@@ -830,7 +830,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         content: TextField(
           controller: ctrl,
           style: TextStyle(color: _textPrimary),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: '卷名称',
             hintStyle: TextStyle(color: _textSecondary),
           ),
@@ -872,7 +872,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         content: TextField(
           controller: ctrl,
           style: TextStyle(color: _textPrimary),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: '作品名称',
             hintStyle: TextStyle(color: _textSecondary),
           ),
@@ -1725,7 +1725,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1734,7 +1734,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _textSecondary,
                       fontSize: 12,
                     ),
@@ -1774,7 +1774,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
