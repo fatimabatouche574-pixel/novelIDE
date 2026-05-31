@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:novel_ide/data/datasources/database_helper.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 import 'package:novel_ide/data/repositories/material_repository.dart';
 
 /// NovelMemory: The persistent "brain" of a novel project.
@@ -15,9 +16,7 @@ class NovelMemory {
 
   /// Get the path to the memory file for this novel.
   Future<String> get _memoryPath async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final memDir = Directory(p.join(dir.path, 'NovelProjects', '记忆包'));
-    if (!await memDir.exists()) await memDir.create(recursive: true);
+    final memDir = await PublicStorageHelper.memoryDir;
     return p.join(memDir.path, '${novelId}_memory.txt');
   }
 
