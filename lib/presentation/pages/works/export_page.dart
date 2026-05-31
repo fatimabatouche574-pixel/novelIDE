@@ -10,6 +10,7 @@ import 'package:archive/archive.dart';
 import 'package:novel_ide/core/constants.dart';
 import 'package:novel_ide/data/datasources/local_file_datasource.dart';
 import 'package:novel_ide/data/datasources/database_helper.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 import 'package:novel_ide/data/models/chapter_model.dart';
 import 'package:novel_ide/data/services/novel_memory.dart';
 import 'package:novel_ide/data/services/epub_export_service.dart';
@@ -204,8 +205,7 @@ class _ExportPageState extends State<ExportPage> {
       isExpanded: true,
     );
 
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final matDir = Directory(p.join(dir.path, 'NovelProjects', '资料区'));
+    final matDir = await PublicStorageHelper.materialsDir;
 
     if (await matDir.exists()) {
       // 按类型分组
@@ -271,8 +271,7 @@ class _ExportPageState extends State<ExportPage> {
 
       final fs = LocalFileDataSource();
       final projectPath = await fs.getProjectDir(widget.novelId, widget.novelTitle);
-      final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-      final matDir = Directory(p.join(dir.path, 'NovelProjects', '资料区'));
+      final matDir = await PublicStorageHelper.materialsDir;
 
       // ====== workspace/ 目录：当前工作版本 ======
       final workspaceDir = Directory(p.join(exportDir.path, 'workspace'));
@@ -381,7 +380,7 @@ class _ExportPageState extends State<ExportPage> {
       exportedWorkspaceFiles.add('workspace/记忆包/小说记忆文件.txt');
 
       // ====== original/ 目录：原始导入文件备份 ======
-      final originalBaseDir = Directory(p.join(dir.path, 'NovelProjects', 'original', widget.novelId));
+      final originalBaseDir = Directory(p.join(PublicStorageHelper.publicRoot.path, 'original', widget.novelId));
       final originalFilesMeta = <Map<String, String>>[];
 
       if (await originalBaseDir.exists()) {
