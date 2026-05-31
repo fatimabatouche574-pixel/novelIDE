@@ -12,11 +12,20 @@ class FuzzyNeedDetector {
   /// 快速关键词预检测（避免不必要的AI调用）
   /// 只有匹配到模糊模式时才调用AI进行深度分析
   static const Map<String, List<String>> _quickPatterns = {
-    'novel_genre': ['写小说', '写一本', '创作小说', '新小说', '开始写', '想写小说', '帮我写小说'],
+    'novel_genre': ['写小说', '创作小说', '想写小说', '帮我写小说'],
     'agent_select': ['生成大纲', '生成角色', '检查爽点', '检测水文', '生成标题', '自动生成'],
     'skill_select': ['帮我润色', '帮我重写', '帮我扩写', '帮我续写', '帮我优化文笔'],
-    // 移除 clarify：原来匹配"帮我""怎么""如何"，几乎每条消息都触发，体验差
+    // 注意：'新小说'、'开始写'、'写一本'、'创建'、'新建' 不再拦截为 novel_genre
+    // 因为这些词表达的通常是"立即创建"而非"想写某种类型"
   };
+
+  /// 用户明确表达"创建/新建"意图的关键词，直接放行不拦截
+  static const List<String> _directCreatePatterns = [
+    '创建作品', '创建小说', '创建书籍', '创建一本书',
+    '新建作品', '新建小说', '新建书籍', '新建一本书',
+    '帮我建', '帮我创', '新书',
+    '直接创建', '直接建', '开始写一本', '写一本新',
+  ];
 
   /// 快速预检测：是否可能需要主动提问
   /// 返回匹配到的类别，null表示不需要
@@ -31,6 +40,14 @@ class FuzzyNeedDetector {
     return null;
   }
 
+  /// 检测是否为明确的创建意图（直接放行）
+  bool _isDirectCreateIntent(String userInput) {
+    for (final p in _directCreatePatterns) {
+      if (userInput.contains(p)) return true;
+    }
+    return false;
+  }
+
   /// 检测用户输入是否为模糊需求（AI驱动）
   /// 返回需要提问的类型，null表示需求明确不需要提问
   Future<ProactiveQuestionType?> detect(
@@ -39,6 +56,9 @@ class FuzzyNeedDetector {
     String? userMemory,
     String? novelContext,
   }) async {
+    // 第零步：如果是明确的创建意图，直接放行，不拦截
+    if (_isDirectCreateIntent(userInput)) return null;
+
     // 第一步：快速预检测
     final quickMatch = _quickDetect(userInput);
     if (quickMatch == null) return null;
@@ -78,7 +98,6 @@ class FuzzyNeedDetector {
       final result = response.trim().toLowerCase();
       if (result == 'clear') return null;
 
-      // 映射AI返回的类型
       switch (result) {
         case 'novel_genre':
           return ProactiveQuestionType.novelGenre;
@@ -92,7 +111,6 @@ class FuzzyNeedDetector {
           return null;
       }
     } catch (_) {
-      // AI调用失败，回退到简单匹配
       return _fallbackDetect(userInput);
     }
   }
@@ -102,7 +120,6 @@ class FuzzyNeedDetector {
     final quickMatch = _quickDetect(userInput);
     switch (quickMatch) {
       case 'novel_genre':
-        // 检查是否已经指定了类型
         const genres = ['玄幻', '都市', '言情', '历史', '科幻', '武侠', '灵异', '军事', '仙侠', '奇幻'];
         if (genres.any((g) => userInput.contains(g))) return null;
         return ProactiveQuestionType.novelGenre;
@@ -126,7 +143,6 @@ class FuzzyNeedDetector {
     String? novelContext,
     List<WritingSkill>? availableSkills,
   }) async {
-    // 如果有AI配置，使用AI生成个性化选项
     if (config != null) {
       try {
         return await _aiGenerateQuestion(
@@ -137,16 +153,11 @@ class FuzzyNeedDetector {
           novelContext: novelContext,
           availableSkills: availableSkills,
         );
-      } catch (_) {
-        // AI生成失败，回退到预设模板
-      }
+      } catch (_) {}
     }
-
-    // 回退到预设模板
     return _fallbackGenerateQuestion(type, userMemory, availableSkills);
   }
 
-  /// AI生成个性化问题
   Future<ProactiveQuestion?> _aiGenerateQuestion(
     String userInput,
     ProactiveQuestionType type, {
@@ -199,10 +210,8 @@ class FuzzyNeedDetector {
     return _parseAiQuestion(response, type);
   }
 
-  /// 解析AI返回的JSON问题
   ProactiveQuestion? _parseAiQuestion(String response, ProactiveQuestionType type) {
     try {
-      // 提取JSON（AI可能返回markdown代码块）
       String jsonStr = response.trim();
       if (jsonStr.startsWith('```')) {
         jsonStr = jsonStr.replaceAll(RegExp(r'^```\w*\n?'), '').replaceAll(RegExp(r'\n?```$'), '');
@@ -232,7 +241,6 @@ class FuzzyNeedDetector {
     }
   }
 
-  /// 获取类型描述
   String _getTypeDescription(ProactiveQuestionType type) {
     switch (type) {
       case ProactiveQuestionType.novelGenre:
@@ -250,7 +258,6 @@ class FuzzyNeedDetector {
     }
   }
 
-  /// 回退的预设模板生成
   ProactiveQuestion? _fallbackGenerateQuestion(
     ProactiveQuestionType type,
     String? userMemory,
@@ -277,7 +284,6 @@ class FuzzyNeedDetector {
     }
   }
 
-  /// 生成小说类型选择问题（结合用户记忆）
   ProactiveQuestion _generateGenreQuestion(String? userMemory) {
     final preferredGenres = <String>[];
     if (userMemory != null) {
@@ -321,23 +327,24 @@ class FuzzyNeedDetector {
 
   /// 检测是否需要触发Workspace Agent
   bool shouldTriggerWorkspaceAgent(String userInput) {
-    // 严格触发条件：必须是明确的工具调用意图，不能匹配普通聊天
     const triggerPatterns = [
-      // 明确的工具请求
       '帮我生成大纲', '帮我生成角色', '帮我生成标题',
       '帮我分析剧情', '帮我检查爽点', '帮我检测水文',
       '自动检查伏笔', '分析角色关系', '检查一致性',
       '帮我创建角色', '帮我添加角色',
       '帮我创建设定', '帮我添加设定',
       '帮我添加伏笔', '帮我添加地点',
-      '帮我创建作品', '帮我创建小说',
+      '帮我创建作品', '帮我创建小说', '帮我创建书籍',
       '帮我切换作品',
       '帮我检查闲置伏笔', '帮我分析节奏',
-      // 明确的工具请求动词+对象组合
       '生成一章大纲', '生成下一章',
       '分析剧情', '检查设定', '检测错别字',
       '导出作品', '备份数据',
       '帮我导出', '帮我备份',
+      // 创建意图 - 扩展匹配（不再只限"帮我"前缀）
+      '创建作品', '创建小说', '创建书籍', '创建一本书',
+      '新建作品', '新建小说', '新建书籍', '新建一本书',
+      '直接创建', '新书一本',
     ];
     for (final p in triggerPatterns) {
       if (userInput.contains(p)) return true;
@@ -345,7 +352,6 @@ class FuzzyNeedDetector {
     return false;
   }
 
-  /// 从用户输入提取任务意图
   Map<String, dynamic> extractIntent(String userInput) {
     final intent = <String, dynamic>{};
     if (userInput.contains('大纲')) intent['task'] = 'generate_outline';
