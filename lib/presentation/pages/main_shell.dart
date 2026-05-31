@@ -544,18 +544,9 @@ class _MainShellState extends ConsumerState<MainShell> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       setState(() => _sidebarOpen = false);
-                      // 跳转到导出页面
-                      final novel = ref.read(selectedNovelProvider);
-                      if (novel != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ExportPage(novelId: novel.id, novelTitle: novel.title),
-                          ),
-                        );
-                      } else {
-                          _showCreateNovelDialog(context, ref);
-                        }
+                      final novel = _ensureNovel(ref);
+                      if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => ExportPage(novelId: novel.id, novelTitle: novel.title)));
                     },
                     icon: Icon(Icons.upload, size: 16),
                     label: Text('导出'),
@@ -941,6 +932,38 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
+  /// 获取当前选中的作品，若无则自动选中第一个作品
+  Novel? _ensureNovel(WidgetRef ref) {
+    final selected = ref.read(selectedNovelProvider);
+    if (selected != null) return selected;
+    final novels = ref.read(novelsProvider).valueOrNull ?? [];
+    if (novels.isEmpty) return null;
+    final first = novels.first;
+    ref.read(selectedNovelProvider.notifier).state = first;
+    loadNovelMaterials(ref, first.id);
+    return first;
+  }
+
+  /// 获取当前选中的章节，若无则自动选中第一个章节
+  Future<Chapter?> _ensureChapter(WidgetRef ref, String novelId) async {
+    final selected = ref.read(selectedChapterProvider);
+    if (selected != null && selected.novelId == novelId) return selected;
+    final chaptersAsync = ref.read(chaptersProvider(novelId));
+    final chapters = chaptersAsync.valueOrNull ?? [];
+    if (chapters.isEmpty) {
+      try {
+        final loaded = await ref.read(chaptersProvider(novelId).future);
+        if (loaded == null || loaded.isEmpty) return null;
+        ref.read(selectedChapterProvider.notifier).state = loaded.first;
+        return loaded.first;
+      } catch (_) {
+        return null;
+      }
+    }
+    ref.read(selectedChapterProvider.notifier).state = chapters.first;
+    return chapters.first;
+  }
+
   /// 新建作品对话框
   void _showCreateNovelDialog(BuildContext context, WidgetRef ref) {
     final titleCtrl = TextEditingController();
@@ -1314,19 +1337,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           GestureDetector(
             onTap: () {
               setState(() => _sidebarOpen = false);
-              if (selectedNovel == null) {
-                _showCreateNovelDialog(context, ref);
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RelationshipGraphPage(
-                    novelId: selectedNovel.id,
-                    novelTitle: selectedNovel.title,
-                  ),
-                ),
-              );
+              final novel = _ensureNovel(ref);
+              if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+              Navigator.push(context, MaterialPageRoute(builder: (_) => RelationshipGraphPage(novelId: novel.id, novelTitle: novel.title)));
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1372,90 +1385,50 @@ class _MainShellState extends ConsumerState<MainShell> {
             MaterialPageRoute(builder: (_) => const StatsPage()),
           );
         } else if (materialType == 'shuangdian') {
-          // 爽点报告 - 需要选择作品
-          final novel = ref.read(selectedNovelProvider);
-          final chapter = ref.read(selectedChapterProvider);
-          if (novel != null && chapter != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ShuangdianReportPage(
-                  chapterContent: chapter.content,
-                  aiResponse: '',
-                ),
-              ),
-            );
-          } else {
-            novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
-          }
+          // 爽点报告 - 自动选择作品和章节
+          final novel = _ensureNovel(ref);
+          if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+          _ensureChapter(ref, novel.id).then((chapter) {
+            if (chapter != null) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ShuangdianReportPage(chapterContent: chapter.content, aiResponse: '')));
+            } else {
+              TopNotification.show(context, '该作品还没有章节，请先创建章节');
+            }
+          });
         } else if (materialType == 'water') {
-          // 水文检测 - 需要选择作品
-          final novel = ref.read(selectedNovelProvider);
-          final chapter = ref.read(selectedChapterProvider);
-          if (novel != null && chapter != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => WaterReportPage(
-                  chapterContent: chapter.content,
-                  aiResponse: "分析中...",
-                ),
-              ),
-            );
-          } else {
-            novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
-          }
+          // 水文检测 - 自动选择作品和章节
+          final novel = _ensureNovel(ref);
+          if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+          _ensureChapter(ref, novel.id).then((chapter) {
+            if (chapter != null) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => WaterReportPage(chapterContent: chapter.content, aiResponse: '分析中...')));
+            } else {
+              TopNotification.show(context, '该作品还没有章节，请先创建章节');
+            }
+          });
         } else if (materialType == 'title') {
-          // 标题生成 - 需要选择作品
-          final novel = ref.read(selectedNovelProvider);
-          if (novel != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TitleGeneratorResultPage(
-                  aiResponse: '',
-                ),
-              ),
-            );
-          } else {
-                          _showCreateNovelDialog(context, ref);
-                        }
+          // 标题生成 - 不需要作品，直接进入
+          Navigator.push(context, MaterialPageRoute(builder: (_) => TitleGeneratorResultPage(aiResponse: '')));
         } else if (materialType == 'review') {
-          // 全文审查 - 需要选择作品
-          final novel = ref.read(selectedNovelProvider);
-          if (novel != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => FullTextReviewPage(
-                  novelId: novel.id,
-                  novelTitle: novel.title,
-                ),
-              ),
-            );
-          } else {
-                          _showCreateNovelDialog(context, ref);
-                        }
+          // 全文审查 - 自动选择作品
+          final novel = _ensureNovel(ref);
+          if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+          Navigator.push(context, MaterialPageRoute(builder: (_) => FullTextReviewPage(novelId: novel.id, novelTitle: novel.title)));
         } else if (materialType == 'polish') {
-          // 润色引擎 - 需要选择作品和章节
-          final novel = ref.read(selectedNovelProvider);
-          final chapter = ref.read(selectedChapterProvider);
-          if (novel != null && chapter != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PolishEnginePage(
-                  chapterContent: chapter.content,
-                  novelTitle: novel.title,
-                  onApply: (modifiedContent) {
-                    // 应用修改后的内容
-                  },
-                ),
-              ),
-            );
-          } else {
-            novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
-          }
+          // 润色引擎 - 自动选择作品和章节
+          final novel = _ensureNovel(ref);
+          if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+          _ensureChapter(ref, novel.id).then((chapter) {
+            if (chapter != null) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => PolishEnginePage(
+                chapterContent: chapter.content,
+                novelTitle: novel.title,
+                onApply: (modifiedContent) {},
+              )));
+            } else {
+              TopNotification.show(context, '该作品还没有章节，请先创建章节');
+            }
+          });
         } else if (materialType == 'style_preset') {
           // 风格预设 - 显示风格选择器
           _showStylePresetPicker();
@@ -1561,21 +1534,15 @@ class _MainShellState extends ConsumerState<MainShell> {
                       subtitle: '分析每章爽点分布',
                       onTap: () {
                         Navigator.pop(ctx);
-                        final novel = ref.read(selectedNovelProvider);
-                        final chapter = ref.read(selectedChapterProvider);
-                        if (novel != null && chapter != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ShuangdianReportPage(
-                                chapterContent: chapter.content,
-                                aiResponse: '',
-                              ),
-                            ),
-                          );
-                        } else {
-                          novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
-                        }
+                        final novel = _ensureNovel(ref);
+                        if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+                        _ensureChapter(ref, novel.id).then((chapter) {
+                          if (chapter != null) {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => ShuangdianReportPage(chapterContent: chapter.content, aiResponse: '')));
+                          } else {
+                            TopNotification.show(context, '该作品还没有章节，请先创建章节');
+                          }
+                        });
                       },
                     ),
                     _buildAiToolMenuItem(
@@ -1584,21 +1551,15 @@ class _MainShellState extends ConsumerState<MainShell> {
                       subtitle: '检测凑字数、重复描写',
                       onTap: () {
                         Navigator.pop(ctx);
-                        final novel = ref.read(selectedNovelProvider);
-                        final chapter = ref.read(selectedChapterProvider);
-                        if (novel != null && chapter != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => WaterReportPage(
-                                chapterContent: chapter.content,
-                                aiResponse: "分析中...",
-                              ),
-                            ),
-                          );
-                        } else {
-                          novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
-                        }
+                        final novel = _ensureNovel(ref);
+                        if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+                        _ensureChapter(ref, novel.id).then((chapter) {
+                          if (chapter != null) {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => WaterReportPage(chapterContent: chapter.content, aiResponse: '分析中...')));
+                          } else {
+                            TopNotification.show(context, '该作品还没有章节，请先创建章节');
+                          }
+                        });
                       },
                     ),
                     _buildAiToolMenuItem(
@@ -1670,24 +1631,19 @@ class _MainShellState extends ConsumerState<MainShell> {
                       subtitle: '章节精修、8个维度',
                       onTap: () {
                         Navigator.pop(ctx);
-                        final novel = ref.read(selectedNovelProvider);
-                        final chapter = ref.read(selectedChapterProvider);
-                        if (novel != null && chapter != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PolishEnginePage(
-                                chapterContent: chapter.content,
-                                novelTitle: novel.title,
-                                onApply: (modifiedContent) {
-                                  // 应用修改后的内容
-                                },
-                              ),
-                            ),
-                          );
-                        } else {
-                          novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
-                        }
+                        final novel = _ensureNovel(ref);
+                        if (novel == null) { _showCreateNovelDialog(context, ref); return; }
+                        _ensureChapter(ref, novel.id).then((chapter) {
+                          if (chapter != null) {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => PolishEnginePage(
+                              chapterContent: chapter.content,
+                              novelTitle: novel.title,
+                              onApply: (modifiedContent) {},
+                            )));
+                          } else {
+                            TopNotification.show(context, '该作品还没有章节，请先创建章节');
+                          }
+                        });
                       },
                     ),
                     _buildAiToolMenuItem(
