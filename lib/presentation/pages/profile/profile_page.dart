@@ -230,7 +230,7 @@ class ProfilePage extends ConsumerWidget {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('备份失败或已取消'), backgroundColor: Colors.orange),
+                    const SnackBar(content: Text('备份失败，请检查存储权限'), backgroundColor: Colors.red),
                   );
                 }
               }
