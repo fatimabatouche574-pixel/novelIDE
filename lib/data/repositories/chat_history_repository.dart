@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:novel_ide/data/models/ai_chat_session_model.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 /// AI 对话历史记录仓库
 /// 将会话列表持久化到本地 JSON 文件
@@ -11,18 +11,13 @@ class ChatHistoryRepository {
 
   /// 获取存储文件路径
   Future<String> _getFilePath() async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    return '${dir.path}/NovelProjects/$_fileName';
+    final root = PublicStorageHelper.publicRoot;
+    return '${root.path}/$_fileName';
   }
 
   /// 确保目录存在
   Future<void> _ensureDirectory() async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final path = '${dir.path}/NovelProjects';
-    final directory = Directory(path);
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
+    // 公共目录由 PublicStorageHelper 统一管理，无需额外创建
   }
 
   /// 加载所有会话
