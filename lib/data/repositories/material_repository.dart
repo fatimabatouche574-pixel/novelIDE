@@ -4,13 +4,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:novel_ide/data/models/material_models.dart';
 import 'package:novel_ide/data/models/character_relationship.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 class MaterialRepository {
   Future<Directory> _getMaterialsDir(String novelId) async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final matDir = Directory(p.join(dir.path, 'NovelProjects', '资料区'));
-    if (!await matDir.exists()) await matDir.create(recursive: true);
-    return matDir;
+    return await PublicStorageHelper.materialsDir;
   }
 
   // Characters
