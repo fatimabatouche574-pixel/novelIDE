@@ -57,6 +57,19 @@ class _MainShellState extends ConsumerState<MainShell> {
   
   // 当前选中的模型名称（用于显示）
   String _selectedModelDisplay = 'GLM-4.7-Flash';
+  
+  // 主题颜色实例变量（build 时更新）
+  late SkinTheme _skin;
+  late Color _bgColor;
+  late Color _sidebarBg;
+  late Color _cardBg;
+  late Color _cardBg2;
+  late Color _primaryColor;
+  late Color _textPrimary;
+  late Color _textSecondary;
+  late Color _textTertiary;
+  late Color _dividerColor;
+  late bool _isDark;
 
   @override
   void initState() {
@@ -191,20 +204,22 @@ class _MainShellState extends ConsumerState<MainShell> {
     
     // 从主题系统读取颜色，跟随皮肤切换
     final skin = ref.watch(skinThemeProvider);
-    final bgColor = skin.background;
-    final sidebarBg = skin.surface;
-    final cardBg = skin.surface;
-    final cardBg2 = skin.cardBg;
-    final primaryColor = skin.primary;
-    final textPrimary = skin.textPrimary;
-    final textSecondary = skin.textSecondary;
-    final textTertiary = skin.textSecondary.withOpacity(0.7);
-    final dividerColor = skin.brightness == Brightness.dark 
-        ? const Color(0xFF2A2A2A) 
+    _skin = skin;
+    _bgColor = skin.background;
+    _sidebarBg = skin.surface;
+    _cardBg = skin.surface;
+    _cardBg2 = skin.cardBg;
+    _primaryColor = skin.primary;
+    _textPrimary = skin.textPrimary;
+    _textSecondary = skin.textSecondary;
+    _textTertiary = skin.textSecondary.withOpacity(0.7);
+    _dividerColor = skin.brightness == Brightness.dark 
+        ? _dividerColor 
         : skin.textSecondary.withOpacity(0.2);
+    _isDark = skin.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: _bgColor,
       body: Stack(
         children: [
           // 主内容区
@@ -213,11 +228,11 @@ class _MainShellState extends ConsumerState<MainShell> {
               // 顶部栏
               _buildTopBar(
                 context: context,
-                bgColor: bgColor,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                primaryColor: primaryColor,
-                cardBg: cardBg,
+                bgColor: _bgColor,
+                textPrimary: _textPrimary,
+                textSecondary: _textSecondary,
+                primaryColor: _primaryColor,
+                cardBg: _cardBg,
               ),
               // 聊天内容区
               const Expanded(
@@ -245,14 +260,14 @@ class _MainShellState extends ConsumerState<MainShell> {
             width: 280,
             child: _buildSidebar(
               context: context,
-              sidebarBg: sidebarBg,
-              cardBg: cardBg,
-              cardBg2: cardBg2,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              textTertiary: textTertiary,
-              primaryColor: primaryColor,
-              dividerColor: dividerColor,
+              sidebarBg: _sidebarBg,
+              cardBg: _cardBg,
+              cardBg2: _cardBg2,
+              textPrimary: _textPrimary,
+              textSecondary: _textSecondary,
+              textTertiary: _textTertiary,
+              primaryColor: _primaryColor,
+              dividerColor: _dividerColor,
               novels: novels,
               selectedNovel: selectedNovel,
             ),
@@ -267,12 +282,12 @@ class _MainShellState extends ConsumerState<MainShell> {
               child: Center(
                 child: _buildModelDropdown(
                   context: context,
-                  cardBg: cardBg,
-                  cardBg2: cardBg2,
-                  textPrimary: textPrimary,
-                  textSecondary: textSecondary,
-                  primaryColor: primaryColor,
-                  dividerColor: dividerColor,
+                  cardBg: _cardBg,
+                  cardBg2: _cardBg2,
+                  textPrimary: _textPrimary,
+                  textSecondary: _textSecondary,
+                  primaryColor: _primaryColor,
+                  dividerColor: _dividerColor,
                 ),
               ),
             ),
@@ -294,7 +309,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: bgColor,
-        border: const Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
+        border: Border(bottom: BorderSide(color: _dividerColor)),
       ),
       child: SafeArea(
         bottom: false,
@@ -324,7 +339,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2F2F2F),
+                        color: _skin.cardBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -419,7 +434,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF333333)),
+                  border: Border.all(color: _dividerColor),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -464,11 +479,11 @@ class _MainShellState extends ConsumerState<MainShell> {
                   // 作品树
                   ...novels.map((novel) => _buildNovelNode(
                     novel: novel,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    textTertiary: textTertiary,
-                    primaryColor: primaryColor,
-                    cardBg2: cardBg2,
+                    textPrimary: _textPrimary,
+                    textSecondary: _textSecondary,
+                    textTertiary: _textTertiary,
+                    primaryColor: _primaryColor,
+                    cardBg2: _cardBg2,
                     selectedNovel: selectedNovel,
                   )),
                   
@@ -531,7 +546,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     label: const Text('导出'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: textPrimary,
-                      side: const BorderSide(color: Color(0xFF333333)),
+                      side: BorderSide(color: _dividerColor),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -544,7 +559,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     label: const Text('导入'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: textPrimary,
-                      side: const BorderSide(color: Color(0xFF333333)),
+                      side: BorderSide(color: _dividerColor),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -633,7 +648,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         margin: const EdgeInsets.only(bottom: 2),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2A3A2A) : cardBg2,
+          color: isSelected ? _primaryColor.withOpacity(0.15) : _cardBg2,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -704,7 +719,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2F2F2F),
+                    color: _skin.cardBg,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -737,10 +752,10 @@ class _MainShellState extends ConsumerState<MainShell> {
               children: volumes.map((vol) => _buildVolumeNode(
                 volume: vol,
                 novel: novel,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                textTertiary: textTertiary,
-                cardBg2: cardBg2,
+                textPrimary: _textPrimary,
+                textSecondary: _textSecondary,
+                textTertiary: _textTertiary,
+                cardBg2: _cardBg2,
               )).toList(),
             ),
           ),
@@ -755,7 +770,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1A1A1A),
+          color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: SafeArea(
@@ -765,23 +780,23 @@ class _MainShellState extends ConsumerState<MainShell> {
               Container(
                 width: 36, height: 4,
                 margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(color: const Color(0xFF444444), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: _textTertiary, borderRadius: BorderRadius.circular(2)),
               ),
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(novel.title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(novel.title, style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               ListTile(
-                leading: const Icon(Icons.add, color: Colors.white),
-                title: const Text('新建卷', style: TextStyle(color: Colors.white)),
+                leading: const Icon(Icons.add, color: _textPrimary),
+                title: Text('新建卷', style: TextStyle(color: _textPrimary)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showNewVolumeDialog(novel);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.edit, color: Colors.white),
-                title: const Text('重命名作品', style: TextStyle(color: Colors.white)),
+                leading: const Icon(Icons.edit, color: _textPrimary),
+                title: Text('重命名作品', style: TextStyle(color: _textPrimary)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showRenameNovelDialog(novel);
@@ -809,14 +824,14 @@ class _MainShellState extends ConsumerState<MainShell> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('新建卷', style: TextStyle(color: Colors.white)),
+        backgroundColor: _skin.surface,
+        title: Text('新建卷', style: TextStyle(color: _textPrimary)),
         content: TextField(
           controller: ctrl,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: _textPrimary),
           decoration: const InputDecoration(
             hintText: '卷名称',
-            hintStyle: TextStyle(color: Colors.grey),
+            hintStyle: TextStyle(color: _textSecondary),
           ),
         ),
         actions: [
@@ -851,14 +866,14 @@ class _MainShellState extends ConsumerState<MainShell> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('重命名作品', style: TextStyle(color: Colors.white)),
+        backgroundColor: _skin.surface,
+        title: Text('重命名作品', style: TextStyle(color: _textPrimary)),
         content: TextField(
           controller: ctrl,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: _textPrimary),
           decoration: const InputDecoration(
             hintText: '作品名称',
-            hintStyle: TextStyle(color: Colors.grey),
+            hintStyle: TextStyle(color: _textSecondary),
           ),
         ),
         actions: [
@@ -885,9 +900,9 @@ class _MainShellState extends ConsumerState<MainShell> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('删除作品', style: TextStyle(color: Colors.white)),
-        content: Text('确定要删除「${novel.title}」吗？此操作不可恢复。', style: const TextStyle(color: Colors.grey)),
+        backgroundColor: _skin.surface,
+        title: Text('删除作品', style: TextStyle(color: _textPrimary)),
+        content: Text('确定要删除「${novel.title}」吗？此操作不可恢复。', style: TextStyle(color: _textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
           FilledButton(
@@ -960,9 +975,9 @@ class _MainShellState extends ConsumerState<MainShell> {
               children: chapters.map((ch) => _buildChapterLeaf(
                 chapter: ch,
                 novel: novel,
-                textPrimary: textPrimary,
-                textTertiary: textTertiary,
-                cardBg2: cardBg2,
+                textPrimary: _textPrimary,
+                textTertiary: _textTertiary,
+                cardBg2: _cardBg2,
               )).toList(),
             ),
           ),
@@ -1024,7 +1039,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Row(
           children: [
-            const Icon(Icons.description, color: Color(0xFF999999), size: 14),
+            Icon(Icons.description, color: _textSecondary, size: 14),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
@@ -1191,7 +1206,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 children: [
                   Icon(Icons.keyboard_arrow_right, color: textTertiary, size: 16),
                   const SizedBox(width: 4),
-                  const Icon(Icons.person, color: Color(0xFFFFFFFF), size: 16),
+                  Icon(Icons.person, color: _textPrimary, size: 16),
                   const SizedBox(width: 6),
                   Text(
                     '角色 ($count)',
@@ -1393,11 +1408,11 @@ class _MainShellState extends ConsumerState<MainShell> {
   /// 显示AI工具菜单
   void _showAiToolsMenu() {
     final theme = Theme.of(context);
-    final textPrimary = Colors.white;
-    final textSecondary = Colors.grey;
-    final primaryColor = const Color(0xFF10A37F);
-    final cardBg = const Color(0xFF1A1A1A);
-    final cardBg2 = const Color(0xFF2A2A2A);
+    final textPrimary = _textPrimary;
+    final textSecondary = _textSecondary;
+    final primaryColor = _primaryColor;
+    final cardBg = _skin.surface;
+    final cardBg2 = _skin.cardBg;
     
     showModalBottomSheet(
       context: context,
@@ -1405,7 +1420,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       builder: (ctx) => Container(
         height: 400,
         decoration: const BoxDecoration(
-          color: Color(0xFF1A1A1A),
+          color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: SafeArea(
@@ -1424,7 +1439,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: Text(
                   'AI工具',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1637,7 +1652,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       builder: (ctx) => Container(
         height: 400,
         decoration: const BoxDecoration(
-          color: Color(0xFF1A1A1A),
+          color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: SafeArea(
@@ -1656,7 +1671,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: Text(
                   '选择写作风格',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1696,7 +1711,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF2A2A2A),
+          color: _dividerColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -1710,7 +1725,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: _textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1719,7 +1734,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   Text(
                     description,
                     style: const TextStyle(
-                      color: Colors.grey,
+                      color: _textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -1745,7 +1760,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF2A2A2A),
+          color: _dividerColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -1759,7 +1774,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: _textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1768,14 +1783,14 @@ class _MainShellState extends ConsumerState<MainShell> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.grey[400],
+                      color: _textSecondary,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[500], size: 20),
+            Icon(Icons.chevron_right, color: _textTertiary, size: 20),
           ],
         ),
       ),
@@ -1802,7 +1817,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         width: 280,
         decoration: BoxDecoration(
           color: cardBg,
-          border: Border.all(color: const Color(0xFF333333)),
+          border: Border.all(color: _dividerColor),
           borderRadius: BorderRadius.circular(14),
           boxShadow: const [
             BoxShadow(color: Colors.black45, blurRadius: 32),
@@ -1833,7 +1848,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       width: 280,
       decoration: BoxDecoration(
         color: cardBg,
-        border: Border.all(color: const Color(0xFF333333)),
+        border: Border.all(color: _dividerColor),
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 32),
@@ -1870,7 +1885,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A3A2A),
+                        color: _primaryColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
