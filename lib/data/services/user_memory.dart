@@ -1,19 +1,18 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 /// UserMemory: 用户级全局记忆，跨所有小说共享。
 /// 类似 Claude Code 的 MEMORY.md —— 记录用户偏好、习惯、指令。
 /// 与 NovelMemory（每部小说独立）互补。
 class UserMemory {
-  static String? _cachedContent;
+static String? _cachedContent;
 
   /// 记忆文件路径
   static Future<String> get _memoryPath async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final memDir = Directory(p.join(dir.path, 'NovelProjects', 'memories'));
-    if (!await memDir.exists()) await memDir.create(recursive: true);
-    return p.join(memDir.path, 'user_memory.txt');
+    final dir = await PublicStorageHelper.memoryDir;
+    return p.join(dir.path, 'user_memory.txt');
   }
 
   /// 检查记忆文件是否存在
