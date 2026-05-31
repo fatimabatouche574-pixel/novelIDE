@@ -30,6 +30,7 @@ import 'package:novel_ide/presentation/pages/writing/global_search_page.dart';
 import 'package:novel_ide/presentation/pages/outline/outline_page.dart';
 import 'package:novel_ide/presentation/widgets/top_notification.dart';
 import 'package:novel_ide/core/router.dart';
+import 'package:novel_ide/data/models/tomato_preset_model.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
 import 'package:novel_ide/core/theme/app_themes.dart';
 
@@ -1644,14 +1645,15 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  /// 显示风格预设选择器
+  /// 显示风格预设选择器（使用全部25个番茄预设）
   void _showStylePresetPicker() {
-    // 显示风格预设选择器
+    final presets = ref.read(tomatoPresetsProvider);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        height: 400,
+        height: 500,
         decoration: BoxDecoration(
           color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -1670,7 +1672,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  '选择写作风格',
+                  '选择写作风格（共${presets.length}种）',
                   style: TextStyle(
                     color: _textPrimary,
                     fontSize: 18,
@@ -1679,18 +1681,13 @@ class _MainShellState extends ConsumerState<MainShell> {
                 ),
               ),
               Expanded(
-                child: ListView(
+                child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    _buildStylePresetItem('都市', '现代都市生活'),
-                    _buildStylePresetItem('玄幻', '修仙玄幻世界'),
-                    _buildStylePresetItem('穿越', '穿越时空题材'),
-                    _buildStylePresetItem('悬疑', '悬疑推理故事'),
-                    _buildStylePresetItem('女频', '女性向题材'),
-                    _buildStylePresetItem('历史', '历史架空题材'),
-                    _buildStylePresetItem('科幻', '科幻未来世界'),
-                    _buildStylePresetItem('武侠', '武侠江湖题材'),
-                  ],
+                  itemCount: presets.length,
+                  itemBuilder: (ctx, index) {
+                    final preset = presets[index];
+                    return _buildTomatoPresetItem(preset);
+                  },
                 ),
               ),
             ],
@@ -1700,13 +1697,14 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  /// 构建风格预设项
-  Widget _buildStylePresetItem(String title, String description) {
+  /// 构建番茄预设风格项
+  Widget _buildTomatoPresetItem(TomatoPreset preset) {
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
-        // 应用风格预设
-        TopNotification.success(context, '已选择风格：$title');
+        // 设置为当前预设
+        ref.read(currentPresetProvider.notifier).state = preset;
+        TopNotification.success(context, '已选择风格：${preset.name}');
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -1723,17 +1721,39 @@ class _MainShellState extends ConsumerState<MainShell> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: _textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          preset.name,
+                          style: TextStyle(
+                            color: _textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          preset.category,
+                          style: TextStyle(
+                            color: _primaryColor,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 4),
                   Text(
-                    description,
+                    preset.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: _textSecondary,
                       fontSize: 12,
