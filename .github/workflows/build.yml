@@ -40,10 +40,11 @@ jobs:
 
     - name: Create key.properties
       run: |
-        echo "storeFile=release-key.jks" > android/app/key.properties
-        echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/app/key.properties
-        echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/app/key.properties
-        echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/app/key.properties
+        echo "storeFile=app/release-key.jks" > android/key.properties
+        echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+        echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+        echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+        cat android/key.properties
 
     - name: Build APK
       run: flutter build apk --release
