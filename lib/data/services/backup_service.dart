@@ -12,15 +12,26 @@ class BackupService {
   /// 执行备份，返回备份文件路径
   static Future<String?> backup() async {
     try {
-      // 让用户选择保存位置
-      final result = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: '选择备份保存位置',
-      );
-      if (result == null) return null;
+      // 让用户选择保存位置，如果失败则使用默认备份目录
+      String? saveDir;
+      try {
+        saveDir = await FilePicker.platform.getDirectoryPath(
+          dialogTitle: '选择备份保存位置',
+        );
+      } catch (_) {
+        // FilePicker 在某些设备上会失败
+      }
+      
+      // 如果用户取消选择或 FilePicker 失败，使用默认备份目录
+      saveDir ??= '/storage/emulated/0/NovelIDE/备份';
+      final saveDirectory = Directory(saveDir);
+      if (!await saveDirectory.exists()) {
+        await saveDirectory.create(recursive: true);
+      }
 
       final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
       final backupFileName = 'NovelIDE_备份_$timestamp.zip';
-      final backupPath = p.join(result, backupFileName);
+      final backupPath = p.join(saveDir, backupFileName);
 
       // 获取项目目录
       final fs = LocalFileDataSource();
