@@ -476,7 +476,20 @@ class _MainShellState extends ConsumerState<MainShell> {
                     )),
                   
                   SizedBox(height: 8),
-                  _buildSectionLabel('作品', textSecondary),
+                  // 作品标题 + 新建按钮
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+                    child: Row(
+                      children: [
+                        Text('作品', style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Spacer(),
+                        GestureDetector(
+                          onTap: () => _showCreateNovelDialog(context, ref),
+                          child: Icon(Icons.add_circle_outline, color: textSecondary, size: 18),
+                        ),
+                      ],
+                    ),
+                  ),
                   
                   // 作品树
                   ...novels.map((novel) => _buildNovelNode(
@@ -1124,25 +1137,48 @@ class _MainShellState extends ConsumerState<MainShell> {
     Color cardBg2,
     Color primaryColor,
   ) {
-    // 没有选中作品时，显示默认数量并始终显示关系图按钮
+    // 没有选中作品时，显示引导创建作品的提示
     if (selectedNovel == null) {
       return [
-        // 角色节点 + 关系图按钮（始终显示）
-        _buildCharacterNodeWithGraphButton(
-          0,
-          textPrimary,
-          textTertiary,
-          cardBg2,
-          primaryColor,
-          null,
+        // 引导创建作品的卡片
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: primaryColor.withOpacity(0.3)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.create_new_folder_outlined, color: primaryColor, size: 24),
+              const SizedBox(height: 8),
+              Text(
+                '还没有作品',
+                style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '创建第一部作品开始写作',
+                style: TextStyle(color: textTertiary, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 32,
+                child: FilledButton.icon(
+                  onPressed: () => _showCreateNovelDialog(context, ref),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('创建作品', style: TextStyle(fontSize: 12)),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        _buildMaterialNode('设定', 0, Icons.settings, textPrimary, textTertiary, cardBg2, materialType: 'setting'),
-        _buildMaterialNode('地点', 0, Icons.location_on, textPrimary, textTertiary, cardBg2, materialType: 'location'),
-        _buildMaterialNode('势力', 0, Icons.account_balance, textPrimary, textTertiary, cardBg2, materialType: 'faction'),
-        _buildMaterialNode('道具', 0, Icons.inventory_2, textPrimary, textTertiary, cardBg2, materialType: 'item'),
-        _buildMaterialNode('伏笔', 0, Icons.lightbulb_outline, textPrimary, textTertiary, cardBg2, materialType: 'hook'),
-        _buildMaterialNode('参考', 0, Icons.book, textPrimary, textTertiary, cardBg2, materialType: 'reference'),
-        _buildMaterialNode('记忆包', 0, Icons.psychology, textPrimary, textTertiary, cardBg2),
       ];
     }
 

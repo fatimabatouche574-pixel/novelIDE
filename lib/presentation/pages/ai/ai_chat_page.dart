@@ -296,6 +296,19 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                 loadNovelMaterials(ref, id);
               }
             },
+            onNovelCreated: (novelId, novelTitle) {
+              // 刷新作品列表
+              ref.invalidate(novelsProvider);
+              // 延迟选中新创建的作品，等待列表刷新完成
+              Future.delayed(const Duration(milliseconds: 500), () {
+                final novels = ref.read(novelsProvider).valueOrNull ?? [];
+                final novel = novels.where((n) => n.id == novelId).firstOrNull;
+                if (novel != null) {
+                  ref.read(selectedNovelProvider.notifier).state = novel;
+                  loadNovelMaterials(ref, novelId);
+                }
+              });
+            },
           );
         }
 
@@ -309,19 +322,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
           systemPrompt: effectiveSystemPrompt,
         );
 
-        final buffer = StringBuffer();
-        if (response.toolResults.isNotEmpty) {
-          buffer.writeln('🔧 **工具调用：**\n');
-          for (final result in response.toolResults) {
-            final icon = result.success ? '✅' : '❌';
-            buffer.writeln('$icon ${result.toolName}：${result.message}');
-          }
-          buffer.writeln('\n---\n');
-        }
-        buffer.write(response.content);
-
         setState(() {
-          _currentSession!.messages.add({'role': 'assistant', 'content': buffer.toString()});
+          _currentSession!.messages.add({'role': 'assistant', 'content': response.content});
           if (matchedSkills.isNotEmpty) {
             _skillMatches[_currentSession!.messages.length - 1] = matchedSkills;
           }

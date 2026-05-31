@@ -14,7 +14,7 @@ import 'package:novel_ide/data/services/workflow_engine.dart';
 import 'package:uuid/uuid.dart';
 
 /// 注册通用工具执行器（不需要小说上下文）
-void registerGeneralToolExecutors({required WorkspaceAgent agent, Function(String)? onSwitchNovel}) {
+void registerGeneralToolExecutors({required WorkspaceAgent agent, Function(String)? onSwitchNovel, Function(String novelId, String novelTitle)? onNovelCreated}) {
   // 配置管理
   agent.registerExecutor('get_ai_configs', (args) async {
     try {
@@ -102,6 +102,8 @@ void registerGeneralToolExecutors({required WorkspaceAgent agent, Function(Strin
       if (title.isEmpty) return ToolResult(toolName: 'create_novel', success: false, message: '标题不能为空');
       final repo = NovelRepository();
       final novel = await repo.createNovel(title: title, category: genre, description: description);
+      // 调用回调，通知UI刷新并选中新创建的小说
+      onNovelCreated?.call(novel.id, novel.title);
       return ToolResult(toolName: 'create_novel', success: true, message: '已创建小说「$title」(ID: ${novel.id})', data: {'novel_id': novel.id});
     } catch (e) {
       return ToolResult(toolName: 'create_novel', success: false, message: '创建失败: $e');
