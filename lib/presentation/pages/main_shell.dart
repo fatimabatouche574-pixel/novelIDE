@@ -941,6 +941,62 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
+  /// 新建作品对话框
+  void _showCreateNovelDialog(BuildContext context, WidgetRef ref) {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建作品'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: InputDecoration(
+                labelText: '作品名称',
+                hintText: '例如：都市神医',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: InputDecoration(
+                labelText: '简介（可选）',
+                hintText: '一句话简介',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            onPressed: () async {
+              if (titleCtrl.text.trim().isEmpty) return;
+              final repo = ref.read(novelRepoProvider);
+              final novel = await repo.createNovel(
+                title: titleCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+              );
+              ref.invalidate(novelsProvider);
+              if (ctx.mounted) {
+                Navigator.pop(ctx);
+                ref.read(selectedNovelProvider.notifier).state = novel;
+              }
+            },
+            child: const Text('创建'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildVolumeNode({
     required Volume volume,
     required Novel novel,
