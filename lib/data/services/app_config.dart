@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 /// App configuration file - like Claude Code's settings.json.
 /// Allows users to customize app behavior via a JSON config file.
@@ -20,8 +20,7 @@ class AppConfig {
   }
 
   Future<String> get configPath async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    return p.join(dir.path, 'app_config.json');
+    return p.join(PublicStorageHelper.publicRoot.path, 'app_config.json');
   }
 
   /// Default configuration.
