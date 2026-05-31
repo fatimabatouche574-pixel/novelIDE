@@ -654,6 +654,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 ),
+                onChanged: (_) => setState(() {}), // 输入时实时更新发送按钮状态
                 onSubmitted: (_) => _sendMessage(),
               ),
             ),
