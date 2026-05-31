@@ -30,6 +30,7 @@ import 'package:novel_ide/presentation/pages/writing/global_search_page.dart';
 import 'package:novel_ide/presentation/pages/outline/outline_page.dart';
 import 'package:novel_ide/presentation/widgets/top_notification.dart';
 import 'package:novel_ide/core/router.dart';
+import 'package:novel_ide/core/theme/skin_provider.dart';
 
 /// GPT风格单页面聊天应用
 class MainShell extends ConsumerStatefulWidget {
@@ -188,16 +189,19 @@ class _MainShellState extends ConsumerState<MainShell> {
       }
     }
     
-    // GPT风格颜色
-    const bgColor = Color(0xFF000000);
-    const sidebarBg = Color(0xFF171717);
-    const cardBg = Color(0xFF1A1A1A);
-    const cardBg2 = Color(0xFF2A2A2A);
-    const primaryColor = Color(0xFF10A37F);
-    const textPrimary = Color(0xFFFFFFFF);
-    const textSecondary = Color(0xFF888888);
-    const textTertiary = Color(0xFF666666);
-    const dividerColor = Color(0xFF2A2A2A);
+    // 从主题系统读取颜色，跟随皮肤切换
+    final skin = ref.watch(skinThemeProvider);
+    final bgColor = skin.background;
+    final sidebarBg = skin.surface;
+    final cardBg = skin.surface;
+    final cardBg2 = skin.cardBg;
+    final primaryColor = skin.primary;
+    final textPrimary = skin.textPrimary;
+    final textSecondary = skin.textSecondary;
+    final textTertiary = skin.textSecondary.withOpacity(0.7);
+    final dividerColor = skin.brightness == Brightness.dark 
+        ? const Color(0xFF2A2A2A) 
+        : skin.textSecondary.withOpacity(0.2);
 
     return Scaffold(
       backgroundColor: bgColor,
