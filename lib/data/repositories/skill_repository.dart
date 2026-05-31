@@ -4,15 +4,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:novel_ide/data/models/writing_skill_model.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 class SkillRepository {
   static final _uuid = Uuid();
 
   Future<String> _getSkillDir() async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final skillDir = Directory(p.join(dir.path, 'NovelProjects', 'Skill'));
-    if (!await skillDir.exists()) await skillDir.create(recursive: true);
-    return skillDir.path;
+    final dir = await PublicStorageHelper.skillDir;
+    return dir.path;
   }
 
   Future<String> _getEnabledStatePath() async {
