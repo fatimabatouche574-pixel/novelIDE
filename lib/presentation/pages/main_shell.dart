@@ -377,7 +377,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     ),
                   );
                 } else {
-                  TopNotification.show(context, '请先选择一部作品再使用全局搜索');
+                  _showCreateNovelDialog(context, ref);
                 }
               },
             ),
@@ -554,8 +554,8 @@ class _MainShellState extends ConsumerState<MainShell> {
                           ),
                         );
                       } else {
-                        TopNotification.show(context, '请先选择一部作品');
-                      }
+                          _showCreateNovelDialog(context, ref);
+                        }
                     },
                     icon: Icon(Icons.upload, size: 16),
                     label: Text('导出'),
@@ -1259,7 +1259,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             onTap: () {
               setState(() => _sidebarOpen = false);
               if (selectedNovel == null) {
-                TopNotification.show(context, '请先选择一部作品');
+                _showCreateNovelDialog(context, ref);
                 return;
               }
               Navigator.push(
@@ -1330,7 +1330,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             );
           } else {
-            TopNotification.show(context, '请先选择作品和章节');
+            novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
           }
         } else if (materialType == 'water') {
           // 水文检测 - 需要选择作品
@@ -1347,7 +1347,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             );
           } else {
-            TopNotification.show(context, '请先选择作品和章节');
+            novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
           }
         } else if (materialType == 'title') {
           // 标题生成 - 需要选择作品
@@ -1362,8 +1362,8 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             );
           } else {
-            TopNotification.show(context, '请先选择一部作品');
-          }
+                          _showCreateNovelDialog(context, ref);
+                        }
         } else if (materialType == 'review') {
           // 全文审查 - 需要选择作品
           final novel = ref.read(selectedNovelProvider);
@@ -1378,8 +1378,8 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             );
           } else {
-            TopNotification.show(context, '请先选择一部作品');
-          }
+                          _showCreateNovelDialog(context, ref);
+                        }
         } else if (materialType == 'polish') {
           // 润色引擎 - 需要选择作品和章节
           final novel = ref.read(selectedNovelProvider);
@@ -1398,7 +1398,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             );
           } else {
-            TopNotification.show(context, '请先选择作品和章节');
+            novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
           }
         } else if (materialType == 'style_preset') {
           // 风格预设 - 显示风格选择器
@@ -1518,7 +1518,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                           );
                         } else {
-                          TopNotification.show(context, '请先选择作品和章节');
+                          novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
                         }
                       },
                     ),
@@ -1541,7 +1541,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                           );
                         } else {
-                          TopNotification.show(context, '请先选择作品和章节');
+                          novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
                         }
                       },
                     ),
@@ -1562,7 +1562,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                           );
                         } else {
-                          TopNotification.show(context, '请先选择一部作品');
+                          _showCreateNovelDialog(context, ref);
                         }
                       },
                     ),
@@ -1584,7 +1584,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                           );
                         } else {
-                          TopNotification.show(context, '请先选择一部作品');
+                          _showCreateNovelDialog(context, ref);
                         }
                       },
                     ),
@@ -1630,7 +1630,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                           );
                         } else {
-                          TopNotification.show(context, '请先选择作品和章节');
+                          novel == null ? _showCreateNovelDialog(context, ref) : TopNotification.show(context, '请先选择一个章节');
                         }
                       },
                     ),
