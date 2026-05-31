@@ -31,6 +31,7 @@ import 'package:novel_ide/presentation/pages/outline/outline_page.dart';
 import 'package:novel_ide/presentation/widgets/top_notification.dart';
 import 'package:novel_ide/core/router.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
+import 'package:novel_ide/core/theme/app_themes.dart';
 
 /// GPT风格单页面聊天应用
 class MainShell extends ConsumerStatefulWidget {
@@ -235,7 +236,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 cardBg: _cardBg,
               ),
               // 聊天内容区
-              const Expanded(
+              Expanded(
                 child: AiChatPage(),
               ),
             ],
@@ -335,7 +336,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       decoration: BoxDecoration(
@@ -440,7 +441,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: Row(
                   children: [
                     Icon(Icons.add, color: textPrimary, size: 18),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       '新会话',
                       style: TextStyle(color: textPrimary, fontSize: 14),
@@ -473,7 +474,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                       cardBg2,
                     )),
                   
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _buildSectionLabel('作品', textSecondary),
                   
                   // 作品树
@@ -499,7 +500,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     primaryColor,
                   ),
                   
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _buildSectionLabel('AI工具', textSecondary),
                   
                   // AI工具分类
@@ -542,8 +543,8 @@ class _MainShellState extends ConsumerState<MainShell> {
                         TopNotification.show(context, '请先选择一部作品');
                       }
                     },
-                    icon: const Icon(Icons.upload, size: 16),
-                    label: const Text('导出'),
+                    icon: Icon(Icons.upload, size: 16),
+                    label: Text('导出'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: textPrimary,
                       side: BorderSide(color: _dividerColor),
@@ -551,12 +552,12 @@ class _MainShellState extends ConsumerState<MainShell> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _handleImport,
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('导入'),
+                    icon: Icon(Icons.download, size: 16),
+                    label: Text('导入'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: textPrimary,
                       side: BorderSide(color: _dividerColor),
@@ -608,7 +609,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               time,
               style: TextStyle(color: textTertiary, fontSize: 11),
@@ -705,9 +706,9 @@ class _MainShellState extends ConsumerState<MainShell> {
                   color: textTertiary,
                   size: 16,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Icon(Icons.menu_book, color: textPrimary, size: 16),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     novel.title,
@@ -727,7 +728,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     style: TextStyle(color: textSecondary, fontSize: 10),
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 // 大纲按钮
                 GestureDetector(
                   onTap: () {
@@ -769,7 +770,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -787,7 +788,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: Text(novel.title, style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               ListTile(
-                leading: const Icon(Icons.add, color: _textPrimary),
+                leading: Icon(Icons.add, color: _textPrimary),
                 title: Text('新建卷', style: TextStyle(color: _textPrimary)),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -795,7 +796,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.edit, color: _textPrimary),
+                leading: Icon(Icons.edit, color: _textPrimary),
                 title: Text('重命名作品', style: TextStyle(color: _textPrimary)),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -803,14 +804,14 @@ class _MainShellState extends ConsumerState<MainShell> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('删除作品', style: TextStyle(color: Colors.red)),
+                leading: Icon(Icons.delete, color: Colors.red),
+                title: Text('删除作品', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showDeleteNovelConfirm(novel);
                 },
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
             ],
           ),
         ),
@@ -835,7 +836,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('取消')),
           FilledButton(
             onPressed: () async {
               if (ctrl.text.trim().isEmpty) return;
@@ -853,7 +854,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               });
               TopNotification.success(context, '已创建卷：${ctrl.text.trim()}');
             },
-            child: const Text('创建'),
+            child: Text('创建'),
           ),
         ],
       ),
@@ -877,7 +878,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('取消')),
           FilledButton(
             onPressed: () async {
               if (ctrl.text.trim().isEmpty) return;
@@ -888,7 +889,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               ref.invalidate(novelsProvider);
               TopNotification.success(context, '已重命名');
             },
-            child: const Text('确定'),
+            child: Text('确定'),
           ),
         ],
       ),
@@ -952,9 +953,9 @@ class _MainShellState extends ConsumerState<MainShell> {
                   color: textTertiary,
                   size: 14,
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.folder, color: Color(0xFFFFC107), size: 14),
-                const SizedBox(width: 6),
+                SizedBox(width: 4),
+                Icon(Icons.folder, color: Color(0xFFFFC107), size: 14),
+                SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     volume.title,
@@ -1205,7 +1206,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               child: Row(
                 children: [
                   Icon(Icons.keyboard_arrow_right, color: textTertiary, size: 16),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Icon(Icons.person, color: _textPrimary, size: 16),
                   const SizedBox(width: 6),
                   Text(
@@ -1390,9 +1391,9 @@ class _MainShellState extends ConsumerState<MainShell> {
         child: Row(
           children: [
             Icon(Icons.keyboard_arrow_right, color: textTertiary, size: 16),
-            const SizedBox(width: 4),
+            SizedBox(width: 4),
             Icon(icon, color: textPrimary, size: 16),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Expanded(
               child: Text(
                 label,
@@ -1419,7 +1420,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         height: 400,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1434,7 +1435,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
                   'AI工具',
@@ -1651,7 +1652,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         height: 400,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _skin.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1666,7 +1667,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
                   '选择写作风格',
@@ -1717,7 +1718,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         child: Row(
           children: [
             Icon(Icons.palette, color: const Color(0xFF10A37F), size: 24),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1730,7 +1731,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     description,
                     style: const TextStyle(
@@ -1766,7 +1767,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         child: Row(
           children: [
             Icon(icon, color: const Color(0xFF10A37F), size: 24),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1779,7 +1780,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -1828,7 +1829,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('暂无AI模型配置', style: TextStyle(color: textSecondary, fontSize: 14)),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             FilledButton(
               onPressed: () {
                 setState(() => _modelDropdownOpen = false);
@@ -1837,7 +1838,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   MaterialPageRoute(builder: (_) => const ProfilePage()),
                 );
               },
-              child: const Text('去配置'),
+              child: Text('去配置'),
             ),
           ],
         ),
@@ -1881,7 +1882,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     style: TextStyle(color: textPrimary, fontSize: 14),
                   ),
                   if (config.modelName.contains('GLM') || config.modelName.contains('glm')) ...[
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
