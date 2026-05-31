@@ -618,7 +618,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   Widget _buildInputBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 10, 16, 20 + MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -716,7 +716,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       isScrollControlled: true,
       builder: (ctx) => Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.75),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1116,7 +1116,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1182,7 +1182,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       isScrollControlled: true,
       builder: (ctx) => Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.65),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1421,7 +1421,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -1498,7 +1498,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
               _saveHistory();
               TopNotification.success(context, '消息已撤回');
             },
-            child: const Text('确定', style: TextStyle(color: Colors.red)),
+            child: Text('确定', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1528,7 +1528,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setPickerState) => Container(
           height: MediaQuery.of(ctx).size.height * 0.7,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _cardBg,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
@@ -1546,7 +1546,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                     Icon(Icons.library_books, size: 20, color: _primaryColor),
                     SizedBox(width: 8),
                     Text('选择资料', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textPrimary)),
-                    const Spacer(),
+                    Spacer(),
                     Text('${selectedIds.length} 项已选', style: TextStyle(fontSize: 13, color: _textSecondary)),
                   ],
                 ),
