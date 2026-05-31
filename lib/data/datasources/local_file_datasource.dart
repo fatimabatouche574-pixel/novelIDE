@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:archive/archive.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 class LocalFileDataSource {
   static final _uuid = Uuid();
@@ -11,58 +12,37 @@ class LocalFileDataSource {
   /// 获取基础目录（NovelProjects 的父目录）
   /// 用于备份服务等需要访问根目录的场景
   Future<Directory> getBaseDir() async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    return dir;
+    return PublicStorageHelper.publicRoot;
   }
 
-  /// 根目录：使用外部存储公共持久化目录，升级/卸载不丢失
-  /// Android: /storage/emulated/0/Android/data/{package}/files/NovelProjects/
-  /// 使用 getExternalStorageDirectory() 确保数据持久化
+  /// 根目录：使用公共存储目录，卸载/重装不丢失
   Future<Directory> get _rootDir async {
-    final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-    final root = Directory(p.join(dir.path, 'NovelProjects'));
-    if (!await root.exists()) await root.create(recursive: true);
-    return root;
+    return PublicStorageHelper.publicRoot;
   }
 
   /// 作品区目录
   Future<Directory> get _worksDir async {
-    final root = await _rootDir;
-    final dir = Directory(p.join(root.path, '作品区'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir;
+    return PublicStorageHelper.worksDir;
   }
 
   /// 资料区目录
   Future<Directory> get _materialsDir async {
-    final root = await _rootDir;
-    final dir = Directory(p.join(root.path, '资料区'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir;
+    return PublicStorageHelper.materialsDir;
   }
 
   /// 记忆包目录
   Future<Directory> get _memoryDir async {
-    final root = await _rootDir;
-    final dir = Directory(p.join(root.path, '记忆包'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir;
+    return PublicStorageHelper.memoryDir;
   }
 
   /// Skill目录
   Future<Directory> get skillDir async {
-    final root = await _rootDir;
-    final dir = Directory(p.join(root.path, 'Skill'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir;
+    return PublicStorageHelper.skillDir;
   }
 
   /// Agent目录
   Future<Directory> get agentDir async {
-    final root = await _rootDir;
-    final dir = Directory(p.join(root.path, 'Agent'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir;
+    return PublicStorageHelper.agentDir;
   }
 
   // ===== 作品区操作 =====
