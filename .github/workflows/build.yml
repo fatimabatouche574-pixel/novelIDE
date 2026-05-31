@@ -33,8 +33,11 @@ jobs:
 
     # 解码签名文件
     - name: Decode keystore
-      run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
-
+      run: printf "%s" "${{ secrets.KEYSTORE_BASE64 }}" > keystore.b64
+        base64 -d keystore.b64 > android/app/release-key.jks
+        rm keystore.b64
+        # 料代码速负：
+        ls -l android/app/release-key.jks
     # 创建 key.properties 供 build.gradle 读取
     - name: Create key.properties
       run: |
