@@ -36,27 +36,34 @@ class AiService {
   }
 
   /// 智能补全 API 地址
-  /// 根据协议类型自动补全为完整路径
+  /// 兼容所有常见 URL 格式，自动补全为完整请求路径
   String _normalizeApiUrl(String url, ApiProtocol protocol) {
-    url = url.trim().replaceAll(RegExp(r'/+$'), ''); // 去除末尾斜杠
+    url = url.trim();
     if (url.isEmpty) return url;
 
-    // 已经是完整路径，直接返回
+    // 已经是完整端点，直接返回
     if (url.contains('/chat/completions')) return url;
-    if (url.contains('/v1/messages')) return url;
+    if (url.contains('/v1/messages') || url.contains('/v1/messages/')) return url;
 
-    // Anthropic 协议特殊处理
+    // 去除末尾斜杠（但保留协议部分）
+    url = url.replaceAll(RegExp(r'/+$'), '');
+
+    // Anthropic 协议
     if (protocol == ApiProtocol.anthropic) {
-      if (url.endsWith('/anthropic')) return '$url/v1/messages';
+      // https://api.anthropic.com → https://api.anthropic.com/v1/messages
+      // https://xxx/v1 → https://xxx/v1/messages
       if (url.endsWith('/v1')) return '$url/messages';
-      if (!url.endsWith('/')) url = '$url/';
-      return '${url}v1/messages';
+      if (url.endsWith('/anthropic')) return '$url/v1/messages';
+      return '$url/v1/messages';
     }
 
-    // OpenAI 兼容协议
+    // OpenAI 兼容协议（覆盖所有主流厂商）
+    // https://api.openai.com → https://api.openai.com/v1/chat/completions
+    // https://api.deepseek.com/v1 → https://api.deepseek.com/v1/chat/completions
+    // https://api.example.com/api/v1 → https://api.example.com/api/v1/chat/completions
+    // https://xxx/v1/openai → https://xxx/v1/openai/chat/completions
     if (url.endsWith('/v1')) return '$url/chat/completions';
-    if (!url.endsWith('/')) url = '$url/';
-    return '${url}v1/chat/completions';
+    return '$url/v1/chat/completions';
   }
 
   /// Send a chat completion request. Tracks cost automatically.
@@ -317,6 +324,140 @@ class AiService {
       // 兜底：非DioException的错误（如响应解析TypeError、NoSuchMethodError）
       throw Exception('API响应解析失败: $e');
     }
+  }
+
+  /// 测试API连接 — 发送最小请求验证连通性
+  Future<Map<String, dynamic>> testConnection(AiConfig config) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final normalizedUrl = _normalizeApiUrl(config.apiUrl, config.protocol);
+      await _dio.post(
+        normalizedUrl,
+        options: Options(
+          headers: _buildHeaders(config),
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+        data: _buildPayload(config, [
+          {'role': 'user', 'content': 'hi'},
+        ]),
+      );
+      stopwatch.stop();
+      return {
+        'success': true,
+        'message': '连接成功！模型「${config.modelName}」响应正常',
+        'latency_ms': stopwatch.elapsedMilliseconds,
+      };
+    } on DioException catch (e) {
+      stopwatch.stop();
+      return {
+        'success': false,
+        'message': _formatDioError(e),
+        'latency_ms': stopwatch.elapsedMilliseconds,
+        'status_code': e.response?.statusCode,
+      };
+    } catch (e) {
+      stopwatch.stop();
+      return {
+        'success': false,
+        'message': '未知错误: $e',
+        'latency_ms': stopwatch.elapsedMilliseconds,
+      };
+    }
+  }
+
+  /// 获取模型列表 — 兼容 OpenAI /v1/models 格式
+  Future<List<String>> fetchModels(AiConfig config) async {
+    try {
+      String modelsUrl = _buildModelsUrl(config.apiUrl.trim());
+      final response = await _dio.get(
+        modelsUrl,
+        options: Options(
+          headers: _buildHeaders(config),
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 15),
+        ),
+      );
+      return _parseModels(response.data);
+    } on DioException catch (e) {
+      throw Exception(_formatDioError(e));
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('获取模型列表失败: $e');
+    }
+  }
+
+  /// 构造 models 列表端点 URL
+  String _buildModelsUrl(String url) {
+    if (url.contains('/models')) return url;
+    url = url.replaceAll(RegExp(r'/+$'), '');
+    if (url.contains('/chat/completions')) {
+      return url.replaceAll('/chat/completions', '/models');
+    }
+    if (url.endsWith('/v1/messages')) {
+      return '${url.substring(0, url.length - '/v1/messages'.length)}/v1/models';
+    }
+    if (url.endsWith('/v1')) return '$url/models';
+    return '$url/v1/models';
+  }
+
+  /// 解析模型列表响应
+  List<String> _parseModels(dynamic data) {
+    final models = <String>[];
+    if (data is Map<String, dynamic>) {
+      final dataList = data['data'];
+      if (dataList is List) {
+        for (final item in dataList) {
+          if (item is Map<String, dynamic>) {
+            final id = item['id'] as String?;
+            if (id != null && id.isNotEmpty) models.add(id);
+          }
+        }
+      }
+      final modelsList = data['models'];
+      if (modelsList is List && models.isEmpty) {
+        for (final item in modelsList) {
+          if (item is String) {
+            models.add(item);
+          } else if (item is Map<String, dynamic>) {
+            final id = item['id'] as String? ?? item['name'] as String?;
+            if (id != null && id.isNotEmpty) models.add(id);
+          }
+        }
+      }
+    } else if (data is List) {
+      for (final item in data) {
+        if (item is String) {
+          models.add(item);
+        } else if (item is Map<String, dynamic>) {
+          final id = item['id'] as String? ?? item['name'] as String?;
+          if (id != null && id.isNotEmpty) models.add(id);
+        }
+      }
+    }
+    models.sort();
+    return models;
+  }
+
+  /// 统一格式化 DioException 错误信息
+  String _formatDioError(DioException e) {
+    final statusCode = e.response?.statusCode;
+    final respBody = e.response?.data?.toString() ?? '';
+    if (statusCode == 401) return 'API Key 无效或认证失败 (401)';
+    if (statusCode == 403) return 'API Key 无权限 (403)';
+    if (statusCode == 404) return 'API 地址错误 (404)，请检查 URL';
+    if (statusCode == 429) return '请求频率超限 (429)，请稍后再试';
+    if (statusCode == 402) return 'API 余额不足 (402)';
+    if (statusCode == 500) return '服务器内部错误 (500)';
+    if (statusCode == 502) return '网关错误 (502)，服务可能在维护';
+    if (statusCode == 503) return '服务暂不可用 (503)';
+    if (e.type == DioExceptionType.connectionTimeout) return '连接超时，请检查网络和API地址';
+    if (e.type == DioExceptionType.sendTimeout) return '发送超时，请检查网络';
+    if (e.type == DioExceptionType.receiveTimeout) return '响应超时，服务器处理时间过长';
+    if (e.type == DioExceptionType.connectionError) return '无法连接到服务器，请检查 API 地址和网络';
+    if (respBody.isNotEmpty && respBody.length < 500) return '错误 ($statusCode): $respBody';
+    if (statusCode != null) return '请求失败: HTTP $statusCode';
+    return '网络错误: ${e.message ?? "连接异常"}';
   }
 }
 
