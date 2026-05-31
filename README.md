@@ -10,6 +10,26 @@
 
 ---
 
+## 📥 立即下载
+
+<table>
+<tr>
+<td align="center">
+<h3>🚀 最新版本</h3>
+<p><b>网文写作IDE</b> — 安卓端 AI 写作神器</p>
+
+<a href="https://github.com/qq1375828505/novelIDE/releases/download/latest/novel-ide-android.apk">
+<img src="https://img.shields.io/badge/%F0%9F%93%B1_%E4%B8%8B%E8%BD%BDAPK-%E7%AB%8B%E5%8D%B3%E4%B8%8B%E8%BD%BD-blue?style=for-the-badge&logo=android" alt="下载 APK" />
+</a>
+
+<p>支持 Android 6.0+ · 下载后直接安装 · 完全免费</p>
+<p><a href="https://github.com/qq1375828505/novelIDE/releases">查看全部版本 →</a></p>
+</td>
+</tr>
+</table>
+
+---
+
 ## 为什么选择网文写作IDE？
 
 市面上的写作工具要么是纯文本编辑器，要么依赖云端服务。**网文写作IDE** 是第一个把 **IDE 工作流** + **AI 智能体** + **完全离线** 融为一体的网文创作工具。
