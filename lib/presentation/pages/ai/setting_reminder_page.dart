@@ -10,10 +10,15 @@ class SettingReminderPage extends ConsumerStatefulWidget {
   final String novelId;
   final TextEditingController editorController;
 
-  const SettingReminderPage({super.key, required this.novelId, required this.editorController});
+  const SettingReminderPage({
+    super.key,
+    required this.novelId,
+    required this.editorController,
+  });
 
   @override
-  ConsumerState<SettingReminderPage> createState() => _SettingReminderPageState();
+  ConsumerState<SettingReminderPage> createState() =>
+      _SettingReminderPageState();
 }
 
 class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
@@ -37,11 +42,21 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none, size: 64, color: Colors.grey[300]),
+                  Icon(
+                    Icons.notifications_none,
+                    size: 64,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
-                  Text('暂无设定提醒', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+                  Text(
+                    '暂无设定提醒',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                  ),
                   const SizedBox(height: 8),
-                  Text('点击右上角扫描当前章节', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+                  Text(
+                    '点击右上角扫描当前章节',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: _showAddDialog,
@@ -67,19 +82,48 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.track_changes, size: 18, color: hasConflict ? AppColors.error : AppColors.primary),
+                            Icon(
+                              Icons.track_changes,
+                              size: 18,
+                              color: hasConflict
+                                  ? AppColors.error
+                                  : AppColors.primary,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(reminder.keyword, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                reminder.keyword,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: AppColors.error,
+                              ),
                               onPressed: () {
-                                final list = ref.read(settingRemindersProvider(widget.novelId))
+                                final list = ref
+                                    .read(
+                                      settingRemindersProvider(widget.novelId),
+                                    )
                                     .where((r) => r.id != reminder.id)
                                     .toList();
-                                ref.read(settingRemindersProvider(widget.novelId).notifier).state = list;
-                                MaterialRepository().saveSettingReminders(widget.novelId, list);
+                                ref
+                                        .read(
+                                          settingRemindersProvider(
+                                            widget.novelId,
+                                          ).notifier,
+                                        )
+                                        .state =
+                                    list;
+                                MaterialRepository().saveSettingReminders(
+                                  widget.novelId,
+                                  list,
+                                );
                               },
                             ),
                           ],
@@ -88,15 +132,26 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Chip(
-                              label: Text(reminder.relatedCharacter!, style: const TextStyle(fontSize: 11)),
-                              backgroundColor: AppColors.primary.withOpacity(0.1),
+                              label: Text(
+                                reminder.relatedCharacter!,
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              backgroundColor: AppColors.primary.withOpacity(
+                                0.1,
+                              ),
                               side: BorderSide.none,
                               visualDensity: VisualDensity.compact,
                             ),
                           ),
                         if (reminder.note != null) ...[
                           const SizedBox(height: 8),
-                          Text(reminder.note!, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Text(
+                            reminder.note!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
                         if (hasConflict) ...[
                           const SizedBox(height: 8),
@@ -108,12 +163,19 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.warning_amber, size: 16, color: AppColors.error),
+                                const Icon(
+                                  Icons.warning_amber,
+                                  size: 16,
+                                  color: AppColors.error,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     '潜在冲突：${reminder.conflicts.join('、')}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.error),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.error,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -139,13 +201,16 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
 
     final chars = ref.read(charactersProvider(widget.novelId));
     final settings = ref.read(settingCardsProvider(widget.novelId));
-    final existingReminders = List<SettingReminder>.from(ref.read(settingRemindersProvider(widget.novelId)));
+    final existingReminders = List<SettingReminder>.from(
+      ref.read(settingRemindersProvider(widget.novelId)),
+    );
 
     int newCount = 0;
 
     for (final char in chars) {
       final mentions = char.name.allMatches(text).length;
-      if (mentions > 0 && !existingReminders.any((r) => r.relatedCharacter == char.name)) {
+      if (mentions > 0 &&
+          !existingReminders.any((r) => r.relatedCharacter == char.name)) {
         final tags = char.tags.map((t) => t.key).toList();
         final conflicts = <String>[];
         for (final set in settings) {
@@ -158,28 +223,33 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
             }
           }
         }
-        existingReminders.add(SettingReminder(
-          id: const Uuid().v4(),
-          novelId: widget.novelId,
-          keyword: char.name,
-          relatedCharacter: char.name,
-          note: '本章出现${mentions}次',
-          conflicts: conflicts,
-        ));
+        existingReminders.add(
+          SettingReminder(
+            id: const Uuid().v4(),
+            novelId: widget.novelId,
+            keyword: char.name,
+            relatedCharacter: char.name,
+            note: '本章出现${mentions}次',
+            conflicts: conflicts,
+          ),
+        );
         newCount++;
       }
     }
 
     for (final set in settings) {
       final mentions = set.name.allMatches(text).length;
-      if (mentions > 0 && !existingReminders.any((r) => r.relatedSetting == set.name)) {
-        existingReminders.add(SettingReminder(
-          id: const Uuid().v4(),
-          novelId: widget.novelId,
-          keyword: set.name,
-          relatedSetting: set.name,
-          note: '本章提及${mentions}次',
-        ));
+      if (mentions > 0 &&
+          !existingReminders.any((r) => r.relatedSetting == set.name)) {
+        existingReminders.add(
+          SettingReminder(
+            id: const Uuid().v4(),
+            novelId: widget.novelId,
+            keyword: set.name,
+            relatedSetting: set.name,
+            note: '本章提及${mentions}次',
+          ),
+        );
         newCount++;
       }
     }
@@ -190,8 +260,12 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
       }
     }
 
-    ref.read(settingRemindersProvider(widget.novelId).notifier).state = existingReminders;
-    MaterialRepository().saveSettingReminders(widget.novelId, existingReminders);
+    ref.read(settingRemindersProvider(widget.novelId).notifier).state =
+        existingReminders;
+    MaterialRepository().saveSettingReminders(
+      widget.novelId,
+      existingReminders,
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -213,16 +287,35 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: keywordCtrl, decoration: const InputDecoration(labelText: '关键词', hintText: '例如：主角的剑')),
+              TextField(
+                controller: keywordCtrl,
+                decoration: const InputDecoration(
+                  labelText: '关键词',
+                  hintText: '例如：主角的剑',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: charCtrl, decoration: const InputDecoration(labelText: '关联角色（可选）')),
+              TextField(
+                controller: charCtrl,
+                decoration: const InputDecoration(labelText: '关联角色（可选）'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: noteCtrl, decoration: const InputDecoration(labelText: '备注', hintText: '例如：注意武器归属'), maxLines: 2),
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(
+                  labelText: '备注',
+                  hintText: '例如：注意武器归属',
+                ),
+                maxLines: 2,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (keywordCtrl.text.trim().isEmpty) return;
@@ -230,13 +323,23 @@ class _SettingReminderPageState extends ConsumerState<SettingReminderPage> {
                 id: const Uuid().v4(),
                 novelId: widget.novelId,
                 keyword: keywordCtrl.text.trim(),
-                relatedCharacter: charCtrl.text.trim().isEmpty ? null : charCtrl.text.trim(),
-                note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                relatedCharacter: charCtrl.text.trim().isEmpty
+                    ? null
+                    : charCtrl.text.trim(),
+                note: noteCtrl.text.trim().isEmpty
+                    ? null
+                    : noteCtrl.text.trim(),
               );
               final list = ref.read(settingRemindersProvider(widget.novelId));
               final newList = [...list, reminder];
-              ref.read(settingRemindersProvider(widget.novelId).notifier).state = newList;
-              MaterialRepository().saveSettingReminders(widget.novelId, newList);
+              ref
+                      .read(settingRemindersProvider(widget.novelId).notifier)
+                      .state =
+                  newList;
+              MaterialRepository().saveSettingReminders(
+                widget.novelId,
+                newList,
+              );
               Navigator.pop(ctx);
             },
             child: const Text('添加'),

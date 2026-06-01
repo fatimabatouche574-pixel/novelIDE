@@ -26,13 +26,26 @@ class WaterReportPage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.water_drop, color: Colors.blue, size: 20),
+                      const Icon(
+                        Icons.water_drop,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
-                      const Text('AI 检测结果', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'AI 检测结果',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(),
-                  Text(aiResponse, style: const TextStyle(fontSize: 14, height: 1.6)),
+                  Text(
+                    aiResponse,
+                    style: const TextStyle(fontSize: 14, height: 1.6),
+                  ),
                 ],
               ),
             ),
@@ -44,13 +57,20 @@ class WaterReportPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('章节内容（前500字）', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text(
+                    '章节内容（前500字）',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     chapterContent.length > 500
                         ? '${chapterContent.substring(0, 500)}...'
                         : chapterContent,
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),

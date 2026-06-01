@@ -16,16 +16,21 @@ import 'package:novel_ide/data/services/announcement_service.dart';
 import 'package:novel_ide/presentation/pages/profile/ai_config_list_page.dart';
 import 'package:novel_ide/data/services/backup_service.dart';
 
-
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   Widget _buildVoiceSubtitle(WidgetRef ref) {
     final voiceConfig = ref.watch(selectedVoiceConfigProvider);
     if (voiceConfig != null) {
-      return Text('已配置：${voiceConfig.name}', style: TextStyle(fontSize: 12, color: Colors.teal[600]));
+      return Text(
+        '已配置：${voiceConfig.name}',
+        style: TextStyle(fontSize: 12, color: Colors.teal[600]),
+      );
     }
-    return Text('待添加 · 通话功能不可用', style: TextStyle(fontSize: 12, color: Colors.orange[600]));
+    return Text(
+      '待添加 · 通话功能不可用',
+      style: TextStyle(fontSize: 12, color: Colors.orange[600]),
+    );
   }
 
   @override
@@ -45,12 +50,22 @@ class ProfilePage extends ConsumerWidget {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: AppColors.primary.withOpacity(0.1),
-                  child: const Icon(Icons.person, size: 40, color: AppColors.primary),
+                  child: const Icon(
+                    Icons.person,
+                    size: 40,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                const Text('网文作者', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  '网文作者',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 4),
-                Text('单机版 · 数据本地存储', style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+                Text(
+                  '单机版 · 数据本地存储',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                ),
               ],
             ),
           ),
@@ -64,7 +79,10 @@ class ProfilePage extends ConsumerWidget {
                 title: Text(config?.name ?? '未选择模型'),
                 subtitle: Text(config?.modelName ?? '点击配置AI模型'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiConfigListPage())),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiConfigListPage()),
+                ),
               );
             },
           ),
@@ -77,7 +95,10 @@ class ProfilePage extends ConsumerWidget {
             subtitle: const Text('记录您的写作风格和AI偏好，AI对话时自动读取'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const UserMemoryPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UserMemoryPage()),
+              );
             },
           ),
           const SizedBox(height: 4),
@@ -87,7 +108,10 @@ class ProfilePage extends ConsumerWidget {
             subtitle: _buildVoiceSubtitle(ref),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const VoiceConfigPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VoiceConfigPage()),
+              );
             },
           ),
           const SizedBox(height: 4),
@@ -172,9 +196,9 @@ class ProfilePage extends ConsumerWidget {
             trailing: Switch(
               value: skinTheme.brightness == Brightness.dark,
               onChanged: (value) {
-                ref.read(skinThemeProvider.notifier).setSkin(
-                  value ? SkinType.black : SkinType.white,
-                );
+                ref
+                    .read(skinThemeProvider.notifier)
+                    .setSkin(value ? SkinType.black : SkinType.white);
               },
             ),
           ),
@@ -210,7 +234,10 @@ class ProfilePage extends ConsumerWidget {
             subtitle: const Text('修改配置文件自定义软件行为'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const AppConfigPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AppConfigPage()),
+              );
             },
           ),
           const Divider(),
@@ -226,11 +253,17 @@ class ProfilePage extends ConsumerWidget {
               if (context.mounted) {
                 if (path != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('备份成功：$path'), backgroundColor: Colors.green),
+                    SnackBar(
+                      content: Text('备份成功：$path'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('备份失败，请检查存储权限'), backgroundColor: Colors.red),
+                    const SnackBar(
+                      content: Text('备份失败，请检查存储权限'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
@@ -244,7 +277,10 @@ class ProfilePage extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.delete_sweep, color: AppColors.error),
-            title: const Text('清空所有数据', style: TextStyle(color: AppColors.error)),
+            title: const Text(
+              '清空所有数据',
+              style: TextStyle(color: AppColors.error),
+            ),
             onTap: () => _showClearDataDialog(context, ref),
           ),
           const Divider(),
@@ -295,7 +331,10 @@ class ProfilePage extends ConsumerWidget {
               onTap: () {
                 final url = announcement['url'];
                 if (url != null && url.isNotEmpty) {
-                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                  launchUrl(
+                    Uri.parse(url),
+                    mode: LaunchMode.externalApplication,
+                  );
                 }
               },
               child: Container(
@@ -311,7 +350,10 @@ class ProfilePage extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         announcement['url']!,
-                        style: const TextStyle(color: Colors.blue, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 12,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -365,7 +407,10 @@ class ProfilePage extends ConsumerWidget {
                   const Text('24', style: TextStyle(fontSize: 12)),
                 ],
               ),
-              Text('当前：${fontSize.toInt()}px', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+              Text(
+                '当前：${fontSize.toInt()}px',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              ),
               const SizedBox(height: 16),
               const Text('行高'),
               Row(
@@ -388,7 +433,10 @@ class ProfilePage extends ConsumerWidget {
                   const Text('2.4', style: TextStyle(fontSize: 12)),
                 ],
               ),
-              Text('当前：${lineHeight.toStringAsFixed(1)}', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+              Text(
+                '当前：${lineHeight.toStringAsFixed(1)}',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              ),
             ],
           ),
           actions: [
@@ -420,11 +468,13 @@ class ProfilePage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Row(children: [
-          Icon(Icons.auto_stories, color: AppColors.primary),
-          const SizedBox(width: 8),
-          const Expanded(child: Text('网文写作IDE')),
-        ]),
+        title: Row(
+          children: [
+            Icon(Icons.auto_stories, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('网文写作IDE')),
+          ],
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -432,31 +482,67 @@ class ProfilePage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('面向网络小说作者的全流程单机写作工具', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                Text(
+                  '面向网络小说作者的全流程单机写作工具',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
                 const SizedBox(height: 16),
-                Text('功能一览', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800])),
-                const SizedBox(height: 8),
-                ...features.map((f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('• ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                      Expanded(child: Text(f, style: const TextStyle(fontSize: 13))),
-                    ],
+                Text(
+                  '功能一览',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
                   ),
-                )),
-                const SizedBox(height: 16),
-                Text('技术栈', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800])),
+                ),
                 const SizedBox(height: 8),
-                Text('Flutter / Dart · Material 3 · Riverpod · SQLite · AI API', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                ...features.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• ',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(f, style: const TextStyle(fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '技术栈',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Flutter / Dart · Material 3 · Riverpod · SQLite · AI API',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
                 const SizedBox(height: 4),
-                Text('开源协议: MIT', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                Text(
+                  '开源协议: MIT',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
               ],
             ),
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+        ],
       ),
     );
   }
@@ -468,14 +554,17 @@ class ProfilePage extends ConsumerWidget {
         title: const Text('清空所有数据'),
         content: const Text('此操作将删除所有作品、章节和设置，不可恢复。确定继续吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('数据已清空')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('数据已清空')));
             },
             child: const Text('清空'),
           ),
@@ -483,7 +572,6 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -496,14 +584,20 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
-          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey[600])),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
           const Spacer(),
         ],
       ),
     );
   }
 }
-
 
 /// 主题皮肤选择器 — 2行4列网格卡片
 class _SkinSelector extends ConsumerWidget {
@@ -539,7 +633,13 @@ class _SkinSelector extends ConsumerWidget {
                 width: isSelected ? 2.5 : 1,
               ),
               boxShadow: isSelected
-                  ? [BoxShadow(color: skin.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                  ? [
+                      BoxShadow(
+                        color: skin.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
                   : null,
             ),
             child: Column(
@@ -562,7 +662,9 @@ class _SkinSelector extends ConsumerWidget {
                   skin.type.label,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     color: skin.textPrimary,
                   ),
                 ),

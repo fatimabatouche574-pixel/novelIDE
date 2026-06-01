@@ -15,5 +15,6 @@ class TomatoAgent with _$TomatoAgent {
     @Default([]) List<String> parameterPrompts,
   }) = _TomatoAgent;
 
-  factory TomatoAgent.fromJson(Map<String, dynamic> json) => _$TomatoAgentFromJson(json);
+  factory TomatoAgent.fromJson(Map<String, dynamic> json) =>
+      _$TomatoAgentFromJson(json);
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/core/constants.dart';
-import 'package:novel_ide/presentation/state/app_providers.dart';
 
 /// 资料编辑页 - 全页编辑模式（类似编辑器）
 class MaterialEditorPage extends ConsumerStatefulWidget {
@@ -76,13 +75,19 @@ class _MaterialEditorPageState extends ConsumerState<MaterialEditorPage> {
             children: [
               Text(
                 _titleCtrl.text.isEmpty ? widget.materialType : _titleCtrl.text,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
                 _dirty ? '未保存' : widget.materialType,
-                style: TextStyle(fontSize: 11, color: _dirty ? Colors.orange : Colors.grey[500]),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: _dirty ? Colors.orange : Colors.grey[500],
+                ),
               ),
             ],
           ),
@@ -93,10 +98,16 @@ class _MaterialEditorPageState extends ConsumerState<MaterialEditorPage> {
                   widget.onSave?.call(_titleCtrl.text, _contentCtrl.text);
                   setState(() => _dirty = false);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('已保存'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                      content: Text('已保存'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
-                child: const Text('保存', style: TextStyle(color: AppColors.primary)),
+                child: const Text(
+                  '保存',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
             PopupMenuButton<String>(
               onSelected: (v) => _handleMenu(v),
@@ -135,7 +146,10 @@ class _MaterialEditorPageState extends ConsumerState<MaterialEditorPage> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -160,7 +174,10 @@ class _MaterialEditorPageState extends ConsumerState<MaterialEditorPage> {
                     contentPadding: EdgeInsets.zero,
                     isDense: true,
                   ),
-                  style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.grey[300] : Colors.grey[700],
+                  ),
                   onChanged: (_) => _markDirty(),
                 ),
               ),
@@ -195,11 +212,10 @@ class _MaterialEditorPageState extends ConsumerState<MaterialEditorPage> {
   void _handleMenu(String action) {
     switch (action) {
       case 'copy':
-        final text = '${_titleCtrl.text}\n\n${_contentCtrl.text}';
         // Flutter's copy is handled by the text field selection
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('内容已在编辑框中，长按可复制')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('内容已在编辑框中，长按可复制')));
         break;
       case 'info':
         showDialog(
@@ -215,7 +231,12 @@ class _MaterialEditorPageState extends ConsumerState<MaterialEditorPage> {
                 Text('字数: ${_contentCtrl.text.length}'),
               ],
             ),
-            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('关闭'),
+              ),
+            ],
           ),
         );
         break;

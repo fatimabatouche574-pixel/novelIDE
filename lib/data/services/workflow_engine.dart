@@ -1,4 +1,3 @@
-
 /// Workflow步骤定义
 class WorkflowStep {
   final String id;
@@ -69,7 +68,8 @@ class StepResult {
 }
 
 /// Workflow执行进度回调
-typedef WorkflowProgressCallback = void Function(int current, int total, String stepName);
+typedef WorkflowProgressCallback =
+    void Function(int current, int total, String stepName);
 
 /// 预定义工作流
 class WorkflowPresets {

@@ -9,7 +9,6 @@ import 'package:novel_ide/data/services/config_service.dart';
 import 'package:novel_ide/data/services/default_config_service.dart';
 import 'package:novel_ide/data/services/ai_service.dart';
 
-
 class AiConfigListPage extends ConsumerWidget {
   const AiConfigListPage({super.key});
 
@@ -30,24 +29,38 @@ class AiConfigListPage extends ConsumerWidget {
         ],
       ),
       body: configs.isEmpty
-          ? const Center(child: Text('未配置AI模型', style: TextStyle(color: Colors.grey)))
+          ? const Center(
+              child: Text('未配置AI模型', style: TextStyle(color: Colors.grey)),
+            )
           : ListView.builder(
               itemCount: configs.length,
               itemBuilder: (context, index) {
                 final config = configs[index];
                 final isSelected = config.id == selectedId;
-                final isBuiltin = DefaultConfigService.isBuiltinModel(config.id);
+                final isBuiltin = DefaultConfigService.isBuiltinModel(
+                  config.id,
+                );
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   elevation: isSelected ? 3 : 1,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: isSelected ? BorderSide(color: AppColors.primary, width: 2) : BorderSide.none,
+                    side: isSelected
+                        ? BorderSide(color: AppColors.primary, width: 2)
+                        : BorderSide.none,
                   ),
-                  color: isSelected ? AppColors.primary.withOpacity(0.08) : null,
+                  color: isSelected
+                      ? AppColors.primary.withOpacity(0.08)
+                      : null,
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     leading: Icon(
                       Icons.smart_toy,
                       color: isSelected ? AppColors.primary : Colors.grey,
@@ -57,30 +70,50 @@ class AiConfigListPage extends ConsumerWidget {
                         Text(
                           config.name,
                           style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             fontSize: 15,
                           ),
                         ),
                         if (isBuiltin) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.orange.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('内置', style: TextStyle(fontSize: 11, color: Colors.orange)),
+                            child: const Text(
+                              '内置',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.orange,
+                              ),
+                            ),
                           ),
                         ],
                         if (isSelected) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('使用中', style: TextStyle(fontSize: 11, color: AppColors.primary)),
+                            child: const Text(
+                              '使用中',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                         ],
                       ],
@@ -95,21 +128,37 @@ class AiConfigListPage extends ConsumerWidget {
                             onSelected: (value) async {
                               if (value == 'use') {
                                 ConfigService.aiConfigId = config.id;
-                                ref.read(selectedAiConfigProvider.notifier).state = config;
+                                ref
+                                        .read(selectedAiConfigProvider.notifier)
+                                        .state =
+                                    config;
                               } else if (value == 'delete') {
                                 _showDeleteConfirm(context, ref, config);
                               }
                             },
                             itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'use', child: Text('使用这个模型')),
-                              const PopupMenuItem(value: 'delete', child: Text('删除', style: TextStyle(color: Colors.red))),
+                              const PopupMenuItem(
+                                value: 'use',
+                                child: Text('使用这个模型'),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  '删除',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
                             ],
                           ),
                     onTap: () {
                       ConfigService.aiConfigId = config.id;
-                      ref.read(selectedAiConfigProvider.notifier).state = config;
+                      ref.read(selectedAiConfigProvider.notifier).state =
+                          config;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('已切换到「${config.name}」'), duration: const Duration(seconds: 1)),
+                        SnackBar(
+                          content: Text('已切换到「${config.name}」'),
+                          duration: const Duration(seconds: 1),
+                        ),
                       );
                     },
                   ),
@@ -128,14 +177,21 @@ class AiConfigListPage extends ConsumerWidget {
     }
   }
 
-  void _showDeleteConfirm(BuildContext context, WidgetRef ref, AiConfig config) {
+  void _showDeleteConfirm(
+    BuildContext context,
+    WidgetRef ref,
+    AiConfig config,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('删除「${config.name}」？'),
         content: const Text('删除后无法恢复，确定要删除吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
@@ -146,17 +202,24 @@ class AiConfigListPage extends ConsumerWidget {
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('删除失败: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('删除失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
                 return;
               }
-              final list = ref.read(aiConfigsProvider).where((c) => c.id != config.id).toList();
+              final list = ref
+                  .read(aiConfigsProvider)
+                  .where((c) => c.id != config.id)
+                  .toList();
               ref.read(aiConfigsProvider.notifier).state = list;
               if (ref.read(selectedAiConfigProvider)?.id == config.id) {
                 if (list.isNotEmpty) {
                   ConfigService.aiConfigId = list.first.id;
-                  ref.read(selectedAiConfigProvider.notifier).state = list.first;
+                  ref.read(selectedAiConfigProvider.notifier).state =
+                      list.first;
                 } else {
                   ConfigService.aiConfigId = '';
                   ref.read(selectedAiConfigProvider.notifier).state = null;
@@ -197,7 +260,10 @@ class AiConfigListPage extends ConsumerWidget {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: '配置名称', prefixIcon: Icon(Icons.label)),
+                    decoration: const InputDecoration(
+                      labelText: '配置名称',
+                      prefixIcon: Icon(Icons.label),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -215,20 +281,34 @@ class AiConfigListPage extends ConsumerWidget {
                       Expanded(
                         child: TextField(
                           controller: modelCtrl,
-                          decoration: const InputDecoration(labelText: '模型 ID', prefixIcon: Icon(Icons.memory)),
+                          decoration: const InputDecoration(
+                            labelText: '模型 ID',
+                            prefixIcon: Icon(Icons.memory),
+                          ),
                         ),
                       ),
                       if (availableModels.isNotEmpty) ...[
                         const SizedBox(width: 4),
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.arrow_drop_down_circle, color: Colors.blue),
+                          icon: const Icon(
+                            Icons.arrow_drop_down_circle,
+                            color: Colors.blue,
+                          ),
                           tooltip: '从获取的模型列表中选择',
                           onSelected: (v) {
                             modelCtrl.text = v;
                             setDialogState(() {});
                           },
                           itemBuilder: (_) => availableModels
-                              .map((m) => PopupMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 13))))
+                              .map(
+                                (m) => PopupMenuItem(
+                                  value: m,
+                                  child: Text(
+                                    m,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              )
                               .toList(),
                         ),
                       ],
@@ -237,10 +317,19 @@ class AiConfigListPage extends ConsumerWidget {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<ApiProtocol>(
                     value: selectedProtocol,
-                    decoration: const InputDecoration(labelText: 'API 协议', prefixIcon: Icon(Icons.swap_horiz)),
+                    decoration: const InputDecoration(
+                      labelText: 'API 协议',
+                      prefixIcon: Icon(Icons.swap_horiz),
+                    ),
                     items: const [
-                      DropdownMenuItem(value: ApiProtocol.openaiCompatible, child: Text('OpenAI兼容')),
-                      DropdownMenuItem(value: ApiProtocol.anthropic, child: Text('Anthropic')),
+                      DropdownMenuItem(
+                        value: ApiProtocol.openaiCompatible,
+                        child: Text('OpenAI兼容'),
+                      ),
+                      DropdownMenuItem(
+                        value: ApiProtocol.anthropic,
+                        child: Text('Anthropic'),
+                      ),
                     ],
                     onChanged: (v) {
                       if (v != null) setDialogState(() => selectedProtocol = v);
@@ -250,7 +339,10 @@ class AiConfigListPage extends ConsumerWidget {
                   TextField(
                     controller: keyCtrl,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'API Key', prefixIcon: Icon(Icons.key)),
+                    decoration: const InputDecoration(
+                      labelText: 'API Key',
+                      prefixIcon: Icon(Icons.key),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -265,7 +357,10 @@ class AiConfigListPage extends ConsumerWidget {
                                   final url = urlCtrl.text.trim();
                                   if (url.isEmpty) {
                                     ScaffoldMessenger.of(ctx).showSnackBar(
-                                      const SnackBar(content: Text('请先填写 API 地址'), backgroundColor: Colors.orange),
+                                      const SnackBar(
+                                        content: Text('请先填写 API 地址'),
+                                        backgroundColor: Colors.orange,
+                                      ),
                                     );
                                     return;
                                   }
@@ -276,13 +371,21 @@ class AiConfigListPage extends ConsumerWidget {
                                   final aiService = ref.read(aiServiceProvider);
                                   final config = AiConfig(
                                     id: '_test',
-                                    name: nameCtrl.text.trim().isEmpty ? 'test' : nameCtrl.text.trim(),
+                                    name: nameCtrl.text.trim().isEmpty
+                                        ? 'test'
+                                        : nameCtrl.text.trim(),
                                     apiUrl: url,
-                                    modelName: modelCtrl.text.trim().isEmpty ? 'gpt-3.5-turbo' : modelCtrl.text.trim(),
-                                    apiKey: keyCtrl.text.trim().isEmpty ? null : keyCtrl.text.trim(),
+                                    modelName: modelCtrl.text.trim().isEmpty
+                                        ? 'gpt-3.5-turbo'
+                                        : modelCtrl.text.trim(),
+                                    apiKey: keyCtrl.text.trim().isEmpty
+                                        ? null
+                                        : keyCtrl.text.trim(),
                                     protocol: selectedProtocol,
                                   );
-                                  final result = await aiService.testConnection(config);
+                                  final result = await aiService.testConnection(
+                                    config,
+                                  );
                                   setDialogState(() {
                                     testing = false;
                                     testSuccess = result['success'] as bool;
@@ -291,7 +394,13 @@ class AiConfigListPage extends ConsumerWidget {
                                   });
                                 },
                           icon: testing
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : const Icon(Icons.wifi_tethering, size: 18),
                           label: Text(testing ? '测试中...' : '测试连接'),
                         ),
@@ -305,7 +414,10 @@ class AiConfigListPage extends ConsumerWidget {
                                   final url = urlCtrl.text.trim();
                                   if (url.isEmpty) {
                                     ScaffoldMessenger.of(ctx).showSnackBar(
-                                      const SnackBar(content: Text('请先填写 API 地址'), backgroundColor: Colors.orange),
+                                      const SnackBar(
+                                        content: Text('请先填写 API 地址'),
+                                        backgroundColor: Colors.orange,
+                                      ),
                                     );
                                     return;
                                   }
@@ -316,31 +428,49 @@ class AiConfigListPage extends ConsumerWidget {
                                     name: 'fetch',
                                     apiUrl: url,
                                     modelName: 'x',
-                                    apiKey: keyCtrl.text.trim().isEmpty ? null : keyCtrl.text.trim(),
+                                    apiKey: keyCtrl.text.trim().isEmpty
+                                        ? null
+                                        : keyCtrl.text.trim(),
                                     protocol: selectedProtocol,
                                   );
                                   try {
-                                    final models = await aiService.fetchModels(config);
+                                    final models = await aiService.fetchModels(
+                                      config,
+                                    );
                                     setDialogState(() {
                                       fetchingModels = false;
                                       availableModels = models;
                                     });
                                     if (models.isEmpty && ctx.mounted) {
                                       ScaffoldMessenger.of(ctx).showSnackBar(
-                                        const SnackBar(content: Text('未获取到模型列表，请检查地址和 Key'), backgroundColor: Colors.orange),
+                                        const SnackBar(
+                                          content: Text('未获取到模型列表，请检查地址和 Key'),
+                                          backgroundColor: Colors.orange,
+                                        ),
                                       );
                                     }
                                   } catch (e) {
-                                    setDialogState(() => fetchingModels = false);
+                                    setDialogState(
+                                      () => fetchingModels = false,
+                                    );
                                     if (ctx.mounted) {
                                       ScaffoldMessenger.of(ctx).showSnackBar(
-                                        SnackBar(content: Text('获取失败: $e'), backgroundColor: Colors.red),
+                                        SnackBar(
+                                          content: Text('获取失败: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
                                       );
                                     }
                                   }
                                 },
                           icon: fetchingModels
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : const Icon(Icons.download, size: 18),
                           label: Text(fetchingModels ? '获取中...' : '获取模型'),
                         ),
@@ -354,15 +484,24 @@ class AiConfigListPage extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: (testSuccess == true ? Colors.green : Colors.red).withOpacity(0.1),
+                        color: (testSuccess == true ? Colors.green : Colors.red)
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: (testSuccess == true ? Colors.green : Colors.red).withOpacity(0.3)),
+                        border: Border.all(
+                          color:
+                              (testSuccess == true ? Colors.green : Colors.red)
+                                  .withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            testSuccess == true ? Icons.check_circle : Icons.error,
-                            color: testSuccess == true ? Colors.green : Colors.red,
+                            testSuccess == true
+                                ? Icons.check_circle
+                                : Icons.error,
+                            color: testSuccess == true
+                                ? Colors.green
+                                : Colors.red,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -374,11 +513,19 @@ class AiConfigListPage extends ConsumerWidget {
                                   testResult!,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: testSuccess == true ? Colors.green[800] : Colors.red[800],
+                                    color: testSuccess == true
+                                        ? Colors.green[800]
+                                        : Colors.red[800],
                                   ),
                                 ),
                                 if (testLatency != null)
-                                  Text('延迟: ${testLatency}ms', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                  Text(
+                                    '延迟: ${testLatency}ms',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -403,7 +550,11 @@ class AiConfigListPage extends ConsumerWidget {
                         children: [
                           Text(
                             '可用模型 (${availableModels.length})，点击选择:',
-                            style: TextStyle(fontSize: 12, color: Colors.blue[700], fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Expanded(
@@ -416,21 +567,29 @@ class AiConfigListPage extends ConsumerWidget {
                                   setDialogState(() {});
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2),
-                                  child: Text(availableModels[i], style: const TextStyle(fontSize: 13)),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: Text(
+                                    availableModels[i],
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                  ),
+                    ),
                   ],
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('取消'),
+              ),
               FilledButton(
                 onPressed: () async {
                   final name = nameCtrl.text.trim();
@@ -439,7 +598,10 @@ class AiConfigListPage extends ConsumerWidget {
                   final key = keyCtrl.text.trim();
                   if (name.isEmpty || url.isEmpty || model.isEmpty) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('名称、API地址、模型ID不能为空'), backgroundColor: Colors.orange),
+                      const SnackBar(
+                        content: Text('名称、API地址、模型ID不能为空'),
+                        backgroundColor: Colors.orange,
+                      ),
                     );
                     return;
                   }
@@ -459,7 +621,10 @@ class AiConfigListPage extends ConsumerWidget {
                   if (ctx.mounted) Navigator.pop(ctx);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('已添加「$name」'), backgroundColor: Colors.green),
+                      SnackBar(
+                        content: Text('已添加「$name」'),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                   }
                 },

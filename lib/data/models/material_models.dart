@@ -25,40 +25,41 @@ class Character {
     List<SettingTag>? tags,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : tags = tags ?? [],
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : tags = tags ?? [],
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'novelId': novelId,
-        'name': name,
-        'role': role,
-        'description': description,
-        'appearance': appearance,
-        'personality': personality,
-        'background': background,
-        'tags': tags.map((t) => t.toJson()).toList(),
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'name': name,
+    'role': role,
+    'description': description,
+    'appearance': appearance,
+    'personality': personality,
+    'background': background,
+    'tags': tags.map((t) => t.toJson()).toList(),
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory Character.fromJson(Map<String, dynamic> json) => Character(
-        id: json['id'] as String,
-        novelId: json['novelId'] as String,
-        name: json['name'] as String,
-        role: json['role'] as String?,
-        description: json['description'] as String?,
-        appearance: json['appearance'] as String?,
-        personality: json['personality'] as String?,
-        background: json['background'] as String?,
-        tags: (json['tags'] as List<dynamic>?)
-                ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
-                .toList() ??
-            [],
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    name: json['name'] as String,
+    role: json['role'] as String?,
+    description: json['description'] as String?,
+    appearance: json['appearance'] as String?,
+    personality: json['personality'] as String?,
+    background: json['background'] as String?,
+    tags:
+        (json['tags'] as List<dynamic>?)
+            ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
 }
 
 class SettingCard {
@@ -80,34 +81,35 @@ class SettingCard {
     List<SettingTag>? tags,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : tags = tags ?? [],
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : tags = tags ?? [],
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'novelId': novelId,
-        'name': name,
-        'category': category,
-        'description': description,
-        'tags': tags.map((t) => t.toJson()).toList(),
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'name': name,
+    'category': category,
+    'description': description,
+    'tags': tags.map((t) => t.toJson()).toList(),
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory SettingCard.fromJson(Map<String, dynamic> json) => SettingCard(
-        id: json['id'] as String,
-        novelId: json['novelId'] as String,
-        name: json['name'] as String,
-        category: json['category'] as String?,
-        description: json['description'] as String?,
-        tags: (json['tags'] as List<dynamic>?)
-                ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
-                .toList() ??
-            [],
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    name: json['name'] as String,
+    category: json['category'] as String?,
+    description: json['description'] as String?,
+    tags:
+        (json['tags'] as List<dynamic>?)
+            ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
 }
 
 class SettingTag {
@@ -145,38 +147,41 @@ class PlotHook {
     this.idleChapters = 0,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
-  Color get statusColor => isRevealed ? Colors.green : (idleChapters > 10 ? Colors.red : Colors.orange);
+  Color get statusColor => isRevealed
+      ? Colors.green
+      : (idleChapters > 10 ? Colors.red : Colors.orange);
 
-  String get statusLabel => isRevealed ? '已回收' : (idleChapters > 10 ? '闲置超10章' : '待回收');
+  String get statusLabel =>
+      isRevealed ? '已回收' : (idleChapters > 10 ? '闲置超10章' : '待回收');
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'novelId': novelId,
-        'title': title,
-        'description': description,
-        'isRevealed': isRevealed,
-        'chapterPlantedId': chapterPlantedId,
-        'chapterRevealedId': chapterRevealedId,
-        'idleChapters': idleChapters,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'title': title,
+    'description': description,
+    'isRevealed': isRevealed,
+    'chapterPlantedId': chapterPlantedId,
+    'chapterRevealedId': chapterRevealedId,
+    'idleChapters': idleChapters,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory PlotHook.fromJson(Map<String, dynamic> json) => PlotHook(
-        id: json['id'] as String,
-        novelId: json['novelId'] as String,
-        title: json['title'] as String,
-        description: json['description'] as String?,
-        isRevealed: json['isRevealed'] as bool? ?? false,
-        chapterPlantedId: json['chapterPlantedId'] as int?,
-        chapterRevealedId: json['chapterRevealedId'] as int?,
-        idleChapters: json['idleChapters'] as int? ?? 0,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    title: json['title'] as String,
+    description: json['description'] as String?,
+    isRevealed: json['isRevealed'] as bool? ?? false,
+    chapterPlantedId: json['chapterPlantedId'] as int?,
+    chapterRevealedId: json['chapterRevealedId'] as int?,
+    idleChapters: json['idleChapters'] as int? ?? 0,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
 }
 
 class ReferenceMaterial {
@@ -198,21 +203,22 @@ class ReferenceMaterial {
     this.sourceUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'novelId': novelId,
-        'title': title,
-        'content': content,
-        'source': source,
-        'sourceUrl': sourceUrl,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'title': title,
+    'content': content,
+    'source': source,
+    'sourceUrl': sourceUrl,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
-  factory ReferenceMaterial.fromJson(Map<String, dynamic> json) => ReferenceMaterial(
+  factory ReferenceMaterial.fromJson(Map<String, dynamic> json) =>
+      ReferenceMaterial(
         id: json['id'] as String,
         novelId: json['novelId'] as String,
         title: json['title'] as String,
@@ -243,27 +249,32 @@ class SettingReminder {
     List<String>? conflicts,
     this.note,
     DateTime? createdAt,
-  })  : conflicts = conflicts ?? [],
-        createdAt = createdAt ?? DateTime.now();
+  }) : conflicts = conflicts ?? [],
+       createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'novelId': novelId,
-        'keyword': keyword,
-        'relatedCharacter': relatedCharacter,
-        'relatedSetting': relatedSetting,
-        'conflicts': conflicts,
-        'note': note,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'keyword': keyword,
+    'relatedCharacter': relatedCharacter,
+    'relatedSetting': relatedSetting,
+    'conflicts': conflicts,
+    'note': note,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
-  factory SettingReminder.fromJson(Map<String, dynamic> json) => SettingReminder(
+  factory SettingReminder.fromJson(Map<String, dynamic> json) =>
+      SettingReminder(
         id: json['id'] as String,
         novelId: json['novelId'] as String,
         keyword: json['keyword'] as String,
         relatedCharacter: json['relatedCharacter'] as String?,
         relatedSetting: json['relatedSetting'] as String?,
-        conflicts: (json['conflicts'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+        conflicts:
+            (json['conflicts'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [],
         note: json['note'] as String?,
         createdAt: DateTime.parse(json['createdAt'] as String),
       );
@@ -294,28 +305,39 @@ class Location {
     List<SettingTag>? tags,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : tags = tags ?? [],
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : tags = tags ?? [],
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id, 'novelId': novelId, 'name': name,
-        'category': category, 'description': description,
-        'features': features, 'rules': rules,
-        'tags': tags.map((t) => t.toJson()).toList(),
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'name': name,
+    'category': category,
+    'description': description,
+    'features': features,
+    'rules': rules,
+    'tags': tags.map((t) => t.toJson()).toList(),
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory Location.fromJson(Map<String, dynamic> json) => Location(
-        id: json['id'] as String, novelId: json['novelId'] as String,
-        name: json['name'] as String, category: json['category'] as String?,
-        description: json['description'] as String?,
-        features: json['features'] as String?, rules: json['rules'] as String?,
-        tags: (json['tags'] as List<dynamic>?)?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>)).toList() ?? [],
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    name: json['name'] as String,
+    category: json['category'] as String?,
+    description: json['description'] as String?,
+    features: json['features'] as String?,
+    rules: json['rules'] as String?,
+    tags:
+        (json['tags'] as List<dynamic>?)
+            ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
 }
 
 class Faction {
@@ -343,30 +365,44 @@ class Faction {
     List<SettingTag>? tags,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : members = members ?? [],
-        tags = tags ?? [],
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : members = members ?? [],
+       tags = tags ?? [],
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id, 'novelId': novelId, 'name': name,
-        'category': category, 'description': description,
-        'leader': leader, 'strength': strength,
-        'members': members, 'tags': tags.map((t) => t.toJson()).toList(),
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'name': name,
+    'category': category,
+    'description': description,
+    'leader': leader,
+    'strength': strength,
+    'members': members,
+    'tags': tags.map((t) => t.toJson()).toList(),
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory Faction.fromJson(Map<String, dynamic> json) => Faction(
-        id: json['id'] as String, novelId: json['novelId'] as String,
-        name: json['name'] as String, category: json['category'] as String?,
-        description: json['description'] as String?,
-        leader: json['leader'] as String?, strength: json['strength'] as String?,
-        members: (json['members'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-        tags: (json['tags'] as List<dynamic>?)?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>)).toList() ?? [],
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    name: json['name'] as String,
+    category: json['category'] as String?,
+    description: json['description'] as String?,
+    leader: json['leader'] as String?,
+    strength: json['strength'] as String?,
+    members:
+        (json['members'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+        [],
+    tags:
+        (json['tags'] as List<dynamic>?)
+            ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
 }
 
 class Item {
@@ -394,30 +430,41 @@ class Item {
     List<SettingTag>? tags,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : tags = tags ?? [],
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : tags = tags ?? [],
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'id': id, 'novelId': novelId, 'name': name,
-        'category': category, 'description': description,
-        'powerLevel': powerLevel, 'owner': owner,
-        'isKeyItem': isKeyItem,
-        'tags': tags.map((t) => t.toJson()).toList(),
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'novelId': novelId,
+    'name': name,
+    'category': category,
+    'description': description,
+    'powerLevel': powerLevel,
+    'owner': owner,
+    'isKeyItem': isKeyItem,
+    'tags': tags.map((t) => t.toJson()).toList(),
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
-        id: json['id'] as String, novelId: json['novelId'] as String,
-        name: json['name'] as String, category: json['category'] as String?,
-        description: json['description'] as String?,
-        powerLevel: json['powerLevel'] as String?, owner: json['owner'] as String?,
-        isKeyItem: json['isKeyItem'] as bool? ?? false,
-        tags: (json['tags'] as List<dynamic>?)?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>)).toList() ?? [],
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    name: json['name'] as String,
+    category: json['category'] as String?,
+    description: json['description'] as String?,
+    powerLevel: json['powerLevel'] as String?,
+    owner: json['owner'] as String?,
+    isKeyItem: json['isKeyItem'] as bool? ?? false,
+    tags:
+        (json['tags'] as List<dynamic>?)
+            ?.map((t) => SettingTag.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
 }
 
 /// 自定义文件夹
@@ -426,19 +473,21 @@ class CustomMaterialFolder {
   final String name;
   final List<CustomMaterialItem> items;
 
-  CustomMaterialFolder({required this.id, required this.name, List<CustomMaterialItem>? items})
-      : items = items ?? [];
+  CustomMaterialFolder({
+    required this.id,
+    required this.name,
+    List<CustomMaterialItem>? items,
+  }) : items = items ?? [];
 
   CustomMaterialFolder copyWith({
     String? id,
     String? name,
     List<CustomMaterialItem>? items,
-  }) =>
-      CustomMaterialFolder(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        items: items ?? List<CustomMaterialItem>.from(this.items),
-      );
+  }) => CustomMaterialFolder(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    items: items ?? List<CustomMaterialItem>.from(this.items),
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -446,14 +495,18 @@ class CustomMaterialFolder {
     'items': items.map((i) => i.toJson()).toList(),
   };
 
-  factory CustomMaterialFolder.fromJson(Map<String, dynamic> json) => CustomMaterialFolder(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    items: (json['items'] as List<dynamic>?)
-            ?.map((i) => CustomMaterialItem.fromJson(i as Map<String, dynamic>))
-            .toList() ??
-        [],
-  );
+  factory CustomMaterialFolder.fromJson(Map<String, dynamic> json) =>
+      CustomMaterialFolder(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        items:
+            (json['items'] as List<dynamic>?)
+                ?.map(
+                  (i) => CustomMaterialItem.fromJson(i as Map<String, dynamic>),
+                )
+                .toList() ??
+            [],
+      );
 }
 
 /// 自定义资料条目
@@ -463,27 +516,37 @@ class CustomMaterialItem {
   String content;
   String? category;
 
-  CustomMaterialItem({required this.id, required this.title, required this.content, this.category});
+  CustomMaterialItem({
+    required this.id,
+    required this.title,
+    required this.content,
+    this.category,
+  });
 
   CustomMaterialItem copyWith({
     String? id,
     String? title,
     String? content,
     String? category,
-  }) =>
-      CustomMaterialItem(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        content: content ?? this.content,
-        category: category ?? this.category,
-      );
-
-  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'content': content, 'category': category};
-
-  factory CustomMaterialItem.fromJson(Map<String, dynamic> json) => CustomMaterialItem(
-    id: json['id'] as String,
-    title: json['title'] as String,
-    content: json['content'] as String? ?? '',
-    category: json['category'] as String?,
+  }) => CustomMaterialItem(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    content: content ?? this.content,
+    category: category ?? this.category,
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'content': content,
+    'category': category,
+  };
+
+  factory CustomMaterialItem.fromJson(Map<String, dynamic> json) =>
+      CustomMaterialItem(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        content: json['content'] as String? ?? '',
+        category: json['category'] as String?,
+      );
 }

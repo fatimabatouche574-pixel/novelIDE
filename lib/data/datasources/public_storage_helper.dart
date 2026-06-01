@@ -51,22 +51,22 @@ class PublicStorageHelper {
     }
     return dir;
   }
-  
+
   /// 作品区目录
   static Future<Directory> get worksDir => _ensureDir('作品区');
-  
+
   /// 资料区目录
   static Future<Directory> get materialsDir => _ensureDir('资料区');
-  
+
   /// 记忆包目录
   static Future<Directory> get memoryDir => _ensureDir('记忆包');
-  
+
   /// 技能目录
   static Future<Directory> get skillDir => _ensureDir('Skill');
-  
+
   /// Agent目录
   static Future<Directory> get agentDir => _ensureDir('Agent');
-  
+
   /// 备份目录
   static Future<Directory> get backupDir => _ensureDir('备份');
 }

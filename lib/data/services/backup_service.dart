@@ -21,7 +21,7 @@ class BackupService {
       } catch (_) {
         // FilePicker 在某些设备上会失败
       }
-      
+
       // 如果用户取消选择或 FilePicker 失败，使用默认备份目录
       saveDir ??= '/storage/emulated/0/NovelIDE/备份';
       final saveDirectory = Directory(saveDir);
@@ -29,7 +29,9 @@ class BackupService {
         await saveDirectory.create(recursive: true);
       }
 
-      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
       final backupFileName = 'NovelIDE_备份_$timestamp.zip';
       final backupPath = p.join(saveDir, backupFileName);
 
@@ -59,7 +61,9 @@ class BackupService {
       final dbFile = File(dbPath);
       if (await dbFile.exists()) {
         final dbBytes = await dbFile.readAsBytes();
-        archive.addFile(ArchiveFile('database/novel_ide.db', dbBytes.length, dbBytes));
+        archive.addFile(
+          ArchiveFile('database/novel_ide.db', dbBytes.length, dbBytes),
+        );
       }
 
       // 编码为ZIP

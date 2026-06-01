@@ -28,7 +28,8 @@ class RichEditorPage extends ConsumerStatefulWidget {
   ConsumerState<RichEditorPage> createState() => _RichEditorPageState();
 }
 
-class _RichEditorPageState extends ConsumerState<RichEditorPage> with WidgetsBindingObserver {
+class _RichEditorPageState extends ConsumerState<RichEditorPage>
+    with WidgetsBindingObserver {
   late final WebViewController _webController;
   bool _isEditorReady = false;
   String _currentText = '';
@@ -64,7 +65,9 @@ class _RichEditorPageState extends ConsumerState<RichEditorPage> with WidgetsBin
   Future<void> _saveCurrentContent() async {
     if (!_isEditorReady) return;
     try {
-      await _webController.runJavaScriptReturningResult('document.body.innerText');
+      await _webController.runJavaScriptReturningResult(
+        'document.body.innerText',
+      );
     } catch (e) {
       debugPrint('Save content error: $e');
     }
@@ -79,13 +82,10 @@ class _RichEditorPageState extends ConsumerState<RichEditorPage> with WidgetsBin
   Future<void> _initWebView() async {
     _webController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (_) => _onEditorReady(),
-      ))
-      ..addJavaScriptChannel(
-        'FlutterBridge',
-        onMessageReceived: _onJsMessage,
-      );
+      ..setNavigationDelegate(
+        NavigationDelegate(onPageFinished: (_) => _onEditorReady()),
+      )
+      ..addJavaScriptChannel('FlutterBridge', onMessageReceived: _onJsMessage);
 
     // 加载内联HTML
     final html = await _buildEditorHtml();
@@ -95,10 +95,14 @@ class _RichEditorPageState extends ConsumerState<RichEditorPage> with WidgetsBin
   /// 构建自包含的编辑器HTML（CSS/JS内联）
   Future<String> _buildEditorHtml() async {
     // 加载资源文件
-    final normalizeCss = await rootBundle.loadString('assets/editor/normalize.css');
+    final normalizeCss = await rootBundle.loadString(
+      'assets/editor/normalize.css',
+    );
     final styleCss = await rootBundle.loadString('assets/editor/style.css');
     final newsCss = await rootBundle.loadString('assets/editor/news.css');
-    final editorJs = await rootBundle.loadString('assets/editor/rich_editor.js');
+    final editorJs = await rootBundle.loadString(
+      'assets/editor/rich_editor.js',
+    );
 
     // 修改JS：将 wereadBridge 调用改为 FlutterBridge
     final modifiedEditorJs = editorJs
@@ -166,7 +170,9 @@ var wereadBridge = {
           .replaceAll('\\', '\\\\')
           .replaceAll("'", "\\'")
           .replaceAll('\n', '\\n');
-      _webController.runJavaScript("RE.setHtml('<p>${escapedContent.replaceAll('\n', '</p><p>')}</p>')");
+      _webController.runJavaScript(
+        "RE.setHtml('<p>${escapedContent.replaceAll('\n', '</p><p>')}</p>')",
+      );
     }
   }
 
@@ -207,9 +213,15 @@ var wereadBridge = {
       _isBold = items.contains('bold');
       _isItalic = items.contains('italic');
       _isInLink = items.contains('isEditingLink:1');
-      _currentFormat = items.where((i) =>
-          i == 'blockquote' || i.startsWith('h') || i == 'orderedList' || i == 'unorderedList'
-      ).join(', ');
+      _currentFormat = items
+          .where(
+            (i) =>
+                i == 'blockquote' ||
+                i.startsWith('h') ||
+                i == 'orderedList' ||
+                i == 'unorderedList',
+          )
+          .join(', ');
     });
   }
 
@@ -324,10 +336,7 @@ var wereadBridge = {
             onPressed: () => _callJs('RE.redo()'),
           ),
           const VerticalDivider(width: 16),
-          _FormatButton(
-            icon: Icons.insert_photo,
-            onPressed: _insertImage,
-          ),
+          _FormatButton(icon: Icons.insert_photo, onPressed: _insertImage),
           _FormatButton(
             icon: Icons.link,
             isActive: _isInLink,
@@ -370,9 +379,9 @@ var wereadBridge = {
       final fileSize = await file.length();
       if (fileSize > 2 * 1024 * 1024) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('图片过大（>2MB），建议选择更小的图片')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('图片过大（>2MB），建议选择更小的图片')));
         }
         return;
       }
@@ -386,20 +395,24 @@ var wereadBridge = {
       final mimeType = _getMimeType(ext);
 
       // 插入到WebView编辑器
-      final html = '<img src="data:$mimeType;base64,$base64Str" style="max-width:100%;height:auto;" />';
+      final html =
+          '<img src="data:$mimeType;base64,$base64Str" style="max-width:100%;height:auto;" />';
       final escapedHtml = html.replaceAll("'", "\\'").replaceAll('\n', '');
       _callJs("RE.insertImage('$escapedHtml')");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('图片已插入'), duration: Duration(seconds: 1)),
+          const SnackBar(
+            content: Text('图片已插入'),
+            duration: Duration(seconds: 1),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('插入图片失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('插入图片失败: $e')));
       }
     }
   }
@@ -435,13 +448,22 @@ var wereadBridge = {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '链接文本')),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: '链接文本'),
+            ),
             const SizedBox(height: 8),
-            TextField(controller: urlCtrl, decoration: const InputDecoration(labelText: 'URL地址')),
+            TextField(
+              controller: urlCtrl,
+              decoration: const InputDecoration(labelText: 'URL地址'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               final text = titleCtrl.text.replaceAll("'", "\\'");
@@ -524,12 +546,19 @@ class _FormatButton extends StatelessWidget {
               )
             : null,
         child: label != null
-            ? Text(label!, style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
+            ? Text(
+                label!,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isActive ? AppColors.primary : Colors.grey[700],
+                ),
+              )
+            : Icon(
+                icon,
+                size: 20,
                 color: isActive ? AppColors.primary : Colors.grey[700],
-              ))
-            : Icon(icon, size: 20, color: isActive ? AppColors.primary : Colors.grey[700]),
+              ),
       ),
     );
   }

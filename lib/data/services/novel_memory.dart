@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/data/datasources/public_storage_helper.dart';
@@ -62,7 +61,11 @@ class NovelMemory {
 
     // --- 1. Novel info ---
     buf.writeln('═══ 1. 作品信息 ═══');
-    final novels = await db.query('novels', where: 'id = ?', whereArgs: [novelId]);
+    final novels = await db.query(
+      'novels',
+      where: 'id = ?',
+      whereArgs: [novelId],
+    );
     if (novels.isNotEmpty) {
       final n = novels.first;
       buf.writeln('书名: $novelTitle');
@@ -78,8 +81,18 @@ class NovelMemory {
 
     // --- 2. Volume & Chapter structure ---
     buf.writeln('═══ 2. 卷章结构 ═══');
-    final volumes = await db.query('volumes', where: 'novel_id = ?', whereArgs: [novelId], orderBy: 'order_index ASC');
-    final chapters = await db.query('chapters', where: 'novel_id = ?', whereArgs: [novelId], orderBy: 'order_index ASC');
+    final volumes = await db.query(
+      'volumes',
+      where: 'novel_id = ?',
+      whereArgs: [novelId],
+      orderBy: 'order_index ASC',
+    );
+    final chapters = await db.query(
+      'chapters',
+      where: 'novel_id = ?',
+      whereArgs: [novelId],
+      orderBy: 'order_index ASC',
+    );
 
     if (volumes.isNotEmpty) {
       for (final vol in volumes) {
@@ -87,23 +100,31 @@ class NovelMemory {
         if (vol['summary'] != null && (vol['summary'] as String).isNotEmpty) {
           buf.writeln('  卷纲要: ${vol['summary']}');
         }
-        final volChapters = chapters.where((c) => c['volume_id'] == vol['id']).toList();
+        final volChapters = chapters
+            .where((c) => c['volume_id'] == vol['id'])
+            .toList();
         for (final ch in volChapters) {
-          buf.writeln('  ${ch['order_index']}. ${ch['title']} (${ch['word_count']}字) [${ch['status']}]');
+          buf.writeln(
+            '  ${ch['order_index']}. ${ch['title']} (${ch['word_count']}字) [${ch['status']}]',
+          );
         }
         buf.writeln();
       }
     } else {
       buf.writeln('（未分卷，共${chapters.length}章）');
       for (final ch in chapters) {
-        buf.writeln('  ${ch['order_index']}. ${ch['title']} (${ch['word_count']}字) [${ch['status']}]');
+        buf.writeln(
+          '  ${ch['order_index']}. ${ch['title']} (${ch['word_count']}字) [${ch['status']}]',
+        );
       }
       buf.writeln();
     }
 
     // --- 3. Latest 5 chapter summaries ---
     buf.writeln('═══ 3. 最近章节摘要 ═══');
-    final recentChapters = chapters.length > 5 ? chapters.sublist(chapters.length - 5) : chapters;
+    final recentChapters = chapters.length > 5
+        ? chapters.sublist(chapters.length - 5)
+        : chapters;
     for (final ch in recentChapters) {
       buf.writeln('【${ch['title']}】');
       if (ch['summary'] != null && (ch['summary'] as String).isNotEmpty) {
@@ -120,10 +141,16 @@ class NovelMemory {
     if (characters.isNotEmpty) {
       for (final c in characters) {
         buf.writeln('【${c.name}】${c.role != null ? " (${c.role})" : ""}');
-        if (c.description != null && c.description!.isNotEmpty) buf.writeln('  简介: ${c.description}');
-        if (c.personality != null && c.personality!.isNotEmpty) buf.writeln('  性格: ${c.personality}');
-        if (c.background != null && c.background!.isNotEmpty) buf.writeln('  背景: ${c.background}');
-        if (c.tags.isNotEmpty) buf.writeln('  属性: ${c.tags.map((t) => "${t.key}=${t.value}").join(", ")}');
+        if (c.description != null && c.description!.isNotEmpty)
+          buf.writeln('  简介: ${c.description}');
+        if (c.personality != null && c.personality!.isNotEmpty)
+          buf.writeln('  性格: ${c.personality}');
+        if (c.background != null && c.background!.isNotEmpty)
+          buf.writeln('  背景: ${c.background}');
+        if (c.tags.isNotEmpty)
+          buf.writeln(
+            '  属性: ${c.tags.map((t) => "${t.key}=${t.value}").join(", ")}',
+          );
       }
     } else {
       buf.writeln('（暂无角色卡）');
@@ -135,9 +162,15 @@ class NovelMemory {
     final settings = await matRepo.getSettingCards(novelId);
     if (settings.isNotEmpty) {
       for (final s in settings) {
-        buf.writeln('【${s.name}】${s.category != null ? " (${s.category})" : ""}');
-        if (s.description != null && s.description!.isNotEmpty) buf.writeln('  ${s.description}');
-        if (s.tags.isNotEmpty) buf.writeln('  属性: ${s.tags.map((t) => "${t.key}=${t.value}").join(", ")}');
+        buf.writeln(
+          '【${s.name}】${s.category != null ? " (${s.category})" : ""}',
+        );
+        if (s.description != null && s.description!.isNotEmpty)
+          buf.writeln('  ${s.description}');
+        if (s.tags.isNotEmpty)
+          buf.writeln(
+            '  属性: ${s.tags.map((t) => "${t.key}=${t.value}").join(", ")}',
+          );
       }
     } else {
       buf.writeln('（暂无设定卡）');
@@ -149,9 +182,13 @@ class NovelMemory {
     final locations = await matRepo.getLocations(novelId);
     if (locations.isNotEmpty) {
       for (final l in locations) {
-        buf.writeln('【${l.name}】${l.category != null ? " (${l.category})" : ""}');
-        if (l.description != null && l.description!.isNotEmpty) buf.writeln('  ${l.description}');
-        if (l.rules != null && l.rules!.isNotEmpty) buf.writeln('  规则: ${l.rules}');
+        buf.writeln(
+          '【${l.name}】${l.category != null ? " (${l.category})" : ""}',
+        );
+        if (l.description != null && l.description!.isNotEmpty)
+          buf.writeln('  ${l.description}');
+        if (l.rules != null && l.rules!.isNotEmpty)
+          buf.writeln('  规则: ${l.rules}');
       }
     } else {
       buf.writeln('（暂无地点）');
@@ -163,8 +200,11 @@ class NovelMemory {
     final factions = await matRepo.getFactions(novelId);
     if (factions.isNotEmpty) {
       for (final f in factions) {
-        buf.writeln('【${f.name}】${f.category != null ? " (${f.category})" : ""}');
-        if (f.description != null && f.description!.isNotEmpty) buf.writeln('  ${f.description}');
+        buf.writeln(
+          '【${f.name}】${f.category != null ? " (${f.category})" : ""}',
+        );
+        if (f.description != null && f.description!.isNotEmpty)
+          buf.writeln('  ${f.description}');
         if (f.leader != null) buf.writeln('  首领: ${f.leader}');
         if (f.members.isNotEmpty) buf.writeln('  成员: ${f.members.join("、")}');
       }
@@ -179,8 +219,11 @@ class NovelMemory {
     if (items.isNotEmpty) {
       for (final i in items) {
         final star = i.isKeyItem ? " ⭐" : "";
-        buf.writeln('【${i.name}】${i.category != null ? " (${i.category})" : ""}$star');
-        if (i.description != null && i.description!.isNotEmpty) buf.writeln('  ${i.description}');
+        buf.writeln(
+          '【${i.name}】${i.category != null ? " (${i.category})" : ""}$star',
+        );
+        if (i.description != null && i.description!.isNotEmpty)
+          buf.writeln('  ${i.description}');
         if (i.powerLevel != null) buf.writeln('  品阶: ${i.powerLevel}');
         if (i.owner != null) buf.writeln('  持有者: ${i.owner}');
       }
@@ -199,7 +242,8 @@ class NovelMemory {
       for (final h in unresolved) {
         final warn = h.idleChapters > 10 ? ' ⚠️闲置${h.idleChapters}章' : '';
         buf.writeln('  · ${h.title}$warn');
-        if (h.description != null && h.description!.isNotEmpty) buf.writeln('    ${h.description}');
+        if (h.description != null && h.description!.isNotEmpty)
+          buf.writeln('    ${h.description}');
       }
       buf.writeln('【已回收伏笔】(${resolved.length}条)');
       for (final h in resolved) {
@@ -237,10 +281,15 @@ class NovelMemory {
   static const _cacheTtl = Duration(minutes: 5);
 
   /// Get memory for AI context. Returns cached version if available (5min TTL).
-  static Future<String> getForAiContext(String novelId, String novelTitle) async {
+  static Future<String> getForAiContext(
+    String novelId,
+    String novelTitle,
+  ) async {
     final now = DateTime.now();
-    if (_cachedContent != null && _cachedNovelId == novelId &&
-        _cachedAt != null && now.difference(_cachedAt!) < _cacheTtl) {
+    if (_cachedContent != null &&
+        _cachedNovelId == novelId &&
+        _cachedAt != null &&
+        now.difference(_cachedAt!) < _cacheTtl) {
       return _cachedContent!;
     }
     final memory = NovelMemory(novelId: novelId, novelTitle: novelTitle);

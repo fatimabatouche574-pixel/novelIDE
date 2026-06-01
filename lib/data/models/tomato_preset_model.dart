@@ -16,5 +16,6 @@ class TomatoPreset with _$TomatoPreset {
     @Default(false) bool isCustom,
   }) = _TomatoPreset;
 
-  factory TomatoPreset.fromJson(Map<String, dynamic> json) => _$TomatoPresetFromJson(json);
+  factory TomatoPreset.fromJson(Map<String, dynamic> json) =>
+      _$TomatoPresetFromJson(json);
 }

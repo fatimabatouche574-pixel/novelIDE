@@ -30,9 +30,15 @@ class WritingPage extends ConsumerWidget {
               icon: const Icon(Icons.file_download_outlined),
               tooltip: '导出',
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ExportPage(novelId: selectedNovel.id, novelTitle: selectedNovel.title),
-                ));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ExportPage(
+                      novelId: selectedNovel.id,
+                      novelTitle: selectedNovel.title,
+                    ),
+                  ),
+                );
               },
             ),
         ],
@@ -43,7 +49,10 @@ class WritingPage extends ConsumerWidget {
           children: [
             Icon(Icons.edit_note, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text('选择一个章节开始写作', style: TextStyle(fontSize: 18, color: Colors.grey[500])),
+            Text(
+              '选择一个章节开始写作',
+              style: TextStyle(fontSize: 18, color: Colors.grey[500]),
+            ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {

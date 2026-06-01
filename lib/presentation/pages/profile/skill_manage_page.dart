@@ -52,7 +52,10 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
                 children: [
                   Icon(Icons.auto_awesome, size: 64, color: Colors.grey[300]),
                   const SizedBox(height: 16),
-                  Text('暂无Skill', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+                  Text(
+                    '暂无Skill',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                  ),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () => _showSkillDialog(),
@@ -76,7 +79,9 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
               _buildStatsBar(skills),
               const SizedBox(height: 12),
               // 按分类展示
-              ...categories.entries.map((entry) => _buildCategorySection(entry.key, entry.value)),
+              ...categories.entries.map(
+                (entry) => _buildCategorySection(entry.key, entry.value),
+              ),
             ],
           );
         },
@@ -112,7 +117,14 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
   Widget _statItem(String label, String value, {Color? color}) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
@@ -124,7 +136,10 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(category, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          child: Text(
+            category,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ),
         ...skills.map((skill) => _buildSkillCard(skill)),
       ],
@@ -166,19 +181,31 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
                         Flexible(
                           child: Text(
                             skill.name,
-                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (skill.isBuiltIn)
                           Container(
                             margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.orange.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('内置', style: TextStyle(fontSize: 10, color: Colors.orange)),
+                            child: const Text(
+                              '内置',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.orange,
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -208,7 +235,13 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
                       },
                       itemBuilder: (_) => [
                         const PopupMenuItem(value: 'edit', child: Text('编辑')),
-                        const PopupMenuItem(value: 'delete', child: Text('删除', style: TextStyle(color: Colors.red))),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            '删除',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
                       ],
                     ),
                 ],
@@ -233,7 +266,10 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
         title: const Text('确认删除'),
         content: Text('确定删除Skill「${skill.name}」？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -257,8 +293,11 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
 
       final file = File(result.files.first.path!);
       final fileName = result.files.first.name;
-      final nameWithoutExt = fileName.replaceAll(RegExp(r'\.(md|txt|json|docx)$'), '');
-      
+      final nameWithoutExt = fileName.replaceAll(
+        RegExp(r'\.(md|txt|json|docx)$'),
+        '',
+      );
+
       // 读取文件内容
       String content;
       if (fileName.endsWith('.docx')) {
@@ -281,21 +320,22 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
         category: skillData?['category'] as String? ?? '导入',
         description: skillData?['description'] as String? ?? '从 $fileName 导入',
         content: skillData?['content'] as String? ?? content.trim(),
-        keywords: (skillData?['keywords'] as List<dynamic>?)?.cast<String>() ?? [],
+        keywords:
+            (skillData?['keywords'] as List<dynamic>?)?.cast<String>() ?? [],
       );
       await _repo.addSkill(newSkill);
       ref.invalidate(skillsProvider);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已导入 Skill: ${newSkill.name}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已导入 Skill: ${newSkill.name}')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导入失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
       }
     }
   }
@@ -304,7 +344,7 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
   Future<String> _readDocxContent(File file) async {
     final bytes = await file.readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes);
-    
+
     // 查找 word/document.xml
     for (final archiveFile in archive) {
       if (archiveFile.name == 'word/document.xml') {
@@ -324,20 +364,28 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${skill.name}  ${skill.category} · ${skill.isEnabled ? "已启用" : "已禁用"}'),
+        title: Text(
+          '${skill.name}  ${skill.category} · ${skill.isEnabled ? "已启用" : "已禁用"}',
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(skill.description, style: TextStyle(color: Colors.grey[700])),
+              Text(
+                skill.description,
+                style: TextStyle(color: Colors.grey[700]),
+              ),
               const Divider(),
               Text(skill.content, style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
           if (!skill.isBuiltIn)
             FilledButton(
               onPressed: () {
@@ -367,11 +415,21 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Skill名称')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Skill名称'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: '分类')),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(labelText: '分类'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 2),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 2,
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: kwCtrl,
@@ -384,14 +442,19 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
               const SizedBox(height: 12),
               TextField(
                 controller: contentCtrl,
-                decoration: const InputDecoration(labelText: 'Skill内容（详细说明/Prompt）'),
+                decoration: const InputDecoration(
+                  labelText: 'Skill内容（详细说明/Prompt）',
+                ),
                 maxLines: 8,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -423,7 +486,8 @@ class _SkillManagePageState extends ConsumerState<SkillManagePage> {
   }
 
   List<String> _parseKeywords(String text) {
-    return text.split(RegExp(r'[、,，\s]+'))
+    return text
+        .split(RegExp(r'[、,，\s]+'))
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .toList();

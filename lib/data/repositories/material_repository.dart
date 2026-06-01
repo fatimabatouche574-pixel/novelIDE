@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:novel_ide/data/models/material_models.dart';
 import 'package:novel_ide/data/models/character_relationship.dart';
@@ -18,13 +17,20 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => Character.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => Character.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> saveCharacters(String novelId, List<Character> characters) async {
+  Future<void> saveCharacters(
+    String novelId,
+    List<Character> characters,
+  ) async {
     final dir = await _getMaterialsDir(novelId);
     final file = File(p.join(dir.path, '${novelId}_characters.json'));
-    await file.writeAsString(jsonEncode(characters.map((c) => c.toJson()).toList()));
+    await file.writeAsString(
+      jsonEncode(characters.map((c) => c.toJson()).toList()),
+    );
   }
 
   // Setting Cards
@@ -34,7 +40,9 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => SettingCard.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => SettingCard.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> saveSettingCards(String novelId, List<SettingCard> cards) async {
@@ -50,7 +58,9 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => PlotHook.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => PlotHook.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> savePlotHooks(String novelId, List<PlotHook> hooks) async {
@@ -66,10 +76,15 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => ReferenceMaterial.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => ReferenceMaterial.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> saveReferences(String novelId, List<ReferenceMaterial> refs) async {
+  Future<void> saveReferences(
+    String novelId,
+    List<ReferenceMaterial> refs,
+  ) async {
     final dir = await _getMaterialsDir(novelId);
     final file = File(p.join(dir.path, '${novelId}_references.json'));
     await file.writeAsString(jsonEncode(refs.map((r) => r.toJson()).toList()));
@@ -82,13 +97,20 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => SettingReminder.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => SettingReminder.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> saveSettingReminders(String novelId, List<SettingReminder> reminders) async {
+  Future<void> saveSettingReminders(
+    String novelId,
+    List<SettingReminder> reminders,
+  ) async {
     final dir = await _getMaterialsDir(novelId);
     final file = File(p.join(dir.path, '${novelId}_reminders.json'));
-    await file.writeAsString(jsonEncode(reminders.map((r) => r.toJson()).toList()));
+    await file.writeAsString(
+      jsonEncode(reminders.map((r) => r.toJson()).toList()),
+    );
   }
 
   // --- V2: Locations ---
@@ -98,13 +120,17 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => Location.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => Location.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> saveLocations(String novelId, List<Location> locations) async {
     final dir = await _getMaterialsDir(novelId);
     final file = File(p.join(dir.path, '${novelId}_locations.json'));
-    await file.writeAsString(jsonEncode(locations.map((l) => l.toJson()).toList()));
+    await file.writeAsString(
+      jsonEncode(locations.map((l) => l.toJson()).toList()),
+    );
   }
 
   // --- V2: Factions ---
@@ -114,13 +140,17 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => Faction.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => Faction.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> saveFactions(String novelId, List<Faction> factions) async {
     final dir = await _getMaterialsDir(novelId);
     final file = File(p.join(dir.path, '${novelId}_factions.json'));
-    await file.writeAsString(jsonEncode(factions.map((f) => f.toJson()).toList()));
+    await file.writeAsString(
+      jsonEncode(factions.map((f) => f.toJson()).toList()),
+    );
   }
 
   // --- V2: Items ---
@@ -146,16 +176,20 @@ class MaterialRepository {
     if (!await file.exists()) return [];
     final content = await file.readAsString(encoding: utf8);
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((j) => CustomMaterialFolder.fromJson(j as Map<String, dynamic>)).toList();
+    return list
+        .map((j) => CustomMaterialFolder.fromJson(j as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> saveCustomFolders(String novelId, List<CustomMaterialFolder> folders) async {
+  Future<void> saveCustomFolders(
+    String novelId,
+    List<CustomMaterialFolder> folders,
+  ) async {
     final dir = await _getMaterialsDir(novelId);
     final file = File(p.join(dir.path, '${novelId}_custom_folders.json'));
     final json = folders.map((f) => f.toJson()).toList();
     await file.writeAsString(jsonEncode(json), encoding: utf8);
   }
-
 
   // --- V4: Character Relationships ---
   Future<RelationshipGraphData> getRelationshipGraphData(String novelId) async {
@@ -177,5 +211,4 @@ class MaterialRepository {
     final file = File(p.join(dir.path, '${novelId}_relationships.json'));
     await file.writeAsString(jsonEncode(data.toJson()), encoding: utf8);
   }
-
 }

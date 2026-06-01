@@ -22,7 +22,11 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
   Widget build(BuildContext context) {
     final allConfigs = ref.watch(aiConfigsProvider);
     // 只筛选语音类型模型
-    final voiceConfigs = allConfigs.where((c) => c.modelType == ModelType.tts || c.modelType == ModelType.stt).toList();
+    final voiceConfigs = allConfigs
+        .where(
+          (c) => c.modelType == ModelType.tts || c.modelType == ModelType.stt,
+        )
+        .toList();
     final currentVoiceId = ConfigService.voiceConfigId;
 
     return Scaffold(
@@ -50,7 +54,13 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
                   children: [
                     Icon(Icons.info_outline, size: 18, color: Colors.blue[700]),
                     const SizedBox(width: 8),
-                    Text('语音通话模型', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[700])),
+                    Text(
+                      '语音通话模型',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -72,16 +82,37 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
                       children: [
                         Icon(Icons.mic_off, size: 64, color: Colors.grey[300]),
                         const SizedBox(height: 16),
-                        Text('待添加', style: TextStyle(fontSize: 18, color: Colors.grey[500], fontWeight: FontWeight.bold)),
+                        Text(
+                          '待添加',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[500],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('尚未配置语音模型', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+                        Text(
+                          '尚未配置语音模型',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[400],
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('通话功能不可用，请先添加TTS语音模型', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                        Text(
+                          '通话功能不可用，请先添加TTS语音模型',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.add),
                           label: const Text('添加语音模型'),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
                           onPressed: () => _showAddVoiceModelDialog(),
                         ),
                       ],
@@ -95,8 +126,13 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
                       final isSelected = config.id == currentVoiceId;
 
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        color: isSelected ? AppColors.primary.withOpacity(0.05) : null,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        color: isSelected
+                            ? AppColors.primary.withOpacity(0.05)
+                            : null,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: isSelected
@@ -104,42 +140,84 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
                               : BorderSide.none,
                         ),
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           leading: CircleAvatar(
-                            backgroundColor: isSelected ? AppColors.primary : Colors.grey[200],
+                            backgroundColor: isSelected
+                                ? AppColors.primary
+                                : Colors.grey[200],
                             child: Icon(
-                              config.modelType == ModelType.tts ? Icons.record_voice_over : Icons.mic,
-                              color: isSelected ? Colors.white : Colors.grey[600],
+                              config.modelType == ModelType.tts
+                                  ? Icons.record_voice_over
+                                  : Icons.mic,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey[600],
                             ),
                           ),
-                          title: Text(config.name, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                          title: Text(
+                            config.name,
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
                           subtitle: Text(
                             '${config.modelName} · ${config.modelType == ModelType.tts ? "TTS语音合成" : "STT语音识别"}',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (isSelected) Icon(Icons.check_circle, color: AppColors.primary),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primary,
+                                ),
                               PopupMenuButton<String>(
                                 onSelected: (value) {
-                                  if (value == 'edit') _showEditVoiceModelDialog(config);
+                                  if (value == 'edit')
+                                    _showEditVoiceModelDialog(config);
                                   if (value == 'test') _testVoiceModel(config);
-                                  if (value == 'delete') _deleteVoiceModel(config);
+                                  if (value == 'delete')
+                                    _deleteVoiceModel(config);
                                 },
                                 itemBuilder: (_) => [
-                                  const PopupMenuItem(value: 'edit', child: Text('编辑')),
-                                  const PopupMenuItem(value: 'test', child: Text('测试连接')),
-                                  const PopupMenuItem(value: 'delete', child: Text('删除', style: TextStyle(color: Colors.red))),
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Text('编辑'),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'test',
+                                    child: Text('测试连接'),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(
+                                      '删除',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
                           ),
                           onTap: () {
                             ConfigService.voiceConfigId = config.id;
-                            ref.read(selectedVoiceConfigProvider.notifier).state = config;
+                            ref
+                                    .read(selectedVoiceConfigProvider.notifier)
+                                    .state =
+                                config;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('已切换语音模型为「${config.name}」')),
+                              SnackBar(
+                                content: Text('已切换语音模型为「${config.name}」'),
+                              ),
                             );
                             setState(() {});
                           },
@@ -155,7 +233,9 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
 
   void _showAddVoiceModelDialog() {
     final nameCtrl = TextEditingController();
-    final urlCtrl = TextEditingController(text: 'https://api.mimo.ai/v1/chat/completions');
+    final urlCtrl = TextEditingController(
+      text: 'https://api.mimo.ai/v1/chat/completions',
+    );
     final modelCtrl = TextEditingController(text: 'mimo-v2.5-tts');
     final apiKeyCtrl = TextEditingController();
 
@@ -175,12 +255,19 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber, size: 18, color: Colors.orange[700]),
+                    Icon(
+                      Icons.warning_amber,
+                      size: 18,
+                      color: Colors.orange[700],
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '只能添加语音模型（TTS/STT），文本模型无法用于通话',
-                        style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange[700],
+                        ),
                       ),
                     ),
                   ],
@@ -189,7 +276,10 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: '模型名称', hintText: '例如：MiMo TTS'),
+                decoration: const InputDecoration(
+                  labelText: '模型名称',
+                  hintText: '例如：MiMo TTS',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -199,7 +289,10 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
               const SizedBox(height: 12),
               TextField(
                 controller: modelCtrl,
-                decoration: const InputDecoration(labelText: '模型ID', hintText: '例如：mimo-v2.5-tts'),
+                decoration: const InputDecoration(
+                  labelText: '模型ID',
+                  hintText: '例如：mimo-v2.5-tts',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -211,10 +304,14 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty || modelCtrl.text.trim().isEmpty) return;
+              if (nameCtrl.text.trim().isEmpty || modelCtrl.text.trim().isEmpty)
+                return;
 
               final id = 'voice_${DateTime.now().millisecondsSinceEpoch}';
               final newConfig = AiConfig(
@@ -231,7 +328,10 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
               await db.insertAiConfig(db.toDbMap(newConfig));
               // API Key 保存到安全存储
               if (apiKeyCtrl.text.trim().isNotEmpty) {
-                await SecureStorageDataSource().writeApiKey(id, apiKeyCtrl.text.trim());
+                await SecureStorageDataSource().writeApiKey(
+                  id,
+                  apiKeyCtrl.text.trim(),
+                );
               }
 
               // 重新加载配置列表，确保 API Key 从 SecureStorage 读取并合并
@@ -240,7 +340,8 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
               ConfigService.voiceConfigId = id;
               final updatedConfigs = ref.read(aiConfigsProvider);
               final savedConfig = updatedConfigs.firstWhere((c) => c.id == id);
-              ref.read(selectedVoiceConfigProvider.notifier).state = savedConfig;
+              ref.read(selectedVoiceConfigProvider.notifier).state =
+                  savedConfig;
 
               Navigator.pop(ctx);
               if (mounted) {
@@ -263,8 +364,14 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
         title: const Text('确认删除'),
         content: Text('确定删除语音模型「${config.name}」？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('删除')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -279,9 +386,9 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
       }
       ref.invalidate(aiConfigsProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已删除「${config.name}」')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已删除「${config.name}」')));
       }
     }
   }
@@ -328,10 +435,14 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty || modelCtrl.text.trim().isEmpty) return;
+              if (nameCtrl.text.trim().isEmpty || modelCtrl.text.trim().isEmpty)
+                return;
 
               final updatedConfig = AiConfig(
                 id: config.id,
@@ -347,7 +458,10 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
               await db.insertAiConfig(db.toDbMap(updatedConfig));
               // 更新API Key
               if (apiKeyCtrl.text.trim().isNotEmpty) {
-                await SecureStorageDataSource().writeApiKey(config.id, apiKeyCtrl.text.trim());
+                await SecureStorageDataSource().writeApiKey(
+                  config.id,
+                  apiKeyCtrl.text.trim(),
+                );
               }
 
               ref.invalidate(aiConfigsProvider);
@@ -387,7 +501,10 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
         if (mounted) Navigator.pop(context);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('请先设置 API Key'), backgroundColor: Colors.orange),
+            const SnackBar(
+              content: Text('请先设置 API Key'),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
         return;
@@ -410,7 +527,7 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
         data: {
           'model': config.modelName,
           'messages': [
-            {'role': 'user', 'content': '测试'}
+            {'role': 'user', 'content': '测试'},
           ],
           'max_tokens': 10,
         },
@@ -430,26 +547,39 @@ class _VoiceConfigPageState extends ConsumerState<VoiceConfigPage> {
       if (mounted) {
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('「${config.name}」连接成功'), backgroundColor: Colors.green),
+            SnackBar(
+              content: Text('「${config.name}」连接成功'),
+              backgroundColor: Colors.green,
+            ),
           );
         } else if (response.statusCode == 401) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('API Key 无效 (401)'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('API Key 无效 (401)'),
+              backgroundColor: Colors.red,
+            ),
           );
         } else if (response.statusCode == 404) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('API端点不存在 (404)，请检查API地址'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('API端点不存在 (404)，请检查API地址'),
+              backgroundColor: Colors.red,
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('连接异常 (HTTP ${response.statusCode})'), backgroundColor: Colors.orange),
+            SnackBar(
+              content: Text('连接异常 (HTTP ${response.statusCode})'),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
       }
     } on DioException catch (e) {
       if (mounted) Navigator.pop(context);
       String errorMsg;
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.sendTimeout) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
         errorMsg = '连接超时，请检查API地址';
       } else if (e.type == DioExceptionType.connectionError) {
         errorMsg = '无法连接服务器，请检查API地址';

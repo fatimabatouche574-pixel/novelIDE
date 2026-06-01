@@ -20,35 +20,40 @@ class Chapter with _$Chapter {
     required DateTime updatedAt,
   }) = _Chapter;
 
-  factory Chapter.fromJson(Map<String, dynamic> json) => _$ChapterFromJson(json);
+  factory Chapter.fromJson(Map<String, dynamic> json) =>
+      _$ChapterFromJson(json);
 }
 
-enum ChapterStatus {
-  unwritten,
-  draft,
-  polishing,
-  completed,
-  exported,
-}
+enum ChapterStatus { unwritten, draft, polishing, completed, exported }
 
 extension ChapterStatusExt on ChapterStatus {
   String get label {
     switch (this) {
-      case ChapterStatus.unwritten: return '未写';
-      case ChapterStatus.draft: return '草稿';
-      case ChapterStatus.polishing: return '待精修';
-      case ChapterStatus.completed: return '已完成';
-      case ChapterStatus.exported: return '已导出';
+      case ChapterStatus.unwritten:
+        return '未写';
+      case ChapterStatus.draft:
+        return '草稿';
+      case ChapterStatus.polishing:
+        return '待精修';
+      case ChapterStatus.completed:
+        return '已完成';
+      case ChapterStatus.exported:
+        return '已导出';
     }
   }
 
   Color get color {
     switch (this) {
-      case ChapterStatus.unwritten: return Colors.grey;
-      case ChapterStatus.draft: return Colors.orange;
-      case ChapterStatus.polishing: return Colors.blue;
-      case ChapterStatus.completed: return Colors.green;
-      case ChapterStatus.exported: return Colors.purple;
+      case ChapterStatus.unwritten:
+        return Colors.grey;
+      case ChapterStatus.draft:
+        return Colors.orange;
+      case ChapterStatus.polishing:
+        return Colors.blue;
+      case ChapterStatus.completed:
+        return Colors.green;
+      case ChapterStatus.exported:
+        return Colors.purple;
     }
   }
 }

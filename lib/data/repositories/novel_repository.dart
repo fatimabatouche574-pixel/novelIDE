@@ -11,22 +11,35 @@ class NovelRepository {
   Future<List<Novel>> getAllNovels() async {
     final db = await _db.database;
     final maps = await db.query('novels', orderBy: 'updated_at DESC');
-    return maps.map((m) => Novel(
-      id: m['id'] as String,
-      title: m['title'] as String,
-      author: m['author'] as String?,
-      description: m['description'] as String?,
-      category: m['category'] as String?,
-      totalWordCount: m['total_word_count'] as int? ?? 0,
-      chapterCount: m['chapter_count'] as int? ?? 0,
-      coverPath: m['cover_path'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(m['updated_at'] as int),
-      status: m['status'] as String? ?? 'draft',
-    )).toList();
+    return maps
+        .map(
+          (m) => Novel(
+            id: m['id'] as String,
+            title: m['title'] as String,
+            author: m['author'] as String?,
+            description: m['description'] as String?,
+            category: m['category'] as String?,
+            totalWordCount: m['total_word_count'] as int? ?? 0,
+            chapterCount: m['chapter_count'] as int? ?? 0,
+            coverPath: m['cover_path'] as String?,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              m['created_at'] as int,
+            ),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(
+              m['updated_at'] as int,
+            ),
+            status: m['status'] as String? ?? 'draft',
+          ),
+        )
+        .toList();
   }
 
-  Future<Novel> createNovel({required String title, String? author, String? description, String? category}) async {
+  Future<Novel> createNovel({
+    required String title,
+    String? author,
+    String? description,
+    String? category,
+  }) async {
     final id = _uuid.v4();
     final now = DateTime.now();
     final novel = Novel(
@@ -65,15 +78,20 @@ class NovelRepository {
 
   Future<void> updateNovel(Novel novel) async {
     final db = await _db.database;
-    await db.update('novels', {
-      'title': novel.title,
-      'author': novel.author,
-      'description': novel.description,
-      'category': novel.category,
-      'total_word_count': novel.totalWordCount,
-      'chapter_count': novel.chapterCount,
-      'updated_at': DateTime.now().millisecondsSinceEpoch,
-    }, where: 'id = ?', whereArgs: [novel.id]);
+    await db.update(
+      'novels',
+      {
+        'title': novel.title,
+        'author': novel.author,
+        'description': novel.description,
+        'category': novel.category,
+        'total_word_count': novel.totalWordCount,
+        'chapter_count': novel.chapterCount,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [novel.id],
+    );
   }
 
   Future<void> deleteNovel(String novelId, String title) async {

@@ -52,10 +52,7 @@ class _StatsPageState extends ConsumerState<StatsPage> {
       appBar: AppBar(
         title: const Text('写作统计'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadStats,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadStats),
         ],
       ),
       body: _isLoading
@@ -68,32 +65,43 @@ class _StatsPageState extends ConsumerState<StatsPage> {
                   // --- Summary cards ---
                   Row(
                     children: [
-                      Expanded(child: _SummaryCard(
-                        label: '今日字数',
-                        value: '$todayWords',
-                        sub: '目标 $goal',
-                        color: todayWords >= goal ? Colors.green : AppColors.primary,
-                      )),
+                      Expanded(
+                        child: _SummaryCard(
+                          label: '今日字数',
+                          value: '$todayWords',
+                          sub: '目标 $goal',
+                          color: todayWords >= goal
+                              ? Colors.green
+                              : AppColors.primary,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _SummaryCard(
-                        label: '连续打卡',
-                        value: '$streak',
-                        sub: '天',
-                        color: streak > 0 ? Colors.orange : Colors.grey,
-                      )),
+                      Expanded(
+                        child: _SummaryCard(
+                          label: '连续打卡',
+                          value: '$streak',
+                          sub: '天',
+                          color: streak > 0 ? Colors.orange : Colors.grey,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _SummaryCard(
-                        label: '累计字数',
-                        value: _formatCount(totalWords),
-                        sub: '',
-                        color: Colors.blue,
-                      )),
+                      Expanded(
+                        child: _SummaryCard(
+                          label: '累计字数',
+                          value: _formatCount(totalWords),
+                          sub: '',
+                          color: Colors.blue,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
                   // --- Daily word chart ---
-                  const Text('近30天字数', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    '近30天字数',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 200,
@@ -102,7 +110,10 @@ class _StatsPageState extends ConsumerState<StatsPage> {
                   const SizedBox(height: 24),
 
                   // --- Goal progress ---
-                  const Text('今日进度', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    '今日进度',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
                   _GoalProgress(current: todayWords, goal: goal),
                 ],
@@ -124,7 +135,12 @@ class _SummaryCard extends StatelessWidget {
   final String sub;
   final Color color;
 
-  const _SummaryCard({required this.label, required this.value, required this.sub, required this.color});
+  const _SummaryCard({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -133,12 +149,25 @@ class _SummaryCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
             const SizedBox(height: 8),
-            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             if (sub.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+              Text(
+                sub,
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
             ],
           ],
         ),
@@ -185,7 +214,8 @@ class _DailyChart extends StatelessWidget {
                 final idx = value.toInt();
                 if (idx < 0 || idx >= stats.length) return const SizedBox();
                 // Show every 5 days
-                if (idx % 5 != 0 && idx != stats.length - 1) return const SizedBox();
+                if (idx % 5 != 0 && idx != stats.length - 1)
+                  return const SizedBox();
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
@@ -234,10 +264,12 @@ class _DailyChart extends StatelessWidget {
                 color: isToday
                     ? AppColors.primary
                     : stat.wordCount >= goal
-                        ? Colors.green.withOpacity(0.7)
-                        : Colors.blue.withOpacity(0.5),
+                    ? Colors.green.withOpacity(0.7)
+                    : Colors.blue.withOpacity(0.5),
                 width: stats.length > 20 ? 6 : 10,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(2),
+                ),
               ),
             ],
           );
@@ -268,12 +300,21 @@ class _GoalProgress extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('$current / $goal 字', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text('$percentage%', style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: progress >= 1.0 ? Colors.green : AppColors.primary,
-                )),
+                Text(
+                  '$current / $goal 字',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '$percentage%',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: progress >= 1.0 ? Colors.green : AppColors.primary,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),

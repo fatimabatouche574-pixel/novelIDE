@@ -33,27 +33,36 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
     try {
       final response = await _dio.get(
         'https://api.duckduckgo.com/',
-        queryParameters: {'q': query, 'format': 'json', 'no_html': 1, 'skip_disambig': 1},
+        queryParameters: {
+          'q': query,
+          'format': 'json',
+          'no_html': 1,
+          'skip_disambig': 1,
+        },
       );
       final data = response.data;
       final results = <SearchResult>[];
       if (data['Results'] != null) {
         for (final item in data['Results']) {
-          results.add(SearchResult(
-            title: item['Text'] ?? '',
-            url: item['FirstURL'] ?? '',
-            snippet: '',
-          ));
+          results.add(
+            SearchResult(
+              title: item['Text'] ?? '',
+              url: item['FirstURL'] ?? '',
+              snippet: '',
+            ),
+          );
         }
       }
       if (data['RelatedTopics'] != null) {
         for (final item in data['RelatedTopics']) {
           if (item is Map<String, dynamic>) {
-            results.add(SearchResult(
-              title: item['Text']?.toString().split(' - ').first ?? '',
-              url: item['FirstURL'] ?? '',
-              snippet: item['Text']?.toString() ?? '',
-            ));
+            results.add(
+              SearchResult(
+                title: item['Text']?.toString().split(' - ').first ?? '',
+                url: item['FirstURL'] ?? '',
+                snippet: item['Text']?.toString() ?? '',
+              ),
+            );
           }
         }
       }
@@ -67,9 +76,9 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
         _results = [];
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('搜索请求失败，请检查网络')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('搜索请求失败，请检查网络')));
       }
     }
   }
@@ -81,7 +90,9 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20),
+        ],
       ),
       child: Column(
         children: [
@@ -100,9 +111,15 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
               children: [
                 const Icon(Icons.search, color: AppColors.primary, size: 20),
                 const SizedBox(width: 8),
-                const Text('联网搜索', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  '联网搜索',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.close, size: 20), onPressed: widget.onClose),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: widget.onClose,
+                ),
               ],
             ),
           ),
@@ -121,7 +138,10 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                     ),
                     onSubmitted: (_) => _search(),
                   ),
@@ -130,7 +150,11 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
                 CircleAvatar(
                   backgroundColor: AppColors.primary,
                   child: IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white, size: 18),
+                    icon: const Icon(
+                      Icons.search,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                     onPressed: _search,
                   ),
                 ),
@@ -148,9 +172,15 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
                   children: [
                     Icon(Icons.search_off, size: 48, color: Colors.grey[300]),
                     const SizedBox(height: 12),
-                    Text('输入关键词搜索资料', style: TextStyle(color: Colors.grey[400])),
+                    Text(
+                      '输入关键词搜索资料',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
                     const SizedBox(height: 4),
-                    Text('结果可保存到参考资料库', style: TextStyle(fontSize: 12, color: Colors.grey[350])),
+                    Text(
+                      '结果可保存到参考资料库',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[350]),
+                    ),
                   ],
                 ),
               ),
@@ -165,14 +195,31 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      title: Text(result.title, style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      title: Text(
+                        result.title,
+                        style: const TextStyle(fontSize: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       subtitle: result.snippet.isNotEmpty
-                          ? Text(result.snippet, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: Colors.grey[500]))
+                          ? Text(
+                              result.snippet,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            )
                           : null,
                       trailing: PopupMenuButton<String>(
                         onSelected: (action) async {
                           if (action == 'copy') {
-                            Clipboard.setData(ClipboardData(text: '${result.title}\n${result.url}'));
+                            Clipboard.setData(
+                              ClipboardData(
+                                text: '${result.title}\n${result.url}',
+                              ),
+                            );
                             TopNotification.success(context, '已复制');
                           } else if (action == 'save') {
                             // Save to reference library
@@ -186,7 +233,9 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
                             );
                             // Load existing references, add new one, save
                             final repo = MaterialRepository();
-                            final existing = await repo.getReferences(widget.novelId);
+                            final existing = await repo.getReferences(
+                              widget.novelId,
+                            );
                             final updated = [...existing, refMaterial];
                             await repo.saveReferences(widget.novelId, updated);
                             if (mounted) {
@@ -203,9 +252,18 @@ class _SearchDrawerState extends ConsumerState<SearchDrawer> {
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(value: 'copy', child: Text('复制链接')),
-                          const PopupMenuItem(value: 'save', child: Text('保存到资料库')),
-                          const PopupMenuItem(value: 'insert', child: Text('插入引用')),
+                          const PopupMenuItem(
+                            value: 'copy',
+                            child: Text('复制链接'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'save',
+                            child: Text('保存到资料库'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'insert',
+                            child: Text('插入引用'),
+                          ),
                         ],
                       ),
                     ),

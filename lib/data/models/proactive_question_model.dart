@@ -2,12 +2,12 @@ import 'package:novel_ide/data/models/writing_skill_model.dart';
 
 /// 主动提问类型
 enum ProactiveQuestionType {
-  novelGenre,      // 小说类型
-  writingStyle,    // 写作风格
-  agentSelection,  // 智能体选择
-  skillSelection,  // 技能选择
-  outputFormat,    // 输出格式
-  custom,          // 自定义
+  novelGenre, // 小说类型
+  writingStyle, // 写作风格
+  agentSelection, // 智能体选择
+  skillSelection, // 技能选择
+  outputFormat, // 输出格式
+  custom, // 自定义
 }
 
 /// 主动提问选项
@@ -60,12 +60,16 @@ class ProactiveQuestion {
       title: '选择写作技能',
       subtitle: '请选择要使用的写作技能，AI将据此优化输出',
       type: ProactiveQuestionType.skillSelection,
-      options: skills.map((s) => ProactiveOption(
-        id: s.id,
-        label: s.name,
-        description: s.description,
-        metadata: {'category': s.category},
-      )).toList(),
+      options: skills
+          .map(
+            (s) => ProactiveOption(
+              id: s.id,
+              label: s.name,
+              description: s.description,
+              metadata: {'category': s.category},
+            ),
+          )
+          .toList(),
       allowCustomInput: false,
       multiSelect: true,
     );
@@ -98,11 +102,31 @@ class ProactiveQuestion {
     subtitle: '请选择要使用的智能体来执行任务',
     type: ProactiveQuestionType.agentSelection,
     options: [
-      ProactiveOption(id: 'outline_generator', label: '番茄大纲生成器', description: '生成符合番茄风格的小说大纲'),
-      ProactiveOption(id: 'character_generator', label: '番茄角色生成器', description: '生成角色设定和人设'),
-      ProactiveOption(id: 'shuangdian_checker', label: '爽点密度检查器', description: '检查章节爽点分布'),
-      ProactiveOption(id: 'water_detector', label: '水文检测器', description: '检测冗余内容'),
-      ProactiveOption(id: 'title_generator', label: '爆款标题生成器', description: '生成吸引眼球的标题'),
+      ProactiveOption(
+        id: 'outline_generator',
+        label: '番茄大纲生成器',
+        description: '生成符合番茄风格的小说大纲',
+      ),
+      ProactiveOption(
+        id: 'character_generator',
+        label: '番茄角色生成器',
+        description: '生成角色设定和人设',
+      ),
+      ProactiveOption(
+        id: 'shuangdian_checker',
+        label: '爽点密度检查器',
+        description: '检查章节爽点分布',
+      ),
+      ProactiveOption(
+        id: 'water_detector',
+        label: '水文检测器',
+        description: '检测冗余内容',
+      ),
+      ProactiveOption(
+        id: 'title_generator',
+        label: '爆款标题生成器',
+        description: '生成吸引眼球的标题',
+      ),
     ],
     allowCustomInput: false,
   );

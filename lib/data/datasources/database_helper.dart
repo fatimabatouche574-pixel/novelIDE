@@ -120,11 +120,15 @@ class DatabaseHelper {
     }
     if (oldVersion < 4) {
       // 添加 protocol 字段到 ai_configs 表
-      await db.execute('ALTER TABLE ai_configs ADD COLUMN protocol TEXT DEFAULT "openaiCompatible"');
+      await db.execute(
+        'ALTER TABLE ai_configs ADD COLUMN protocol TEXT DEFAULT "openaiCompatible"',
+      );
     }
     if (oldVersion < 5) {
       // 添加 model_type 字段到 ai_configs 表
-      await db.execute('ALTER TABLE ai_configs ADD COLUMN model_type TEXT DEFAULT "text"');
+      await db.execute(
+        'ALTER TABLE ai_configs ADD COLUMN model_type TEXT DEFAULT "text"',
+      );
     }
   }
 
@@ -176,7 +180,11 @@ class DatabaseHelper {
 
   Future<void> insertAiConfig(Map<String, dynamic> config) async {
     final db = await database;
-    await db.insert('ai_configs', config, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+      'ai_configs',
+      config,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Map<String, dynamic> toDbMap(AiConfig config) {
@@ -239,17 +247,27 @@ class DatabaseHelper {
   // --- Daily Words CRUD ---
 
   /// Record word count for a day. Accumulates if already exists.
-  Future<void> recordDailyWords(String date, String novelId, int wordCount) async {
+  Future<void> recordDailyWords(
+    String date,
+    String novelId,
+    int wordCount,
+  ) async {
     final db = await database;
-    await db.rawInsert('''
+    await db.rawInsert(
+      '''
       INSERT INTO daily_words (date, novel_id, word_count)
       VALUES (?, ?, ?)
       ON CONFLICT(date, novel_id) DO UPDATE SET word_count = word_count + ?
-    ''', [date, novelId, wordCount, wordCount]);
+    ''',
+      [date, novelId, wordCount, wordCount],
+    );
   }
 
   /// Get daily word counts for a date range.
-  Future<List<Map<String, dynamic>>> getDailyWords({String? startDate, String? endDate}) async {
+  Future<List<Map<String, dynamic>>> getDailyWords({
+    String? startDate,
+    String? endDate,
+  }) async {
     final db = await database;
     String where = '';
     List<dynamic> args = [];
@@ -261,20 +279,30 @@ class DatabaseHelper {
       where += (where.isEmpty ? '' : ' AND ') + 'date <= ?';
       args.add(endDate);
     }
-    return await db.query('daily_words', where: where.isEmpty ? null : where, whereArgs: args.isEmpty ? null : args, orderBy: 'date ASC');
+    return await db.query(
+      'daily_words',
+      where: where.isEmpty ? null : where,
+      whereArgs: args.isEmpty ? null : args,
+      orderBy: 'date ASC',
+    );
   }
 
   /// Get total word count across all days.
   Future<int> getTotalWords() async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COALESCE(SUM(word_count), 0) as total FROM daily_words');
+    final result = await db.rawQuery(
+      'SELECT COALESCE(SUM(word_count), 0) as total FROM daily_words',
+    );
     return (result.first['total'] as int?) ?? 0;
   }
 
   /// Get today's word count.
   Future<int> getTodayWords(String date) async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COALESCE(SUM(word_count), 0) as total FROM daily_words WHERE date = ?', [date]);
+    final result = await db.rawQuery(
+      'SELECT COALESCE(SUM(word_count), 0) as total FROM daily_words WHERE date = ?',
+      [date],
+    );
     return (result.first['total'] as int?) ?? 0;
   }
 }

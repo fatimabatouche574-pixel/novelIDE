@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/data/services/cost_tracker.dart';
-import 'package:novel_ide/data/services/default_config_service.dart';
 
 /// Unified AI service with cost tracking.
 /// 自适应兼容所有主流 API 厂商（OpenAI / Anthropic / 小米MiMo / DeepSeek / 通义千问 / Moonshot 等）
@@ -12,27 +11,30 @@ class AiService {
 
   AiService() {
     // 添加重试拦截器：网络波动自动重试
-    _dio.interceptors.add(InterceptorsWrapper(
-      onError: (error, handler) async {
-        // 只对网络错误重试，不对4xx/5xx重试
-        if (error.type == DioExceptionType.connectionError ||
-            error.type == DioExceptionType.connectionTimeout ||
-            error.type == DioExceptionType.sendTimeout) {
-          try {
-            // 最多重试2次，间隔递增
-            final retryCount = error.requestOptions.extra['retryCount'] as int? ?? 0;
-            if (retryCount < 2) {
-              final delay = Duration(seconds: (retryCount + 1) * 2);
-              await Future.delayed(delay);
-              error.requestOptions.extra['retryCount'] = retryCount + 1;
-              final response = await _dio.fetch(error.requestOptions);
-              return handler.resolve(response);
-            }
-          } catch (_) {}
-        }
-        handler.next(error);
-      },
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (error, handler) async {
+          // 只对网络错误重试，不对4xx/5xx重试
+          if (error.type == DioExceptionType.connectionError ||
+              error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.sendTimeout) {
+            try {
+              // 最多重试2次，间隔递增
+              final retryCount =
+                  error.requestOptions.extra['retryCount'] as int? ?? 0;
+              if (retryCount < 2) {
+                final delay = Duration(seconds: (retryCount + 1) * 2);
+                await Future.delayed(delay);
+                error.requestOptions.extra['retryCount'] = retryCount + 1;
+                final response = await _dio.fetch(error.requestOptions);
+                return handler.resolve(response);
+              }
+            } catch (_) {}
+          }
+          handler.next(error);
+        },
+      ),
+    );
   }
 
   /// 智能补全 API 地址
@@ -43,7 +45,8 @@ class AiService {
 
     // 已经是完整端点，直接返回
     if (url.contains('/chat/completions')) return url;
-    if (url.contains('/v1/messages') || url.contains('/v1/messages/')) return url;
+    if (url.contains('/v1/messages') || url.contains('/v1/messages/'))
+      return url;
 
     // 去除末尾斜杠（但保留协议部分）
     url = url.replaceAll(RegExp(r'/+$'), '');
@@ -67,7 +70,11 @@ class AiService {
   }
 
   /// Send a chat completion request. Tracks cost automatically.
-  Future<String> chat(AiConfig config, List<Map<String, String>> messages, {String taskType = 'chat'}) async {
+  Future<String> chat(
+    AiConfig config,
+    List<Map<String, String>> messages, {
+    String taskType = 'chat',
+  }) async {
     final normalizedUrl = _normalizeApiUrl(config.apiUrl, config.protocol);
 
     try {
@@ -85,7 +92,8 @@ class AiService {
 
       // Track usage
       final usage = response.data['usage'];
-      final tokenCount = (usage?['total_tokens'] as int?) ?? content.length ~/ 2;
+      final tokenCount =
+          (usage?['total_tokens'] as int?) ?? content.length ~/ 2;
       _costTracker.recordUsage(
         configId: config.id,
         model: config.modelName,
@@ -112,7 +120,8 @@ class AiService {
       if (statusCode == 402) {
         throw Exception('API 余额不足 (402)，请充值后重试');
       }
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.sendTimeout) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
         throw Exception('连接超时，请检查网络或API地址');
       }
       if (e.type == DioExceptionType.receiveTimeout) {
@@ -148,10 +157,8 @@ class AiService {
       // 游客模式：无内置Key，提示用户配置
       apiKey = '';
     }
-    
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (config.protocol == ApiProtocol.anthropic) {
       headers['x-api-key'] = apiKey;
@@ -165,7 +172,10 @@ class AiService {
     return headers;
   }
 
-  Map<String, dynamic> _buildPayload(AiConfig config, List<Map<String, String>> messages) {
+  Map<String, dynamic> _buildPayload(
+    AiConfig config,
+    List<Map<String, String>> messages,
+  ) {
     // 所有协议统一：从 messages 中提取 system 消息，作为单独字段传递
     String? systemContent;
     final nonSystemMessages = <Map<String, String>>[];
@@ -209,7 +219,8 @@ class AiService {
       }
       return '生成失败，请检查API配置';
     }
-    return response.data['choices']?[0]?['message']?['content'] ?? '生成失败，请检查API配置';
+    return response.data['choices']?[0]?['message']?['content'] ??
+        '生成失败，请检查API配置';
   }
 
   /// Convenience: send with system prompt + user message.
@@ -235,8 +246,10 @@ class AiService {
   }) async {
     final normalizedUrl = _normalizeApiUrl(config.apiUrl, config.protocol);
     // 判断是否发送 tools（先尝试发送）
-    final bool shouldSendTools = config.protocol != ApiProtocol.anthropic
-        && tools != null && tools.isNotEmpty;
+    final bool shouldSendTools =
+        config.protocol != ApiProtocol.anthropic &&
+        tools != null &&
+        tools.isNotEmpty;
 
     Future<_ToolChatResponse> doRequest({required bool withTools}) async {
       final payload = <String, dynamic>{
@@ -277,12 +290,18 @@ class AiService {
       List<ToolCallInfo>? toolCalls;
       if (withTools) {
         final rawToolCalls = message?['tool_calls'];
-        if (rawToolCalls != null && rawToolCalls is List && rawToolCalls.isNotEmpty) {
-          toolCalls = rawToolCalls.map((tc) => ToolCallInfo(
-            id: tc['id'] as String? ?? '',
-            functionName: tc['function']?['name'] as String? ?? '',
-            arguments: tc['function']?['arguments'] ?? '{}',
-          )).toList();
+        if (rawToolCalls != null &&
+            rawToolCalls is List &&
+            rawToolCalls.isNotEmpty) {
+          toolCalls = rawToolCalls
+              .map(
+                (tc) => ToolCallInfo(
+                  id: tc['id'] as String? ?? '',
+                  functionName: tc['function']?['name'] as String? ?? '',
+                  arguments: tc['function']?['arguments'] ?? '{}',
+                ),
+              )
+              .toList();
         }
       }
 
@@ -293,7 +312,8 @@ class AiService {
       return await doRequest(withTools: shouldSendTools);
     } on DioException catch (e) {
       // 如果带 tools 失败（MiMo等不支持tools的API），去掉 tools 重试
-      if (shouldSendTools && (e.response?.statusCode == 400 || e.response?.statusCode == 422)) {
+      if (shouldSendTools &&
+          (e.response?.statusCode == 400 || e.response?.statusCode == 422)) {
         try {
           return await doRequest(withTools: false);
         } catch (_) {
@@ -307,7 +327,8 @@ class AiService {
       if (statusCode == 403) throw Exception('API Key 无权限访问该资源 (403)');
       if (statusCode == 404) throw Exception('API地址错误 (404)');
       if (statusCode == 429) throw Exception('请求频率超限 (429)，请稍后再试');
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.sendTimeout) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
         throw Exception('连接超时，请检查网络或API地址');
       }
       if (e.type == DioExceptionType.receiveTimeout) {
@@ -454,8 +475,10 @@ class AiService {
     if (e.type == DioExceptionType.connectionTimeout) return '连接超时，请检查网络和API地址';
     if (e.type == DioExceptionType.sendTimeout) return '发送超时，请检查网络';
     if (e.type == DioExceptionType.receiveTimeout) return '响应超时，服务器处理时间过长';
-    if (e.type == DioExceptionType.connectionError) return '无法连接到服务器，请检查 API 地址和网络';
-    if (respBody.isNotEmpty && respBody.length < 500) return '错误 ($statusCode): $respBody';
+    if (e.type == DioExceptionType.connectionError)
+      return '无法连接到服务器，请检查 API 地址和网络';
+    if (respBody.isNotEmpty && respBody.length < 500)
+      return '错误 ($statusCode): $respBody';
     if (statusCode != null) return '请求失败: HTTP $statusCode';
     return '网络错误: ${e.message ?? "连接异常"}';
   }

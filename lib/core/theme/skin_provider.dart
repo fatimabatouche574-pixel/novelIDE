@@ -5,7 +5,9 @@ import 'app_themes.dart';
 
 /// 主题皮肤 Provider
 /// 使用 Hive 持久化用户选择的皮肤类型
-final skinThemeProvider = StateNotifierProvider<SkinThemeNotifier, SkinTheme>((ref) {
+final skinThemeProvider = StateNotifierProvider<SkinThemeNotifier, SkinTheme>((
+  ref,
+) {
   return SkinThemeNotifier();
 });
 

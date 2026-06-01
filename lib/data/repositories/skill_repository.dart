@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:novel_ide/data/models/writing_skill_model.dart';
@@ -61,7 +60,9 @@ class SkillRepository {
 
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    final customSkills = list.map((e) => WritingSkill.fromJson(e as Map<String, dynamic>)).toList();
+    final customSkills = list
+        .map((e) => WritingSkill.fromJson(e as Map<String, dynamic>))
+        .toList();
 
     // 应用持久化的内置skill启用状态
     final enabledState = await _loadBuiltinEnabledState();
@@ -91,14 +92,18 @@ class SkillRepository {
 
     final content = await file.readAsString();
     final list = jsonDecode(content) as List<dynamic>;
-    return list.map((e) => WritingSkill.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => WritingSkill.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// 保存自定义技能
   Future<void> saveCustomSkills(List<WritingSkill> skills) async {
     final dirPath = await _getSkillDir();
     final file = File(p.join(dirPath, 'skills.json'));
-    await file.writeAsString(jsonEncode(skills.map((s) => s.toJson()).toList()));
+    await file.writeAsString(
+      jsonEncode(skills.map((s) => s.toJson()).toList()),
+    );
   }
 
   /// 添加自定义技能

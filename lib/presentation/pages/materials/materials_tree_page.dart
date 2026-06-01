@@ -9,11 +9,10 @@ import 'package:novel_ide/data/services/novel_memory.dart';
 import 'package:novel_ide/data/services/outline_generator_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:novel_ide/presentation/widgets/file_tree_view.dart';
-import 'package:novel_ide/presentation/pages/works/export_page.dart' hide FileTreeNode;
+import 'package:novel_ide/presentation/pages/works/export_page.dart'
+    hide FileTreeNode;
 import 'package:novel_ide/presentation/pages/materials/material_editor_page.dart';
 import 'package:novel_ide/presentation/pages/materials/relationship_graph_page.dart';
-
-
 
 /// 新版资料库页面 - 层级文件树展示
 class MaterialsTreePage extends ConsumerStatefulWidget {
@@ -25,7 +24,16 @@ class MaterialsTreePage extends ConsumerStatefulWidget {
 
 class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   // 树节点展开状态
-  final Set<String> _expandedNodes = {'角色', '设定', '地点', '势力', '道具', '伏笔', '参考', '记忆'};
+  final Set<String> _expandedNodes = {
+    '角色',
+    '设定',
+    '地点',
+    '势力',
+    '道具',
+    '伏笔',
+    '参考',
+    '记忆',
+  };
   // 记忆包内容
   String _memoryContent = '';
   // AI大纲生成
@@ -61,14 +69,22 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   /// 将 materialType 映射为中文标签
   String? _materialTypeToLabel(String type) {
     switch (type) {
-      case 'character': return '角色';
-      case 'setting': return '设定';
-      case 'location': return '地点';
-      case 'faction': return '势力';
-      case 'item': return '道具';
-      case 'hook': return '伏笔';
-      case 'reference': return '参考';
-      default: return null;
+      case 'character':
+        return '角色';
+      case 'setting':
+        return '设定';
+      case 'location':
+        return '地点';
+      case 'faction':
+        return '势力';
+      case 'item':
+        return '道具';
+      case 'hook':
+        return '伏笔';
+      case 'reference':
+        return '参考';
+      default:
+        return null;
     }
   }
 
@@ -82,13 +98,19 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   Future<void> _persistCustomFolders() async {
     final novelId = ref.read(selectedNovelProvider)?.id;
     if (novelId == null) return;
-    await MaterialRepository().saveCustomFolders(novelId, ref.read(customFoldersProvider));
+    await MaterialRepository().saveCustomFolders(
+      novelId,
+      ref.read(customFoldersProvider),
+    );
   }
 
   Future<void> _loadMemory() async {
     final selectedNovel = ref.read(selectedNovelProvider);
     if (selectedNovel == null) return;
-    final memory = NovelMemory(novelId: selectedNovel.id, novelTitle: selectedNovel.title);
+    final memory = NovelMemory(
+      novelId: selectedNovel.id,
+      novelTitle: selectedNovel.title,
+    );
     final content = await memory.autoUpdate();
     if (mounted) {
       setState(() {
@@ -100,7 +122,7 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   @override
   Widget build(BuildContext context) {
     final selectedNovel = ref.watch(selectedNovelProvider);
-    
+
     if (selectedNovel == null) {
       return _buildEmptyState();
     }
@@ -139,35 +161,66 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         elevation: 0,
         title: Text(
           '${selectedNovel.title} · 资料库',
-          style: TextStyle(color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface),
+          style: TextStyle(
+            color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
+          ),
         ),
         actions: [
           IconButton(
             icon: _isGeneratingOutline
-                ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary))
-                : Icon(Icons.auto_awesome, color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface),
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
+                    ),
+                  )
+                : Icon(
+                    Icons.auto_awesome,
+                    color:
+                        theme.appBarTheme.foregroundColor ??
+                        colorScheme.onSurface,
+                  ),
             tooltip: 'AI生成大纲',
-            onPressed: _isGeneratingOutline ? null : () => _generateOutline(selectedNovel.id),
+            onPressed: _isGeneratingOutline
+                ? null
+                : () => _generateOutline(selectedNovel.id),
           ),
           IconButton(
-            icon: Icon(Icons.people_outline, color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface),
+            icon: Icon(
+              Icons.people_outline,
+              color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
+            ),
             tooltip: '角色关系图',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => RelationshipGraphPage(novelId: selectedNovel.id, novelTitle: selectedNovel.title),
+                  builder: (_) => RelationshipGraphPage(
+                    novelId: selectedNovel.id,
+                    novelTitle: selectedNovel.title,
+                  ),
                 ),
               );
             },
           ),
           IconButton(
-            icon: Icon(Icons.file_download_outlined, color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface),
+            icon: Icon(
+              Icons.file_download_outlined,
+              color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
+            ),
             tooltip: '打包',
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => ExportPage(novelId: selectedNovel.id, novelTitle: selectedNovel.title),
-              ));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ExportPage(
+                    novelId: selectedNovel.id,
+                    novelTitle: selectedNovel.title,
+                  ),
+                ),
+              );
             },
           ),
         ],
@@ -201,12 +254,23 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2, size: 64, color: colorScheme.onSurface.withOpacity(0.3)),
+            Icon(
+              Icons.inventory_2,
+              size: 64,
+              color: colorScheme.onSurface.withOpacity(0.3),
+            ),
             const SizedBox(height: 16),
-            Text('先选择一部作品', style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.5))),
+            Text(
+              '先选择一部作品',
+              style: TextStyle(
+                fontSize: 16,
+                color: colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => ref.read(bottomNavIndexProvider.notifier).state = 0,
+              onPressed: () =>
+                  ref.read(bottomNavIndexProvider.notifier).state = 0,
               child: const Text('去选择作品'),
             ),
           ],
@@ -234,91 +298,123 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         name: '角色 (${characters.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('角色'),
-        children: characters.map((c) => FileTreeNode(
-          id: c.id,
-          parentType: 'character',
-          name: '${c.name}${c.role != null ? " · ${c.role}" : ""}.md',
-          content: _formatCharacterContent(c),
-          fileType: 'md',
-        )).toList(),
+        children: characters
+            .map(
+              (c) => FileTreeNode(
+                id: c.id,
+                parentType: 'character',
+                name: '${c.name}${c.role != null ? " · ${c.role}" : ""}.md',
+                content: _formatCharacterContent(c),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       FileTreeNode(
         id: 'folder_settings',
         name: '设定 (${settings.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('设定'),
-        children: settings.map((s) => FileTreeNode(
-          id: s.id,
-          parentType: 'setting',
-          name: '${s.name}${s.category != null ? " · ${s.category}" : ""}.md',
-          content: _formatSettingContent(s),
-          fileType: 'md',
-        )).toList(),
+        children: settings
+            .map(
+              (s) => FileTreeNode(
+                id: s.id,
+                parentType: 'setting',
+                name:
+                    '${s.name}${s.category != null ? " · ${s.category}" : ""}.md',
+                content: _formatSettingContent(s),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       FileTreeNode(
         id: 'folder_locations',
         name: '地点 (${locations.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('地点'),
-        children: locations.map((l) => FileTreeNode(
-          id: l.id,
-          parentType: 'location',
-          name: '${l.name}${l.category != null ? " · ${l.category}" : ""}.md',
-          content: _formatLocationContent(l),
-          fileType: 'md',
-        )).toList(),
+        children: locations
+            .map(
+              (l) => FileTreeNode(
+                id: l.id,
+                parentType: 'location',
+                name:
+                    '${l.name}${l.category != null ? " · ${l.category}" : ""}.md',
+                content: _formatLocationContent(l),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       FileTreeNode(
         id: 'folder_factions',
         name: '势力 (${factions.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('势力'),
-        children: factions.map((f) => FileTreeNode(
-          id: f.id,
-          parentType: 'faction',
-          name: '${f.name}${f.category != null ? " · ${f.category}" : ""}.md',
-          content: _formatFactionContent(f),
-          fileType: 'md',
-        )).toList(),
+        children: factions
+            .map(
+              (f) => FileTreeNode(
+                id: f.id,
+                parentType: 'faction',
+                name:
+                    '${f.name}${f.category != null ? " · ${f.category}" : ""}.md',
+                content: _formatFactionContent(f),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       FileTreeNode(
         id: 'folder_items',
         name: '道具 (${items.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('道具'),
-        children: items.map((i) => FileTreeNode(
-          id: i.id,
-          parentType: 'item',
-          name: '${i.name}${i.category != null ? " · ${i.category}" : ""}.md',
-          content: _formatItemContent(i),
-          fileType: 'md',
-        )).toList(),
+        children: items
+            .map(
+              (i) => FileTreeNode(
+                id: i.id,
+                parentType: 'item',
+                name:
+                    '${i.name}${i.category != null ? " · ${i.category}" : ""}.md',
+                content: _formatItemContent(i),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       FileTreeNode(
         id: 'folder_hooks',
         name: '伏笔 (${hooks.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('伏笔'),
-        children: hooks.map((h) => FileTreeNode(
-          id: h.id,
-          parentType: 'hook',
-          name: '${h.title}.md',
-          content: _formatHookContent(h),
-          fileType: 'md',
-        )).toList(),
+        children: hooks
+            .map(
+              (h) => FileTreeNode(
+                id: h.id,
+                parentType: 'hook',
+                name: '${h.title}.md',
+                content: _formatHookContent(h),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       FileTreeNode(
         id: 'folder_references',
         name: '参考 (${references.length})',
         isFolder: true,
         isExpanded: _expandedNodes.contains('参考'),
-        children: references.map((r) => FileTreeNode(
-          id: r.id,
-          parentType: 'reference',
-          name: '${r.title}.md',
-          content: _formatReferenceContent(r),
-          fileType: 'md',
-        )).toList(),
+        children: references
+            .map(
+              (r) => FileTreeNode(
+                id: r.id,
+                parentType: 'reference',
+                name: '${r.title}.md',
+                content: _formatReferenceContent(r),
+                fileType: 'md',
+              ),
+            )
+            .toList(),
       ),
       // AI生成的大纲
       if (_outlineNodes.isNotEmpty)
@@ -330,23 +426,29 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
           children: _outlineNodesToTreeNodes(_outlineNodes),
         ),
       // 自定义文件夹
-      ...customFolders.map((folder) => FileTreeNode(
-        id: 'custom_${folder.id}',
-        name: '${folder.name} (${folder.items.length})',
-        isFolder: true,
-        isExpanded: _expandedNodes.contains(folder.name),
-        icon: Icons.folder,
-        iconColor: colorScheme.primary,
-        children: folder.items.map((item) => FileTreeNode(
-          id: 'custom_item_${item.id}',
-          parentType: 'custom_${folder.id}',
-          name: '${item.title}.md',
-          content: item.content,
-          icon: Icons.description,
-          iconColor: colorScheme.primary.withOpacity(0.7),
-          fileType: 'md',
-        )).toList(),
-      )),
+      ...customFolders.map(
+        (folder) => FileTreeNode(
+          id: 'custom_${folder.id}',
+          name: '${folder.name} (${folder.items.length})',
+          isFolder: true,
+          isExpanded: _expandedNodes.contains(folder.name),
+          icon: Icons.folder,
+          iconColor: colorScheme.primary,
+          children: folder.items
+              .map(
+                (item) => FileTreeNode(
+                  id: 'custom_item_${item.id}',
+                  parentType: 'custom_${folder.id}',
+                  name: '${item.title}.md',
+                  content: item.content,
+                  icon: Icons.description,
+                  iconColor: colorScheme.primary.withOpacity(0.7),
+                  fileType: 'md',
+                ),
+              )
+              .toList(),
+        ),
+      ),
       // 记忆包
       FileTreeNode(
         id: 'folder_memory',
@@ -446,7 +548,9 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     // 获取章节
     List<Chapter> chapters;
     try {
-      chapters = await ref.read(chapterRepoProvider).getChaptersByNovel(novelId);
+      chapters = await ref
+          .read(chapterRepoProvider)
+          .getChaptersByNovel(novelId);
     } catch (e) {
       _showTopMsg('获取章节失败: $e', isError: true);
       return;
@@ -482,7 +586,10 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   }
 
   /// 将OutlineNode转为FileTreeNode
-  List<FileTreeNode> _outlineNodesToTreeNodes(List<OutlineNode> nodes, {int depth = 0}) {
+  List<FileTreeNode> _outlineNodesToTreeNodes(
+    List<OutlineNode> nodes, {
+    int depth = 0,
+  }) {
     return nodes.map((node) {
       final hasChildren = node.children.isNotEmpty;
       final buffer = StringBuffer();
@@ -507,9 +614,9 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   /// 顶部提示
   void _showTopMsg(String message, {bool isError = false}) {
     final color = isError ? Colors.red : Colors.green;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   /// 点击节点 → 打开编辑器或展开文件夹
@@ -522,16 +629,20 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     final type = node.parentType ?? 'reference';
     final cleanName = node.name.replaceAll(RegExp(r'\.[^.]+$'), '');
 
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => MaterialEditorPage(
-        title: cleanName,
-        content: node.content ?? '',
-        materialType: _typeLabel(type),
-        materialId: node.id,
-        category: _getCategoryFromNode(node),
-        onSave: (newTitle, newContent) => _saveFromEditor(node, novelId, type, newTitle, newContent),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MaterialEditorPage(
+          title: cleanName,
+          content: node.content ?? '',
+          materialType: _typeLabel(type),
+          materialId: node.id,
+          category: _getCategoryFromNode(node),
+          onSave: (newTitle, newContent) =>
+              _saveFromEditor(node, novelId, type, newTitle, newContent),
+        ),
       ),
-    )).then((_) {
+    ).then((_) {
       _refreshMaterials(novelId);
       setState(() {});
     });
@@ -542,7 +653,13 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     return null;
   }
 
-  void _saveFromEditor(FileTreeNode node, String novelId, String type, String newTitle, String newContent) {
+  void _saveFromEditor(
+    FileTreeNode node,
+    String novelId,
+    String type,
+    String newTitle,
+    String newContent,
+  ) {
     if (type.startsWith('custom_')) {
       final folderId = type.replaceFirst('custom_', '');
       final folders = ref.read(customFoldersProvider);
@@ -551,9 +668,18 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         final items = List<CustomMaterialItem>.from(folders[folderIdx].items);
         final itemIdx = items.indexWhere((i) => i.id == node.id);
         if (itemIdx >= 0) {
-          items[itemIdx] = CustomMaterialItem(id: node.id, title: newTitle, content: newContent, category: items[itemIdx].category);
+          items[itemIdx] = CustomMaterialItem(
+            id: node.id,
+            title: newTitle,
+            content: newContent,
+            category: items[itemIdx].category,
+          );
           final updated = List<CustomMaterialFolder>.from(folders);
-          updated[folderIdx] = CustomMaterialFolder(id: folders[folderIdx].id, name: folders[folderIdx].name, items: items);
+          updated[folderIdx] = CustomMaterialFolder(
+            id: folders[folderIdx].id,
+            name: folders[folderIdx].name,
+            items: items,
+          );
           ref.read(customFoldersProvider.notifier).state = updated;
           _persistCustomFolders();
         }
@@ -595,154 +721,279 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     if (selectedNovel == null) return;
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(
-          leading: const Icon(Icons.account_tree, color: AppColors.primary),
-          title: const Text('查看关系图'),
-          subtitle: const Text('可视化角色之间的关系'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => RelationshipGraphPage(
-                novelId: selectedNovel.id,
-                novelTitle: selectedNovel.title,
-              ),
-            ));
-          },
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.account_tree, color: AppColors.primary),
+              title: const Text('查看关系图'),
+              subtitle: const Text('可视化角色之间的关系'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RelationshipGraphPage(
+                      novelId: selectedNovel.id,
+                      novelTitle: selectedNovel.title,
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('编辑文件夹'),
+              onTap: () {
+                Navigator.pop(ctx);
+                // 默认行为
+              },
+            ),
+          ],
         ),
-        ListTile(
-          leading: const Icon(Icons.edit),
-          title: const Text('编辑文件夹'),
-          onTap: () {
-            Navigator.pop(ctx);
-            // 默认行为
-          },
-        ),
-      ])),
+      ),
     );
   }
 
-  void _showCustomFolderMenu(FileTreeNode node, String folderId, String novelId) {
+  void _showCustomFolderMenu(
+    FileTreeNode node,
+    String folderId,
+    String novelId,
+  ) {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(
-          leading: Icon(Icons.note_add, color: Theme.of(context).colorScheme.primary),
-          title: const Text('添加条目'),
-          onTap: () { Navigator.pop(ctx); _showAddItemToCustomFolderDialog(folderId); },
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.note_add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('添加条目'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showAddItemToCustomFolderDialog(folderId);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('重命名文件夹'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showRenameCustomFolderDialog(folderId, novelId);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Colors.red[400]),
+              title: Text('删除文件夹', style: TextStyle(color: Colors.red[400])),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: const Text('删除文件夹？'),
+                    content: const Text('文件夹内所有内容将被删除'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(c, false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(c, true),
+                        child: const Text('删除'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  ref.read(customFoldersProvider.notifier).state = ref
+                      .read(customFoldersProvider)
+                      .where((f) => f.id != folderId)
+                      .toList();
+                  _persistCustomFolders();
+                  setState(() {});
+                }
+              },
+            ),
+          ],
         ),
-        ListTile(
-          leading: const Icon(Icons.edit),
-          title: const Text('重命名文件夹'),
-          onTap: () { Navigator.pop(ctx); _showRenameCustomFolderDialog(folderId, novelId); },
-        ),
-        ListTile(
-          leading: Icon(Icons.delete, color: Colors.red[400]),
-          title: Text('删除文件夹', style: TextStyle(color: Colors.red[400])),
-          onTap: () async {
-            Navigator.pop(ctx);
-            final confirm = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
-              title: const Text('删除文件夹？'),
-              content: const Text('文件夹内所有内容将被删除'),
-              actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('取消')),
-                FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(c, true), child: const Text('删除'))],
-            ));
-            if (confirm == true) {
-              ref.read(customFoldersProvider.notifier).state = ref.read(customFoldersProvider).where((f) => f.id != folderId).toList();
-              _persistCustomFolders();
-              setState(() {});
-            }
-          },
-        ),
-      ])),
+      ),
     );
   }
 
   void _showAddItemToCustomFolderDialog(String folderId) {
     final titleCtrl = TextEditingController();
     final contentCtrl = TextEditingController();
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('添加条目'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '标题')),
-          const SizedBox(height: 12),
-          TextField(controller: contentCtrl, maxLines: 8, decoration: const InputDecoration(labelText: '内容')),
-        ]),
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('添加条目'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: '标题'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: contentCtrl,
+                maxLines: 8,
+                decoration: const InputDecoration(labelText: '内容'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (titleCtrl.text.trim().isEmpty) return;
+              final item = CustomMaterialItem(
+                id: const Uuid().v4(),
+                title: titleCtrl.text.trim(),
+                content: contentCtrl.text,
+              );
+              final folders = List<CustomMaterialFolder>.from(
+                ref.read(customFoldersProvider),
+              );
+              final fi = folders.indexWhere((f) => f.id == folderId);
+              if (fi >= 0) {
+                folders[fi] = CustomMaterialFolder(
+                  id: folders[fi].id,
+                  name: folders[fi].name,
+                  items: [...folders[fi].items, item],
+                );
+                ref.read(customFoldersProvider.notifier).state = folders;
+                _persistCustomFolders();
+              }
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('添加'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () {
-          if (titleCtrl.text.trim().isEmpty) return;
-          final item = CustomMaterialItem(
-            id: const Uuid().v4(),
-            title: titleCtrl.text.trim(),
-            content: contentCtrl.text,
-          );
-          final folders = List<CustomMaterialFolder>.from(ref.read(customFoldersProvider));
-          final fi = folders.indexWhere((f) => f.id == folderId);
-          if (fi >= 0) {
-            folders[fi] = CustomMaterialFolder(id: folders[fi].id, name: folders[fi].name, items: [...folders[fi].items, item]);
-            ref.read(customFoldersProvider.notifier).state = folders;
-            _persistCustomFolders();
-          }
-          Navigator.pop(ctx);
-          setState(() {});
-        }, child: const Text('添加')),
-      ],
-    ));
+    );
   }
 
   void _showRenameCustomFolderDialog(String folderId, String novelId) {
     final folders = ref.read(customFoldersProvider);
     final folder = folders.firstWhere((f) => f.id == folderId);
     final ctrl = TextEditingController(text: folder.name);
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('重命名文件夹'),
-      content: TextField(controller: ctrl, autofocus: true),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () {
-          if (ctrl.text.trim().isEmpty) return;
-          final updated = ref.read(customFoldersProvider).map((f) =>
-            f.id == folderId ? CustomMaterialFolder(id: f.id, name: ctrl.text.trim(), items: f.items) : f
-          ).toList();
-          ref.read(customFoldersProvider.notifier).state = updated;
-          _persistCustomFolders();
-          Navigator.pop(ctx);
-          setState(() {});
-        }, child: const Text('确定'))],
-    ));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名文件夹'),
+        content: TextField(controller: ctrl, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (ctrl.text.trim().isEmpty) return;
+              final updated = ref
+                  .read(customFoldersProvider)
+                  .map(
+                    (f) => f.id == folderId
+                        ? CustomMaterialFolder(
+                            id: f.id,
+                            name: ctrl.text.trim(),
+                            items: f.items,
+                          )
+                        : f,
+                  )
+                  .toList();
+              ref.read(customFoldersProvider.notifier).state = updated;
+              _persistCustomFolders();
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showCustomItemMenu(FileTreeNode node, String type, String novelId) {
     final folderId = type.replaceFirst('custom_', '');
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(leading: const Icon(Icons.edit), title: const Text('编辑'), onTap: () { Navigator.pop(ctx); _handleNodeTap(node, novelId); }),
-        ListTile(leading: Icon(Icons.delete, color: Colors.red[400]), title: Text('删除', style: TextStyle(color: Colors.red[400])),
-          onTap: () async {
-            Navigator.pop(ctx);
-            final confirm = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
-              title: const Text('删除？'), content: Text('确定删除「${node.name}」？'),
-              actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('取消')),
-                FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(c, true), child: const Text('删除'))],
-            ));
-            if (confirm == true) {
-              final folders = List<CustomMaterialFolder>.from(ref.read(customFoldersProvider));
-              final fi = folders.indexWhere((f) => f.id == folderId);
-              if (fi >= 0) {
-                final items = List<CustomMaterialItem>.from(folders[fi].items)..removeWhere((i) => i.id == node.id);
-                folders[fi] = CustomMaterialFolder(id: folders[fi].id, name: folders[fi].name, items: items);
-                ref.read(customFoldersProvider.notifier).state = folders;
-                _persistCustomFolders();
-                setState(() {});
-              }
-            }
-          },
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('编辑'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleNodeTap(node, novelId);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Colors.red[400]),
+              title: Text('删除', style: TextStyle(color: Colors.red[400])),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: const Text('删除？'),
+                    content: Text('确定删除「${node.name}」？'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(c, false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(c, true),
+                        child: const Text('删除'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  final folders = List<CustomMaterialFolder>.from(
+                    ref.read(customFoldersProvider),
+                  );
+                  final fi = folders.indexWhere((f) => f.id == folderId);
+                  if (fi >= 0) {
+                    final items = List<CustomMaterialItem>.from(
+                      folders[fi].items,
+                    )..removeWhere((i) => i.id == node.id);
+                    folders[fi] = CustomMaterialFolder(
+                      id: folders[fi].id,
+                      name: folders[fi].name,
+                      items: items,
+                    );
+                    ref.read(customFoldersProvider.notifier).state = folders;
+                    _persistCustomFolders();
+                    setState(() {});
+                  }
+                }
+              },
+            ),
+          ],
         ),
-      ])),
+      ),
     );
   }
 
@@ -776,7 +1027,9 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
   }
 
   void _editNode(FileTreeNode node, String novelId) async {
-    final nameCtrl = TextEditingController(text: node.name.replaceAll(RegExp(r'\\.[^.]+$'), ''));
+    final nameCtrl = TextEditingController(
+      text: node.name.replaceAll(RegExp(r'\\.[^.]+$'), ''),
+    );
     final contentCtrl = TextEditingController(text: node.content ?? '');
     final type = node.parentType ?? 'reference';
 
@@ -790,40 +1043,74 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (type != 'memory') TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '名称')),
+                if (type != 'memory')
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: '名称'),
+                  ),
                 const SizedBox(height: 12),
-                TextField(controller: contentCtrl, maxLines: 8, decoration: const InputDecoration(labelText: '内容')),
+                TextField(
+                  controller: contentCtrl,
+                  maxLines: 8,
+                  decoration: const InputDecoration(labelText: '内容'),
+                ),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('保存')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('保存'),
+          ),
         ],
       ),
     );
 
     if (result == true && mounted) {
-      await _saveMaterialEdit(node, novelId, nameCtrl.text.trim(), contentCtrl.text, type);
+      await _saveMaterialEdit(
+        node,
+        novelId,
+        nameCtrl.text.trim(),
+        contentCtrl.text,
+        type,
+      );
       _refreshMaterials(novelId);
     }
   }
 
   String _typeLabel(String type) {
     switch (type) {
-      case 'character': return '角色';
-      case 'setting': return '设定';
-      case 'location': return '地点';
-      case 'faction': return '势力';
-      case 'item': return '道具';
-      case 'hook': return '伏笔';
-      case 'reference': return '参考资料';
-      default: return '内容';
+      case 'character':
+        return '角色';
+      case 'setting':
+        return '设定';
+      case 'location':
+        return '地点';
+      case 'faction':
+        return '势力';
+      case 'item':
+        return '道具';
+      case 'hook':
+        return '伏笔';
+      case 'reference':
+        return '参考资料';
+      default:
+        return '内容';
     }
   }
 
-  Future<void> _saveMaterialEdit(FileTreeNode node, String novelId, String newName, String newContent, String type) async {
+  Future<void> _saveMaterialEdit(
+    FileTreeNode node,
+    String novelId,
+    String newName,
+    String newContent,
+    String type,
+  ) async {
     final repo = MaterialRepository();
     switch (type) {
       case 'character':
@@ -832,10 +1119,15 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = Character(
-            id: old.id, novelId: novelId, name: newName,
-            role: old.role, description: newContent,
-            appearance: old.appearance, personality: old.personality,
-            background: old.background, tags: old.tags,
+            id: old.id,
+            novelId: novelId,
+            name: newName,
+            role: old.role,
+            description: newContent,
+            appearance: old.appearance,
+            personality: old.personality,
+            background: old.background,
+            tags: old.tags,
             createdAt: old.createdAt,
           );
           final newList = List<Character>.from(list);
@@ -850,9 +1142,13 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = SettingCard(
-            id: old.id, novelId: novelId, name: newName,
-            category: old.category, description: newContent,
-            tags: old.tags, createdAt: old.createdAt,
+            id: old.id,
+            novelId: novelId,
+            name: newName,
+            category: old.category,
+            description: newContent,
+            tags: old.tags,
+            createdAt: old.createdAt,
           );
           final newList = List<SettingCard>.from(list);
           newList[idx] = updated;
@@ -866,9 +1162,13 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = ReferenceMaterial(
-            id: old.id, novelId: novelId, title: newName,
-            content: newContent, source: old.source,
-            sourceUrl: old.sourceUrl, createdAt: old.createdAt,
+            id: old.id,
+            novelId: novelId,
+            title: newName,
+            content: newContent,
+            source: old.source,
+            sourceUrl: old.sourceUrl,
+            createdAt: old.createdAt,
           );
           final newList = List<ReferenceMaterial>.from(list);
           newList[idx] = updated;
@@ -882,10 +1182,15 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = Location(
-            id: old.id, novelId: novelId, name: newName,
-            category: old.category, description: newContent,
-            features: old.features, rules: old.rules,
-            tags: old.tags, createdAt: old.createdAt,
+            id: old.id,
+            novelId: novelId,
+            name: newName,
+            category: old.category,
+            description: newContent,
+            features: old.features,
+            rules: old.rules,
+            tags: old.tags,
+            createdAt: old.createdAt,
           );
           final newList = List<Location>.from(list);
           newList[idx] = updated;
@@ -899,10 +1204,15 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = Faction(
-            id: old.id, novelId: novelId, name: newName,
-            category: old.category, description: newContent,
-            leader: old.leader, strength: old.strength,
-            members: old.members, tags: old.tags,
+            id: old.id,
+            novelId: novelId,
+            name: newName,
+            category: old.category,
+            description: newContent,
+            leader: old.leader,
+            strength: old.strength,
+            members: old.members,
+            tags: old.tags,
             createdAt: old.createdAt,
           );
           final newList = List<Faction>.from(list);
@@ -917,10 +1227,15 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = Item(
-            id: old.id, novelId: novelId, name: newName,
-            category: old.category, description: newContent,
-            powerLevel: old.powerLevel, owner: old.owner,
-            isKeyItem: old.isKeyItem, tags: old.tags,
+            id: old.id,
+            novelId: novelId,
+            name: newName,
+            category: old.category,
+            description: newContent,
+            powerLevel: old.powerLevel,
+            owner: old.owner,
+            isKeyItem: old.isKeyItem,
+            tags: old.tags,
             createdAt: old.createdAt,
           );
           final newList = List<Item>.from(list);
@@ -935,8 +1250,11 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         if (idx >= 0) {
           final old = list[idx];
           final updated = PlotHook(
-            id: old.id, novelId: novelId, title: newName,
-            description: newContent, isRevealed: old.isRevealed,
+            id: old.id,
+            novelId: novelId,
+            title: newName,
+            description: newContent,
+            isRevealed: old.isRevealed,
             chapterPlantedId: old.chapterPlantedId,
             chapterRevealedId: old.chapterRevealedId,
             idleChapters: old.idleChapters,
@@ -964,8 +1282,15 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
         title: const Text('确认删除'),
         content: Text('确定要删除「${node.name}」吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(ctx, true), child: const Text('删除')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -1015,33 +1340,45 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
 
   void _showNewFolderDialog() {
     final ctrl = TextEditingController();
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('新建文件夹'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: TextField(
-        controller: ctrl,
-        autofocus: true,
-        decoration: InputDecoration(labelText: '文件夹名称', hintText: '例如：世界观设定集'),
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建文件夹'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: '文件夹名称',
+            hintText: '例如：世界观设定集',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (ctrl.text.trim().isEmpty) return;
+              final folder = CustomMaterialFolder(
+                id: const Uuid().v4(),
+                name: ctrl.text.trim(),
+              );
+              ref.read(customFoldersProvider.notifier).state = [
+                ...ref.read(customFoldersProvider),
+                folder,
+              ];
+              _persistCustomFolders();
+              _expandedNodes.add(ctrl.text.trim());
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('创建'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () {
-          if (ctrl.text.trim().isEmpty) return;
-          final folder = CustomMaterialFolder(
-            id: const Uuid().v4(),
-            name: ctrl.text.trim(),
-          );
-          ref.read(customFoldersProvider.notifier).state = [
-            ...ref.read(customFoldersProvider),
-            folder,
-          ];
-          _persistCustomFolders();
-          _expandedNodes.add(ctrl.text.trim());
-          Navigator.pop(ctx);
-          setState(() {});
-        }, child: const Text('创建')),
-      ],
-    ));
+    );
   }
 
   void _showAddMenu(String novelId) {
@@ -1052,10 +1389,16 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.create_new_folder, color: Theme.of(context).colorScheme.primary),
+              leading: Icon(
+                Icons.create_new_folder,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text('新建文件夹'),
               subtitle: const Text('创建自定义分类'),
-              onTap: () { Navigator.pop(ctx); _showNewFolderDialog(); },
+              onTap: () {
+                Navigator.pop(ctx);
+                _showNewFolderDialog();
+              },
             ),
             const Divider(height: 1),
             ListTile(
@@ -1133,16 +1476,29 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '角色名')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: '角色名'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: roleCtrl, decoration: const InputDecoration(labelText: '定位')),
+              TextField(
+                controller: roleCtrl,
+                decoration: const InputDecoration(labelText: '定位'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -1150,12 +1506,22 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
                 id: const Uuid().v4(),
                 novelId: novelId,
                 name: nameCtrl.text.trim(),
-                role: roleCtrl.text.trim().isEmpty ? null : roleCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                role: roleCtrl.text.trim().isEmpty
+                    ? null
+                    : roleCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               final list = ref.read(charactersProvider(novelId));
-              ref.read(charactersProvider(novelId).notifier).state = [...list, char];
-              await MaterialRepository().saveCharacters(novelId, [...list, char]);
+              ref.read(charactersProvider(novelId).notifier).state = [
+                ...list,
+                char,
+              ];
+              await MaterialRepository().saveCharacters(novelId, [
+                ...list,
+                char,
+              ]);
               Navigator.pop(ctx);
             },
             child: const Text('添加'),
@@ -1165,33 +1531,64 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     );
   }
 
-  void _showSettingDialog(String novelId) => _showSimpleDialog(novelId, '设定', (name, cat, desc) async {
-    final card = SettingCard(id: const Uuid().v4(), novelId: novelId, name: name, category: cat, description: desc);
+  void _showSettingDialog(String novelId) => _showSimpleDialog(novelId, '设定', (
+    name,
+    cat,
+    desc,
+  ) async {
+    final card = SettingCard(
+      id: const Uuid().v4(),
+      novelId: novelId,
+      name: name,
+      category: cat,
+      description: desc,
+    );
     final list = ref.read(settingCardsProvider(novelId));
     ref.read(settingCardsProvider(novelId).notifier).state = [...list, card];
     await MaterialRepository().saveSettingCards(novelId, [...list, card]);
   });
 
-  void _showLocationDialog(String novelId) => _showSimpleDialog(novelId, '地点', (name, cat, desc) async {
-    final loc = Location(id: const Uuid().v4(), novelId: novelId, name: name, category: cat, description: desc);
-    final list = ref.read(locationsProvider(novelId));
-    ref.read(locationsProvider(novelId).notifier).state = [...list, loc];
-    await MaterialRepository().saveLocations(novelId, [...list, loc]);
-  });
+  void _showLocationDialog(String novelId) =>
+      _showSimpleDialog(novelId, '地点', (name, cat, desc) async {
+        final loc = Location(
+          id: const Uuid().v4(),
+          novelId: novelId,
+          name: name,
+          category: cat,
+          description: desc,
+        );
+        final list = ref.read(locationsProvider(novelId));
+        ref.read(locationsProvider(novelId).notifier).state = [...list, loc];
+        await MaterialRepository().saveLocations(novelId, [...list, loc]);
+      });
 
-  void _showFactionDialog(String novelId) => _showSimpleDialog(novelId, '势力', (name, cat, desc) async {
-    final faction = Faction(id: const Uuid().v4(), novelId: novelId, name: name, category: cat, description: desc);
-    final list = ref.read(factionsProvider(novelId));
-    ref.read(factionsProvider(novelId).notifier).state = [...list, faction];
-    await MaterialRepository().saveFactions(novelId, [...list, faction]);
-  });
+  void _showFactionDialog(String novelId) =>
+      _showSimpleDialog(novelId, '势力', (name, cat, desc) async {
+        final faction = Faction(
+          id: const Uuid().v4(),
+          novelId: novelId,
+          name: name,
+          category: cat,
+          description: desc,
+        );
+        final list = ref.read(factionsProvider(novelId));
+        ref.read(factionsProvider(novelId).notifier).state = [...list, faction];
+        await MaterialRepository().saveFactions(novelId, [...list, faction]);
+      });
 
-  void _showItemDialog(String novelId) => _showSimpleDialog(novelId, '道具', (name, cat, desc) async {
-    final item = Item(id: const Uuid().v4(), novelId: novelId, name: name, category: cat, description: desc);
-    final list = ref.read(itemsProvider(novelId));
-    ref.read(itemsProvider(novelId).notifier).state = [...list, item];
-    await MaterialRepository().saveItems(novelId, [...list, item]);
-  });
+  void _showItemDialog(String novelId) =>
+      _showSimpleDialog(novelId, '道具', (name, cat, desc) async {
+        final item = Item(
+          id: const Uuid().v4(),
+          novelId: novelId,
+          name: name,
+          category: cat,
+          description: desc,
+        );
+        final list = ref.read(itemsProvider(novelId));
+        ref.read(itemsProvider(novelId).notifier).state = [...list, item];
+        await MaterialRepository().saveItems(novelId, [...list, item]);
+      });
 
   void _showHookDialog(String novelId) {
     final titleCtrl = TextEditingController();
@@ -1204,14 +1601,24 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '伏笔标题')),
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: '伏笔标题'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               if (titleCtrl.text.trim().isEmpty) return;
@@ -1219,11 +1626,19 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
                 id: const Uuid().v4(),
                 novelId: novelId,
                 title: titleCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               final list = ref.read(plotHooksProvider(novelId));
-              ref.read(plotHooksProvider(novelId).notifier).state = [...list, hook];
-              await MaterialRepository().savePlotHooks(novelId, [...list, hook]);
+              ref.read(plotHooksProvider(novelId).notifier).state = [
+                ...list,
+                hook,
+              ];
+              await MaterialRepository().savePlotHooks(novelId, [
+                ...list,
+                hook,
+              ]);
               Navigator.pop(ctx);
             },
             child: const Text('添加'),
@@ -1244,14 +1659,24 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '标题')),
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: '标题'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: contentCtrl, decoration: const InputDecoration(labelText: '内容'), maxLines: 5),
+              TextField(
+                controller: contentCtrl,
+                decoration: const InputDecoration(labelText: '内容'),
+                maxLines: 5,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               if (titleCtrl.text.trim().isEmpty) return;
@@ -1259,11 +1684,19 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
                 id: const Uuid().v4(),
                 novelId: novelId,
                 title: titleCtrl.text.trim(),
-                content: contentCtrl.text.trim().isEmpty ? null : contentCtrl.text.trim(),
+                content: contentCtrl.text.trim().isEmpty
+                    ? null
+                    : contentCtrl.text.trim(),
               );
               final list = ref.read(referencesProvider(novelId));
-              ref.read(referencesProvider(novelId).notifier).state = [...list, newRef];
-              await MaterialRepository().saveReferences(novelId, [...list, newRef]);
+              ref.read(referencesProvider(novelId).notifier).state = [
+                ...list,
+                newRef,
+              ];
+              await MaterialRepository().saveReferences(novelId, [
+                ...list,
+                newRef,
+              ]);
               Navigator.pop(ctx);
             },
             child: const Text('添加'),
@@ -1273,7 +1706,11 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     );
   }
 
-  void _showSimpleDialog(String novelId, String type, Function(String name, String? cat, String? desc) onSave) {
+  void _showSimpleDialog(
+    String novelId,
+    String type,
+    Function(String name, String? cat, String? desc) onSave,
+  ) {
     final nameCtrl = TextEditingController();
     final catCtrl = TextEditingController();
     final descCtrl = TextEditingController();
@@ -1285,16 +1722,29 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: InputDecoration(labelText: '${type}名称')),
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: '${type}名称'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: '分类')),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(labelText: '分类'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;

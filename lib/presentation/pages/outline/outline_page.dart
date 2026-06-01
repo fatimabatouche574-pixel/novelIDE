@@ -24,12 +24,23 @@ class OutlinePage extends ConsumerWidget {
             children: [
               Icon(Icons.account_tree, size: 64, color: Colors.grey[300]),
               const SizedBox(height: 16),
-              Text('大纲用于管理小说的卷、章节结构', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+              Text(
+                '大纲用于管理小说的卷、章节结构',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              ),
               const SizedBox(height: 8),
-              Text('请先选择或创建一部作品', style: TextStyle(fontSize: 16, color: Colors.grey[700], fontWeight: FontWeight.w500)),
+              Text(
+                '请先选择或创建一部作品',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: () => ref.read(bottomNavIndexProvider.notifier).state = 0,
+                onPressed: () =>
+                    ref.read(bottomNavIndexProvider.notifier).state = 0,
                 icon: const Icon(Icons.arrow_forward),
                 label: const Text('前往作品页'),
               ),
@@ -50,9 +61,15 @@ class OutlinePage extends ConsumerWidget {
             icon: const Icon(Icons.file_download_outlined),
             tooltip: '导出',
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => ExportPage(novelId: selectedNovel.id, novelTitle: selectedNovel.title),
-              ));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ExportPage(
+                    novelId: selectedNovel.id,
+                    novelTitle: selectedNovel.title,
+                  ),
+                ),
+              );
             },
           ),
           IconButton(
@@ -83,13 +100,17 @@ class OutlinePage extends ConsumerWidget {
                         vols.insert(newIndex, moved);
                         for (int i = 0; i < vols.length; i++) {
                           final updated = vols[i].copyWith(orderIndex: i);
-                          await ref.read(volumeRepoProvider).updateVolume(updated);
+                          await ref
+                              .read(volumeRepoProvider)
+                              .updateVolume(updated);
                         }
                         ref.invalidate(volumesProvider(selectedNovel.id));
                       },
                       itemBuilder: (context, index) {
                         final volume = volumes[index];
-                        final volumeChapters = chapters.where((c) => c.volumeId == volume.id).toList();
+                        final volumeChapters = chapters
+                            .where((c) => c.volumeId == volume.id)
+                            .toList();
                         return _VolumeOutlineCard(
                           key: ValueKey(volume.id),
                           volume: volume,
@@ -140,20 +161,30 @@ class OutlinePage extends ConsumerWidget {
         title: const Text('新建卷'),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(labelText: '卷名', hintText: '例如：第一卷 潜龙在渊'),
+          decoration: const InputDecoration(
+            labelText: '卷名',
+            hintText: '例如：第一卷 潜龙在渊',
+          ),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               if (ctrl.text.trim().isEmpty) return;
-              final volumes = await ref.read(volumeRepoProvider).getVolumesByNovel(novel.id);
-              await ref.read(volumeRepoProvider).createVolume(
-                novelId: novel.id,
-                title: ctrl.text.trim(),
-                orderIndex: volumes.length,
-              );
+              final volumes = await ref
+                  .read(volumeRepoProvider)
+                  .getVolumesByNovel(novel.id);
+              await ref
+                  .read(volumeRepoProvider)
+                  .createVolume(
+                    novelId: novel.id,
+                    title: ctrl.text.trim(),
+                    orderIndex: volumes.length,
+                  );
               ref.invalidate(volumesProvider(novel.id));
               if (context.mounted) Navigator.pop(context);
             },
@@ -193,12 +224,23 @@ class _VolumeOutlineCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
-            child: Text('${volumeIndex + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+            child: Text(
+              '${volumeIndex + 1}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
           ),
         ),
-        title: Text(volume.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${chapters.length}章 · ${chapters.fold<int>(0, (sum, c) => sum + c.wordCount)}字',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        title: Text(
+          volume.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${chapters.length}章 · ${chapters.fold<int>(0, (sum, c) => sum + c.wordCount)}字',
+          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+        ),
         children: [
           if (chapters.isEmpty)
             Padding(
@@ -216,7 +258,9 @@ class _VolumeOutlineCard extends ConsumerWidget {
                 chaps.insert(newIndex, moved);
                 for (int i = 0; i < chaps.length; i++) {
                   final updated = chaps[i].copyWith(orderIndex: i);
-                  await ref.read(chapterRepoProvider).updateChapter(updated, novel.title);
+                  await ref
+                      .read(chapterRepoProvider)
+                      .updateChapter(updated, novel.title);
                 }
                 ref.invalidate(chaptersProvider(novel.id));
               },
@@ -232,38 +276,60 @@ class _VolumeOutlineCard extends ConsumerWidget {
                     backgroundColor: status.color.withOpacity(0.15),
                     child: Text(
                       '${chapter.orderIndex + 1}',
-                      style: TextStyle(fontSize: 11, color: status.color, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: status.color,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  title: Text(chapter.title, style: const TextStyle(fontSize: 14)),
+                  title: Text(
+                    chapter.title,
+                    style: const TextStyle(fontSize: 14),
+                  ),
                   subtitle: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: status.color.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(status.label, style: TextStyle(fontSize: 10, color: status.color)),
+                        child: Text(
+                          status.label,
+                          style: TextStyle(fontSize: 10, color: status.color),
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      Text('${chapter.wordCount}字', style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                      Text(
+                        '${chapter.wordCount}字',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                      ),
                     ],
                   ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) async {
                       if (value == 'edit') {
-                        ref.read(selectedChapterProvider.notifier).state = chapter;
+                        ref.read(selectedChapterProvider.notifier).state =
+                            chapter;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => EditorPage(novelId: novel.id, chapterId: chapter.id),
+                            builder: (_) => EditorPage(
+                              novelId: novel.id,
+                              chapterId: chapter.id,
+                            ),
                           ),
                         );
                       } else if (value.startsWith('status_')) {
                         final newStatus = value.replaceFirst('status_', '');
                         final updated = chapter.copyWith(status: newStatus);
-                        await ref.read(chapterRepoProvider).updateChapter(updated, novel.title);
+                        await ref
+                            .read(chapterRepoProvider)
+                            .updateChapter(updated, novel.title);
                         ref.invalidate(chaptersProvider(novel.id));
                       } else if (value == 'summary') {
                         _showSummaryDialog(context, ref, chapter);
@@ -271,18 +337,30 @@ class _VolumeOutlineCard extends ConsumerWidget {
                     },
                     itemBuilder: (context) => [
                       const PopupMenuItem(value: 'edit', child: Text('编辑')),
-                      const PopupMenuItem(value: 'summary', child: Text('编辑梗概')),
+                      const PopupMenuItem(
+                        value: 'summary',
+                        child: Text('编辑梗概'),
+                      ),
                       const PopupMenuDivider(),
-                      ...ChapterStatus.values.map((s) => PopupMenuItem(
-                        value: 'status_${s.name}',
-                        child: Row(
-                          children: [
-                            Container(width: 8, height: 8, decoration: BoxDecoration(color: s.color, borderRadius: BorderRadius.circular(4))),
-                            const SizedBox(width: 8),
-                            Text(s.label),
-                          ],
+                      ...ChapterStatus.values.map(
+                        (s) => PopupMenuItem(
+                          value: 'status_${s.name}',
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: s.color,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(s.label),
+                            ],
+                          ),
                         ),
-                      )),
+                      ),
                     ],
                   ),
                 );
@@ -301,7 +379,11 @@ class _VolumeOutlineCard extends ConsumerWidget {
     );
   }
 
-  void _showSummaryDialog(BuildContext context, WidgetRef ref, Chapter chapter) {
+  void _showSummaryDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Chapter chapter,
+  ) {
     final ctrl = TextEditingController(text: chapter.summary ?? '');
     showDialog(
       context: context,
@@ -313,11 +395,18 @@ class _VolumeOutlineCard extends ConsumerWidget {
           maxLines: 4,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
-              final updated = chapter.copyWith(summary: ctrl.text.trim().isEmpty ? null : ctrl.text.trim());
-              await ref.read(chapterRepoProvider).updateChapter(updated, novel.title);
+              final updated = chapter.copyWith(
+                summary: ctrl.text.trim().isEmpty ? null : ctrl.text.trim(),
+              );
+              await ref
+                  .read(chapterRepoProvider)
+                  .updateChapter(updated, novel.title);
               ref.invalidate(chaptersProvider(novel.id));
               if (context.mounted) Navigator.pop(ctx);
             },
@@ -336,20 +425,28 @@ class _VolumeOutlineCard extends ConsumerWidget {
         title: const Text('新建章节'),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(labelText: '章节标题', hintText: '例如：第1章 退婚'),
+          decoration: const InputDecoration(
+            labelText: '章节标题',
+            hintText: '例如：第1章 退婚',
+          ),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               if (ctrl.text.trim().isEmpty) return;
-              final chapter = await ref.read(chapterRepoProvider).createChapter(
-                novelId: novel.id,
-                volumeId: volume.id,
-                title: ctrl.text.trim(),
-                orderIndex: chapters.length,
-              );
+              final chapter = await ref
+                  .read(chapterRepoProvider)
+                  .createChapter(
+                    novelId: novel.id,
+                    volumeId: volume.id,
+                    title: ctrl.text.trim(),
+                    orderIndex: chapters.length,
+                  );
               ref.invalidate(chaptersProvider(novel.id));
               if (context.mounted) {
                 Navigator.pop(context);
@@ -357,7 +454,8 @@ class _VolumeOutlineCard extends ConsumerWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => EditorPage(novelId: novel.id, chapterId: chapter.id),
+                    builder: (_) =>
+                        EditorPage(novelId: novel.id, chapterId: chapter.id),
                   ),
                 );
               }
@@ -376,7 +474,8 @@ class _MainOutlineSection extends ConsumerStatefulWidget {
   const _MainOutlineSection({required this.novel});
 
   @override
-  ConsumerState<_MainOutlineSection> createState() => _MainOutlineSectionState();
+  ConsumerState<_MainOutlineSection> createState() =>
+      _MainOutlineSectionState();
 }
 
 class _MainOutlineSectionState extends ConsumerState<_MainOutlineSection> {
@@ -412,13 +511,18 @@ class _MainOutlineSectionState extends ConsumerState<_MainOutlineSection> {
             children: [
               const Icon(Icons.summarize, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Text('主线大纲', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const Text(
+                '主线大纲',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
               const Spacer(),
               IconButton(
                 icon: Icon(_isEditing ? Icons.check : Icons.edit, size: 18),
                 onPressed: () async {
                   if (_isEditing) {
-                    final updated = currentNovel.copyWith(description: _ctrl.text.trim());
+                    final updated = currentNovel.copyWith(
+                      description: _ctrl.text.trim(),
+                    );
                     await NovelRepository().updateNovel(updated);
                     ref.invalidate(novelsProvider);
                     ref.read(selectedNovelProvider.notifier).state = updated;
@@ -436,7 +540,9 @@ class _MainOutlineSectionState extends ConsumerState<_MainOutlineSection> {
               minLines: 3,
               decoration: InputDecoration(
                 hintText: '输入主线大纲：故事的核心冲突、主角目标、主要转折点...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 contentPadding: const EdgeInsets.all(12),
               ),
             )

@@ -2,14 +2,14 @@ import 'package:novel_ide/data/models/ai_config_model.dart';
 
 /// Model routing rules - determines which model to use for which task.
 enum AiTaskType {
-  chat,        // AI聊天
+  chat, // AI聊天
   continueWriting, // 续写
-  polish,      // 润色
-  titleGen,    // 标题生成
-  analysis,    // 爽点/水文分析
-  outline,     // 大纲生成
-  character,   // 角色生成
-  search,      // 联网搜索增强
+  polish, // 润色
+  titleGen, // 标题生成
+  analysis, // 爽点/水文分析
+  outline, // 大纲生成
+  character, // 角色生成
+  search, // 联网搜索增强
 }
 
 class ModelRouter {

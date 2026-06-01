@@ -14,9 +14,9 @@ class AiChatSessionModel {
     List<Map<String, String>>? messages,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : messages = messages != null ? List.from(messages) : [],
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : messages = messages != null ? List.from(messages) : [],
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   /// 从 JSON 构造
   factory AiChatSessionModel.fromJson(Map<String, dynamic> json) {
@@ -89,9 +89,7 @@ class AiChatSessionList {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'sessions': sessions.map((s) => s.toJson()).toList(),
-    };
+    return {'sessions': sessions.map((s) => s.toJson()).toList()};
   }
 
   String toJsonString() => jsonEncode(toJson());

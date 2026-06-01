@@ -63,9 +63,7 @@ class AppRouter {
       case proofread:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
-          builder: (_) => ProofreadPage(
-            novelId: args?['novelId'] ?? '',
-          ),
+          builder: (_) => ProofreadPage(novelId: args?['novelId'] ?? ''),
         );
       case fullTextReview:
         final args = settings.arguments as Map<String, dynamic>?;

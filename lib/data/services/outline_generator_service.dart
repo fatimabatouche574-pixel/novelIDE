@@ -21,7 +21,8 @@ class OutlineNode {
     return OutlineNode(
       title: json['title'] as String? ?? '',
       summary: json['summary'] as String?,
-      children: (json['children'] as List<dynamic>?)
+      children:
+          (json['children'] as List<dynamic>?)
               ?.map((e) => OutlineNode.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -42,7 +43,10 @@ class OutlineGeneratorService {
     // 构建章节摘要
     final chapterSummaries = chapters
         .where((c) => c.content.isNotEmpty)
-        .map((c) => '【${c.title}】\n${c.content.length > 500 ? c.content.substring(0, 500) : c.content}')
+        .map(
+          (c) =>
+              '【${c.title}】\n${c.content.length > 500 ? c.content.substring(0, 500) : c.content}',
+        )
         .join('\n\n---\n\n');
 
     if (chapterSummaries.isEmpty) {
@@ -87,13 +91,14 @@ JSON格式示例：
 
 请根据以下章节内容生成大纲：''',
       },
-      {
-        'role': 'user',
-        'content': chapterSummaries,
-      },
+      {'role': 'user', 'content': chapterSummaries},
     ];
 
-    final response = await _aiService.chat(aiConfig, messages, taskType: 'outline_generate');
+    final response = await _aiService.chat(
+      aiConfig,
+      messages,
+      taskType: 'outline_generate',
+    );
 
     // 解析JSON
     return _parseOutlineResponse(response);

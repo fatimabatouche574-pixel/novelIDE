@@ -45,14 +45,18 @@ class StyleSelectorBar extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(entry.value, style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      entry.value,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     selected: isSelected,
                     selectedColor: AppColors.tomatoRed.withOpacity(0.15),
                     backgroundColor: Colors.grey[100],
                     side: BorderSide.none,
                     visualDensity: VisualDensity.compact,
                     onSelected: (_) {
-                      ref.read(categoryFilterProvider.notifier).state = entry.key;
+                      ref.read(categoryFilterProvider.notifier).state =
+                          entry.key;
                     },
                   ),
                 );
@@ -87,11 +91,18 @@ class StyleSelectorBar extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(preset.name, style: const TextStyle(fontSize: 12)),
+                    label: Text(
+                      preset.name,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     selected: isSelected,
                     selectedColor: AppColors.tomatoRed.withOpacity(0.2),
                     backgroundColor: Colors.grey[100],
-                    side: isSelected ? BorderSide(color: AppColors.tomatoRed.withOpacity(0.5)) : BorderSide.none,
+                    side: isSelected
+                        ? BorderSide(
+                            color: AppColors.tomatoRed.withOpacity(0.5),
+                          )
+                        : BorderSide.none,
                     onSelected: (_) {
                       ref.read(currentPresetProvider.notifier).state = preset;
                       onPresetSelected(preset);

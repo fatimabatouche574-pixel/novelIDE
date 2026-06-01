@@ -16,7 +16,8 @@ class MaterialsPage extends ConsumerStatefulWidget {
   ConsumerState<MaterialsPage> createState() => _MaterialsPageState();
 }
 
-class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProviderStateMixin {
+class _MaterialsPageState extends ConsumerState<MaterialsPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -36,16 +37,24 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
     final selectedNovel = ref.watch(selectedNovelProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedNovel == null ? '资料' : '${selectedNovel.title} · 资料'),
+        title: Text(
+          selectedNovel == null ? '资料' : '${selectedNovel.title} · 资料',
+        ),
         actions: [
           if (selectedNovel != null)
             IconButton(
               icon: const Icon(Icons.file_download_outlined),
               tooltip: '导出',
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ExportPage(novelId: selectedNovel.id, novelTitle: selectedNovel.title),
-                ));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ExportPage(
+                      novelId: selectedNovel.id,
+                      novelTitle: selectedNovel.title,
+                    ),
+                  ),
+                );
               },
             ),
           IconButton(
@@ -83,12 +92,23 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
                 children: [
                   Icon(Icons.inventory_2, size: 64, color: Colors.grey[300]),
                   const SizedBox(height: 16),
-                  Text('资料库用于管理小说的角色、设定、世界观等', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                  Text(
+                    '资料库用于管理小说的角色、设定、世界观等',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  ),
                   const SizedBox(height: 8),
-                  Text('请先选择或创建一部作品', style: TextStyle(fontSize: 16, color: Colors.grey[700], fontWeight: FontWeight.w500)),
+                  Text(
+                    '请先选择或创建一部作品',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () => ref.read(bottomNavIndexProvider.notifier).state = 0,
+                    onPressed: () =>
+                        ref.read(bottomNavIndexProvider.notifier).state = 0,
                     icon: const Icon(Icons.arrow_forward),
                     label: const Text('前往作品页'),
                   ),
@@ -105,7 +125,10 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
                 _ItemTab(novelId: selectedNovel.id),
                 _HookTab(novelId: selectedNovel.id),
                 _ReferenceTab(novelId: selectedNovel.id),
-                _MemoryTab(novelId: selectedNovel.id, novelTitle: selectedNovel.title),
+                _MemoryTab(
+                  novelId: selectedNovel.id,
+                  novelTitle: selectedNovel.title,
+                ),
               ],
             ),
       floatingActionButton: selectedNovel == null
@@ -120,13 +143,27 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
   void _showAddDialog(String novelId) {
     final index = _tabController.index;
     switch (index) {
-      case 0: _showCharacterDialog(novelId); break;
-      case 1: _showSettingDialog(novelId); break;
-      case 2: _showLocationDialog(novelId); break;
-      case 3: _showFactionDialog(novelId); break;
-      case 4: _showItemDialog(novelId); break;
-      case 5: _showHookDialog(novelId); break;
-      case 6: _showReferenceDialog(novelId); break;
+      case 0:
+        _showCharacterDialog(novelId);
+        break;
+      case 1:
+        _showSettingDialog(novelId);
+        break;
+      case 2:
+        _showLocationDialog(novelId);
+        break;
+      case 3:
+        _showFactionDialog(novelId);
+        break;
+      case 4:
+        _showItemDialog(novelId);
+        break;
+      case 5:
+        _showHookDialog(novelId);
+        break;
+      case 6:
+        _showReferenceDialog(novelId);
+        break;
     }
   }
 
@@ -142,16 +179,38 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '角色名', hintText: '例如：林逸')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '角色名',
+                  hintText: '例如：林逸',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: roleCtrl, decoration: const InputDecoration(labelText: '角色定位', hintText: '例如：主角/反派/配角')),
+              TextField(
+                controller: roleCtrl,
+                decoration: const InputDecoration(
+                  labelText: '角色定位',
+                  hintText: '例如：主角/反派/配角',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述', hintText: '外貌、性格、背景'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(
+                  labelText: '描述',
+                  hintText: '外貌、性格、背景',
+                ),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -159,8 +218,12 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
                 id: const Uuid().v4(),
                 novelId: novelId,
                 name: nameCtrl.text.trim(),
-                role: roleCtrl.text.trim().isEmpty ? null : roleCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                role: roleCtrl.text.trim().isEmpty
+                    ? null
+                    : roleCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               final list = ref.read(charactersProvider(novelId));
               final updated = [...list, char];
@@ -187,16 +250,35 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '设定名称', hintText: '例如：灵气复苏')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '设定名称',
+                  hintText: '例如：灵气复苏',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: '分类', hintText: '例如：世界观/战力/势力')),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(
+                  labelText: '分类',
+                  hintText: '例如：世界观/战力/势力',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -204,8 +286,12 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
                 id: const Uuid().v4(),
                 novelId: novelId,
                 name: nameCtrl.text.trim(),
-                category: catCtrl.text.trim().isEmpty ? null : catCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                category: catCtrl.text.trim().isEmpty
+                    ? null
+                    : catCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               final list = ref.read(settingCardsProvider(novelId));
               final updated = [...list, card];
@@ -232,27 +318,54 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '地点名称', hintText: '例如：青云宗')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '地点名称',
+                  hintText: '例如：青云宗',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: '分类', hintText: '例如：宗门/城市/秘境')),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(
+                  labelText: '分类',
+                  hintText: '例如：宗门/城市/秘境',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
               final loc = Location(
-                id: const Uuid().v4(), novelId: novelId,
+                id: const Uuid().v4(),
+                novelId: novelId,
                 name: nameCtrl.text.trim(),
-                category: catCtrl.text.trim().isEmpty ? null : catCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                category: catCtrl.text.trim().isEmpty
+                    ? null
+                    : catCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               final list = ref.read(locationsProvider(novelId));
-              ref.read(locationsProvider(novelId).notifier).state = [...list, loc];
+              ref.read(locationsProvider(novelId).notifier).state = [
+                ...list,
+                loc,
+              ];
               MaterialRepository().saveLocations(novelId, [...list, loc]);
               Navigator.pop(ctx);
             },
@@ -275,27 +388,56 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '势力名称', hintText: '例如：天剑宗')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '势力名称',
+                  hintText: '例如：天剑宗',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: '分类', hintText: '例如：正道/魔道/中立')),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(
+                  labelText: '分类',
+                  hintText: '例如：正道/魔道/中立',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: leaderCtrl, decoration: const InputDecoration(labelText: '首领', hintText: '可选')),
+              TextField(
+                controller: leaderCtrl,
+                decoration: const InputDecoration(
+                  labelText: '首领',
+                  hintText: '可选',
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
               final faction = Faction(
-                id: const Uuid().v4(), novelId: novelId,
+                id: const Uuid().v4(),
+                novelId: novelId,
                 name: nameCtrl.text.trim(),
-                category: catCtrl.text.trim().isEmpty ? null : catCtrl.text.trim(),
-                leader: leaderCtrl.text.trim().isEmpty ? null : leaderCtrl.text.trim(),
+                category: catCtrl.text.trim().isEmpty
+                    ? null
+                    : catCtrl.text.trim(),
+                leader: leaderCtrl.text.trim().isEmpty
+                    ? null
+                    : leaderCtrl.text.trim(),
               );
               final list = ref.read(factionsProvider(novelId));
-              ref.read(factionsProvider(novelId).notifier).state = [...list, faction];
+              ref.read(factionsProvider(novelId).notifier).state = [
+                ...list,
+                faction,
+              ];
               MaterialRepository().saveFactions(novelId, [...list, faction]);
               Navigator.pop(ctx);
             },
@@ -318,24 +460,50 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '道具名称', hintText: '例如：诛仙剑')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '道具名称',
+                  hintText: '例如：诛仙剑',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: catCtrl, decoration: const InputDecoration(labelText: '分类', hintText: '例如：武器/法宝/丹药')),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(
+                  labelText: '分类',
+                  hintText: '例如：武器/法宝/丹药',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: powerCtrl, decoration: const InputDecoration(labelText: '品阶/等级', hintText: '可选')),
+              TextField(
+                controller: powerCtrl,
+                decoration: const InputDecoration(
+                  labelText: '品阶/等级',
+                  hintText: '可选',
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
               final item = Item(
-                id: const Uuid().v4(), novelId: novelId,
+                id: const Uuid().v4(),
+                novelId: novelId,
                 name: nameCtrl.text.trim(),
-                category: catCtrl.text.trim().isEmpty ? null : catCtrl.text.trim(),
-                powerLevel: powerCtrl.text.trim().isEmpty ? null : powerCtrl.text.trim(),
+                category: catCtrl.text.trim().isEmpty
+                    ? null
+                    : catCtrl.text.trim(),
+                powerLevel: powerCtrl.text.trim().isEmpty
+                    ? null
+                    : powerCtrl.text.trim(),
               );
               final list = ref.read(itemsProvider(novelId));
               ref.read(itemsProvider(novelId).notifier).state = [...list, item];
@@ -360,14 +528,30 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '伏笔标题', hintText: '例如：主角的身世之谜')),
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: '伏笔标题',
+                  hintText: '例如：主角的身世之谜',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '伏笔描述', hintText: '在哪里埋下、初步线索'), maxLines: 3),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(
+                  labelText: '伏笔描述',
+                  hintText: '在哪里埋下、初步线索',
+                ),
+                maxLines: 3,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (titleCtrl.text.trim().isEmpty) return;
@@ -375,7 +559,9 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
                 id: const Uuid().v4(),
                 novelId: novelId,
                 title: titleCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               final list = ref.read(plotHooksProvider(novelId));
               final updated = [...list, hook];
@@ -402,16 +588,32 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '标题', hintText: '例如：明代官制参考')),
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: '标题',
+                  hintText: '例如：明代官制参考',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: contentCtrl, decoration: const InputDecoration(labelText: '内容'), maxLines: 4),
+              TextField(
+                controller: contentCtrl,
+                decoration: const InputDecoration(labelText: '内容'),
+                maxLines: 4,
+              ),
               const SizedBox(height: 12),
-              TextField(controller: sourceCtrl, decoration: const InputDecoration(labelText: '来源（可选）')),
+              TextField(
+                controller: sourceCtrl,
+                decoration: const InputDecoration(labelText: '来源（可选）'),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               if (titleCtrl.text.trim().isEmpty) return;
@@ -419,8 +621,12 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> with TickerProvid
                 id: const Uuid().v4(),
                 novelId: novelId,
                 title: titleCtrl.text.trim(),
-                content: contentCtrl.text.trim().isEmpty ? null : contentCtrl.text.trim(),
-                source: sourceCtrl.text.trim().isEmpty ? null : sourceCtrl.text.trim(),
+                content: contentCtrl.text.trim().isEmpty
+                    ? null
+                    : contentCtrl.text.trim(),
+                source: sourceCtrl.text.trim().isEmpty
+                    ? null
+                    : sourceCtrl.text.trim(),
               );
               final list = ref.read(referencesProvider(novelId));
               final updated = [...list, refModel];
@@ -461,20 +667,37 @@ class _CharacterTab extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(ch.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        ch.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                     if (ch.role != null)
                       Chip(
-                        label: Text(ch.role!, style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          ch.role!,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         backgroundColor: AppColors.primary.withOpacity(0.1),
                         side: BorderSide.none,
                         visualDensity: VisualDensity.compact,
                       ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.error,
+                      ),
                       onPressed: () {
-                        final list = ref.read(charactersProvider(novelId)).where((c) => c.id != ch.id).toList();
-                        ref.read(charactersProvider(novelId).notifier).state = list;
+                        final list = ref
+                            .read(charactersProvider(novelId))
+                            .where((c) => c.id != ch.id)
+                            .toList();
+                        ref.read(charactersProvider(novelId).notifier).state =
+                            list;
                         MaterialRepository().saveCharacters(novelId, list);
                       },
                     ),
@@ -482,7 +705,10 @@ class _CharacterTab extends ConsumerWidget {
                 ),
                 if (ch.description != null) ...[
                   const SizedBox(height: 8),
-                  Text(ch.description!, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  Text(
+                    ch.description!,
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
                 ],
               ],
             ),
@@ -517,19 +743,38 @@ class _SettingTab extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(card.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                    Expanded(
+                      child: Text(
+                        card.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                     if (card.category != null)
                       Chip(
-                        label: Text(card.category!, style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          card.category!,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         backgroundColor: AppColors.secondary.withOpacity(0.1),
                         side: BorderSide.none,
                         visualDensity: VisualDensity.compact,
                       ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.error,
+                      ),
                       onPressed: () {
-                        final list = ref.read(settingCardsProvider(novelId)).where((c) => c.id != card.id).toList();
-                        ref.read(settingCardsProvider(novelId).notifier).state = list;
+                        final list = ref
+                            .read(settingCardsProvider(novelId))
+                            .where((c) => c.id != card.id)
+                            .toList();
+                        ref.read(settingCardsProvider(novelId).notifier).state =
+                            list;
                         MaterialRepository().saveSettingCards(novelId, list);
                       },
                     ),
@@ -537,7 +782,10 @@ class _SettingTab extends ConsumerWidget {
                 ),
                 if (card.description != null) ...[
                   const SizedBox(height: 8),
-                  Text(card.description!, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  Text(
+                    card.description!,
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
                 ],
               ],
             ),
@@ -576,20 +824,33 @@ class _HookTab extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (hook.description != null)
-                  Text(hook.description!, style: TextStyle(fontSize: 12, color: Colors.grey[500]), maxLines: 1),
+                  Text(
+                    hook.description!,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    maxLines: 1,
+                  ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: hook.statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(hook.statusLabel, style: TextStyle(fontSize: 10, color: hook.statusColor)),
+                      child: Text(
+                        hook.statusLabel,
+                        style: TextStyle(fontSize: 10, color: hook.statusColor),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Text('闲置${hook.idleChapters}章', style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                    Text(
+                      '闲置${hook.idleChapters}章',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                    ),
                   ],
                 ),
               ],
@@ -598,8 +859,13 @@ class _HookTab extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: Icon(hook.isRevealed ? Icons.check_circle : Icons.check_circle_outline,
-                      size: 20, color: hook.isRevealed ? Colors.green : Colors.grey),
+                  icon: Icon(
+                    hook.isRevealed
+                        ? Icons.check_circle
+                        : Icons.check_circle_outline,
+                    size: 20,
+                    color: hook.isRevealed ? Colors.green : Colors.grey,
+                  ),
                   tooltip: '标记回收',
                   onPressed: () {
                     final list = ref.read(plotHooksProvider(novelId));
@@ -607,14 +873,22 @@ class _HookTab extends ConsumerWidget {
                     if (idx >= 0) {
                       final updated = list.toList();
                       updated[idx].isRevealed = !updated[idx].isRevealed;
-                      ref.read(plotHooksProvider(novelId).notifier).state = updated;
+                      ref.read(plotHooksProvider(novelId).notifier).state =
+                          updated;
                     }
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: AppColors.error,
+                  ),
                   onPressed: () {
-                    final list = ref.read(plotHooksProvider(novelId)).where((h) => h.id != hook.id).toList();
+                    final list = ref
+                        .read(plotHooksProvider(novelId))
+                        .where((h) => h.id != hook.id)
+                        .toList();
                     ref.read(plotHooksProvider(novelId).notifier).state = list;
                     MaterialRepository().savePlotHooks(novelId, list);
                   },
@@ -649,13 +923,19 @@ class _ReferenceTab extends ConsumerWidget {
             leading: const Icon(Icons.bookmark, color: AppColors.primary),
             title: Text(refModel.title, style: const TextStyle(fontSize: 15)),
             subtitle: refModel.source != null
-                ? Text('来源：${refModel.source}', style: TextStyle(fontSize: 12, color: Colors.grey[500]))
+                ? Text(
+                    '来源：${refModel.source}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  )
                 : null,
             children: [
               if (refModel.content != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Text(refModel.content!, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                  child: Text(
+                    refModel.content!,
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  ),
                 ),
               ButtonBar(
                 children: [
@@ -663,8 +943,12 @@ class _ReferenceTab extends ConsumerWidget {
                     icon: const Icon(Icons.delete_outline, size: 16),
                     label: const Text('删除'),
                     onPressed: () {
-                      final list = ref.read(referencesProvider(novelId)).where((r) => r.id != refModel.id).toList();
-                      ref.read(referencesProvider(novelId).notifier).state = list;
+                      final list = ref
+                          .read(referencesProvider(novelId))
+                          .where((r) => r.id != refModel.id)
+                          .toList();
+                      ref.read(referencesProvider(novelId).notifier).state =
+                          list;
                       MaterialRepository().saveReferences(novelId, list);
                     },
                   ),
@@ -685,11 +969,21 @@ Widget _emptyState(String title, String desc, IconData icon) {
       children: [
         Icon(icon, size: 64, color: Colors.grey[300]),
         const SizedBox(height: 16),
-        Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[500])),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[500],
+          ),
+        ),
         const SizedBox(height: 8),
         Text(desc, style: TextStyle(fontSize: 14, color: Colors.grey[400])),
         const SizedBox(height: 16),
-        Text('点击右下角 + 添加', style: TextStyle(fontSize: 12, color: Colors.grey[350])),
+        Text(
+          '点击右下角 + 添加',
+          style: TextStyle(fontSize: 12, color: Colors.grey[350]),
+        ),
       ],
     ),
   );
@@ -716,10 +1010,21 @@ class _LocationTab extends ConsumerWidget {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.green.withOpacity(0.1),
-              child: const Icon(Icons.location_on, color: Colors.green, size: 20),
+              child: const Icon(
+                Icons.location_on,
+                color: Colors.green,
+                size: 20,
+              ),
             ),
-            title: Text(loc.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(loc.category ?? loc.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: Text(
+              loc.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              loc.category ?? loc.description ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline, size: 20),
               onPressed: () async {
@@ -756,10 +1061,21 @@ class _FactionTab extends ConsumerWidget {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.purple.withOpacity(0.1),
-              child: const Icon(Icons.account_balance, color: Colors.purple, size: 20),
+              child: const Icon(
+                Icons.account_balance,
+                color: Colors.purple,
+                size: 20,
+              ),
             ),
-            title: Text(f.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${f.category ?? ''} ${f.leader != null ? '· ${f.leader}' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: Text(
+              f.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${f.category ?? ''} ${f.leader != null ? '· ${f.leader}' : ''}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline, size: 20),
               onPressed: () async {
@@ -795,15 +1111,24 @@ class _ItemTab extends ConsumerWidget {
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: item.isKeyItem ? Colors.amber.withOpacity(0.2) : Colors.blue.withOpacity(0.1),
+              backgroundColor: item.isKeyItem
+                  ? Colors.amber.withOpacity(0.2)
+                  : Colors.blue.withOpacity(0.1),
               child: Icon(
                 item.isKeyItem ? Icons.star : Icons.inventory_2,
                 color: item.isKeyItem ? Colors.amber : Colors.blue,
                 size: 20,
               ),
             ),
-            title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${item.category ?? ''} ${item.powerLevel != null ? '· ${item.powerLevel}' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: Text(
+              item.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${item.category ?? ''} ${item.powerLevel != null ? '· ${item.powerLevel}' : ''}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline, size: 20),
               onPressed: () async {
@@ -840,7 +1165,10 @@ class _MemoryTabState extends ConsumerState<_MemoryTab> {
   }
 
   Future<void> _loadMemory() async {
-    final memory = NovelMemory(novelId: widget.novelId, novelTitle: widget.novelTitle);
+    final memory = NovelMemory(
+      novelId: widget.novelId,
+      novelTitle: widget.novelTitle,
+    );
     final content = await memory.autoUpdate();
     if (mounted) {
       setState(() {
@@ -867,9 +1195,19 @@ class _MemoryTabState extends ConsumerState<_MemoryTab> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.psychology, size: 20, color: AppColors.primary),
+                            const Icon(
+                              Icons.psychology,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
                             const SizedBox(width: 8),
-                            const Text('小说记忆文件', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const Text(
+                              '小说记忆文件',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const Spacer(),
                             IconButton(
                               icon: const Icon(Icons.refresh, size: 18),
@@ -879,9 +1217,22 @@ class _MemoryTabState extends ConsumerState<_MemoryTab> {
                           ],
                         ),
                         const Divider(),
-                        Text('此文件记录了小说的完整状态，AI对话时自动读取。', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                        Text(
+                          '此文件记录了小说的完整状态，AI对话时自动读取。',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
                         const SizedBox(height: 12),
-                        Text(_memoryContent, style: const TextStyle(fontSize: 13, height: 1.6, fontFamily: 'monospace')),
+                        Text(
+                          _memoryContent,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.6,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ],
                     ),
                   ),

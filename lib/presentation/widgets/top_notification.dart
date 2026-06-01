@@ -17,7 +17,7 @@ class TopNotification {
     hide();
 
     final overlay = Overlay.of(context);
-    
+
     _currentEntry = OverlayEntry(
       builder: (context) => Positioned(
         top: MediaQuery.of(context).padding.top + 8,
@@ -59,10 +59,7 @@ class TopNotification {
                   Expanded(
                     child: Text(
                       message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
                   ),
                 ],

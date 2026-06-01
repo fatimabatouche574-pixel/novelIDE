@@ -25,10 +25,14 @@ class ProofreadItem {
 
   String get typeLabel {
     switch (type) {
-      case 'typo': return '错别字';
-      case 'punctuation': return '标点符号';
-      case 'suggestion': return '用词建议';
-      default: return '其他';
+      case 'typo':
+        return '错别字';
+      case 'punctuation':
+        return '标点符号';
+      case 'suggestion':
+        return '用词建议';
+      default:
+        return '其他';
     }
   }
 }
@@ -108,18 +112,18 @@ class ProofreadService {
   // ==================== 标点符号修正规则 ====================
   static const List<List<String>> _punctuationRules = [
     // [错误模式, 修正] — 长模式优先
-    ['。。。。。。', '……'],   // 六个句号
-    ['。。。。', '……'],       // 四个句号
-    ['。。。', '……'],         // 三个句号
-    ['。。', '……'],           // 两个句号
-    ['！！！', '！'],          // 重复感叹号简化
-    ['？？？', '？'],          // 重复问号简化
-    ['，，', '，'],            // 重复逗号
-    ['...…', '……'],           // 混合省略号
-    ['………', '……'],           // 过多省略号
-    [',,', '，'],              // 英文逗号
-    ['!!', '！'],              // 英文感叹号
-    ['??', '？'],              // 英文问号
+    ['。。。。。。', '……'], // 六个句号
+    ['。。。。', '……'], // 四个句号
+    ['。。。', '……'], // 三个句号
+    ['。。', '……'], // 两个句号
+    ['！！！', '！'], // 重复感叹号简化
+    ['？？？', '？'], // 重复问号简化
+    ['，，', '，'], // 重复逗号
+    ['...…', '……'], // 混合省略号
+    ['………', '……'], // 过多省略号
+    [',,', '，'], // 英文逗号
+    ['!!', '！'], // 英文感叹号
+    ['??', '？'], // 英文问号
     // 注意：删除 ['..', '。'] 规则 — 中文省略号 ...... 会误匹配为多个英文句号修正
   ];
 
@@ -127,7 +131,11 @@ class ProofreadService {
   static final RegExp _mixedPunctuation = RegExp(r'[一-鿿][,.!?;:)]');
 
   /// 校对单个文本
-  List<ProofreadItem> proofreadText(String text, String chapterId, String chapterTitle) {
+  List<ProofreadItem> proofreadText(
+    String text,
+    String chapterId,
+    String chapterTitle,
+  ) {
     final results = <ProofreadItem>[];
 
     // 1. 错别字检测
@@ -142,15 +150,17 @@ class ProofreadService {
         final contextStart = (idx - 20).clamp(0, text.length);
         final contextEnd = (idx + wrongWord.length + 20).clamp(0, text.length);
 
-        results.add(ProofreadItem(
-          type: 'typo',
-          original: wrongWord,
-          suggestion: correctWord,
-          context: text.substring(contextStart, contextEnd),
-          chapterId: chapterId,
-          chapterTitle: chapterTitle,
-          position: idx,
-        ));
+        results.add(
+          ProofreadItem(
+            type: 'typo',
+            original: wrongWord,
+            suggestion: correctWord,
+            context: text.substring(contextStart, contextEnd),
+            chapterId: chapterId,
+            chapterTitle: chapterTitle,
+            position: idx,
+          ),
+        );
         start = idx + 1;
       }
     }
@@ -165,15 +175,17 @@ class ProofreadService {
         final contextStart = (idx - 20).clamp(0, text.length);
         final contextEnd = (idx + rule[0].length + 20).clamp(0, text.length);
 
-        results.add(ProofreadItem(
-          type: 'punctuation',
-          original: rule[0],
-          suggestion: rule[1],
-          context: text.substring(contextStart, contextEnd),
-          chapterId: chapterId,
-          chapterTitle: chapterTitle,
-          position: idx,
-        ));
+        results.add(
+          ProofreadItem(
+            type: 'punctuation',
+            original: rule[0],
+            suggestion: rule[1],
+            context: text.substring(contextStart, contextEnd),
+            chapterId: chapterId,
+            chapterTitle: chapterTitle,
+            position: idx,
+          ),
+        );
         start = idx + 1;
       }
     }
@@ -184,15 +196,17 @@ class ProofreadService {
       final contextStart = (pos - 20).clamp(0, text.length);
       final contextEnd = (match.end + 20).clamp(0, text.length);
 
-      results.add(ProofreadItem(
-        type: 'punctuation',
-        original: match.group(0)!,
-        suggestion: '中文后应使用中文标点',
-        context: text.substring(contextStart, contextEnd),
-        chapterId: chapterId,
-        chapterTitle: chapterTitle,
-        position: pos,
-      ));
+      results.add(
+        ProofreadItem(
+          type: 'punctuation',
+          original: match.group(0)!,
+          suggestion: '中文后应使用中文标点',
+          context: text.substring(contextStart, contextEnd),
+          chapterId: chapterId,
+          chapterTitle: chapterTitle,
+          position: pos,
+        ),
+      );
     }
 
     // 4. 重复词语检测（如"的的"、"了了"）
@@ -202,15 +216,17 @@ class ProofreadService {
       final contextStart = (pos - 20).clamp(0, text.length);
       final contextEnd = (match.end + 20).clamp(0, text.length);
 
-      results.add(ProofreadItem(
-        type: 'suggestion',
-        original: match.group(0)!,
-        suggestion: '疑似重复用字',
-        context: text.substring(contextStart, contextEnd),
-        chapterId: chapterId,
-        chapterTitle: chapterTitle,
-        position: pos,
-      ));
+      results.add(
+        ProofreadItem(
+          type: 'suggestion',
+          original: match.group(0)!,
+          suggestion: '疑似重复用字',
+          context: text.substring(contextStart, contextEnd),
+          chapterId: chapterId,
+          chapterTitle: chapterTitle,
+          position: pos,
+        ),
+      );
     }
 
     // 按位置排序
@@ -224,15 +240,21 @@ class ProofreadService {
     final fs = LocalFileDataSource();
     final projectPath = await fs.getProjectDir(novelId, '');
 
-    final chapterRows = await db.query('chapters',
-        where: 'novel_id = ?', whereArgs: [novelId], orderBy: 'order_index ASC');
+    final chapterRows = await db.query(
+      'chapters',
+      where: 'novel_id = ?',
+      whereArgs: [novelId],
+      orderBy: 'order_index ASC',
+    );
 
     final allResults = <ProofreadItem>[];
 
     for (final row in chapterRows) {
       final chapterId = row['id'] as String;
       final chapterTitle = row['title'] as String;
-      final contentFile = File(p.join(projectPath, 'chapters', '$chapterId.md'));
+      final contentFile = File(
+        p.join(projectPath, 'chapters', '$chapterId.md'),
+      );
 
       if (await contentFile.exists()) {
         final content = await contentFile.readAsString();

@@ -74,10 +74,11 @@ class ModelTestService {
 
     try {
       // Try OpenAI-compatible /models endpoint
-      final modelsUrl = normalizedUrl
-          .replaceAll(RegExp(r'/chat/completions.*'), '')
-          .replaceAll(RegExp(r'/v1/messages.*'), '')
-          + '/models';
+      final modelsUrl =
+          normalizedUrl
+              .replaceAll(RegExp(r'/chat/completions.*'), '')
+              .replaceAll(RegExp(r'/v1/messages.*'), '') +
+          '/models';
       final response = await _dio.get(
         modelsUrl,
         options: Options(
@@ -108,9 +109,7 @@ class ModelTestService {
 
   Map<String, String> _buildHeaders(AiConfig config) {
     final apiKey = config.apiKey ?? '';
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (config.protocol == ApiProtocol.anthropic) {
       headers['x-api-key'] = apiKey;

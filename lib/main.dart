@@ -17,32 +17,32 @@ import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Hive.initFlutter();
   } catch (e) {
     debugPrint('Hive init error: $e');
   }
-  
+
   try {
     await ConfigService.init();
   } catch (e) {
     debugPrint('ConfigService init error: $e');
   }
-  
+
   // 初始化默认AI配置（开箱即用）
   try {
     await DefaultConfigService.initDefaultConfig();
   } catch (e) {
     debugPrint('DefaultConfig init error: $e');
   }
-  
+
   try {
     ConnectivityService.startMonitoring();
   } catch (e) {
     debugPrint('ConnectivityService error: $e');
   }
-  
+
   try {
     await NotificationService.init();
   } catch (e) {
@@ -52,11 +52,7 @@ void main() async {
   // 延迟权限请求到首页加载后，避免阻塞启动
   // 权限请求在 _NovelIdeAppState.initState 中进行
 
-  runApp(
-    const ProviderScope(
-      child: NovelIdeApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: NovelIdeApp()));
 }
 
 /// 请求基本运行时权限（不含特殊权限）
@@ -66,9 +62,11 @@ Future<void> _requestBasicPermissions() async {
     final storage = await Permission.storage.request();
     final notification = await Permission.notification.request();
     final mic = await Permission.microphone.request();
-    
-    debugPrint('Permissions - Storage: $storage, Notification: $notification, Mic: $mic');
-    
+
+    debugPrint(
+      'Permissions - Storage: $storage, Notification: $notification, Mic: $mic',
+    );
+
     // MANAGE_EXTERNAL_STORAGE 是特殊权限，需要单独处理
     // 只在 Android 11+ 且需要管理所有文件时才请求
     if (await Permission.manageExternalStorage.isDenied) {
@@ -87,12 +85,13 @@ class NovelIdeApp extends ConsumerStatefulWidget {
   ConsumerState<NovelIdeApp> createState() => _NovelIdeAppState();
 }
 
-class _NovelIdeAppState extends ConsumerState<NovelIdeApp> with WidgetsBindingObserver {
+class _NovelIdeAppState extends ConsumerState<NovelIdeApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // 迁移旧目录结构到新结构
       try {
@@ -103,12 +102,12 @@ class _NovelIdeAppState extends ConsumerState<NovelIdeApp> with WidgetsBindingOb
 
       // 加载持久化设置
       _loadSettings();
-      
+
       // 延迟 500ms 确保页面已渲染，再请求权限
       // 避免权限对话框与启动动画冲突导致卡死
       await Future.delayed(const Duration(milliseconds: 500));
       await _requestBasicPermissions();
-      
+
       // 首次启动显示公告
       _showAnnouncementIfNeeded();
     });
@@ -194,7 +193,10 @@ class _NovelIdeAppState extends ConsumerState<NovelIdeApp> with WidgetsBindingOb
                       Expanded(
                         child: Text(
                           announcement['url']!,
-                          style: const TextStyle(color: Colors.blue, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 12,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),

@@ -21,7 +21,11 @@ class NovelMemoryGenerator {
 
     // --- 1. Novel info ---
     buf.writeln('═══ 1. 作品信息 ═══');
-    final novels = await db.query('novels', where: 'id = ?', whereArgs: [novelId]);
+    final novels = await db.query(
+      'novels',
+      where: 'id = ?',
+      whereArgs: [novelId],
+    );
     if (novels.isNotEmpty) {
       final novel = novels.first;
       buf.writeln('书名: $novelTitle');
@@ -46,16 +50,22 @@ class NovelMemoryGenerator {
         if (vol.summary != null && vol.summary!.isNotEmpty) {
           buf.writeln('  卷纲要: ${vol.summary}');
         }
-        final volChapters = chapters.where((c) => c.volumeId == vol.id).toList();
+        final volChapters = chapters
+            .where((c) => c.volumeId == vol.id)
+            .toList();
         for (final ch in volChapters) {
-          buf.writeln('  ${ch.orderIndex}. ${ch.title} (${ch.wordCount}字) [${ch.status}]');
+          buf.writeln(
+            '  ${ch.orderIndex}. ${ch.title} (${ch.wordCount}字) [${ch.status}]',
+          );
         }
         buf.writeln();
       }
     } else {
       buf.writeln('（未分卷，共${chapters.length}章）');
       for (final ch in chapters) {
-        buf.writeln('  ${ch.orderIndex}. ${ch.title} (${ch.wordCount}字) [${ch.status}]');
+        buf.writeln(
+          '  ${ch.orderIndex}. ${ch.title} (${ch.wordCount}字) [${ch.status}]',
+        );
       }
       buf.writeln();
     }
@@ -89,7 +99,9 @@ class NovelMemoryGenerator {
           buf.writeln('  背景: ${c.background}');
         }
         if (c.tags.isNotEmpty) {
-          buf.writeln('  标签: ${c.tags.map((t) => "${t.key}=${t.value}").join(", ")}');
+          buf.writeln(
+            '  标签: ${c.tags.map((t) => "${t.key}=${t.value}").join(", ")}',
+          );
         }
       }
     } else {
@@ -102,12 +114,16 @@ class NovelMemoryGenerator {
     final settings = await matRepo.getSettingCards(novelId);
     if (settings.isNotEmpty) {
       for (final s in settings) {
-        buf.writeln('【${s.name}】${s.category != null ? " (${s.category})" : ""}');
+        buf.writeln(
+          '【${s.name}】${s.category != null ? " (${s.category})" : ""}',
+        );
         if (s.description != null && s.description!.isNotEmpty) {
           buf.writeln('  ${s.description}');
         }
         if (s.tags.isNotEmpty) {
-          buf.writeln('  属性: ${s.tags.map((t) => "${t.key}=${t.value}").join(", ")}');
+          buf.writeln(
+            '  属性: ${s.tags.map((t) => "${t.key}=${t.value}").join(", ")}',
+          );
         }
       }
     } else {
@@ -120,9 +136,13 @@ class NovelMemoryGenerator {
     final locations = await matRepo.getLocations(novelId);
     if (locations.isNotEmpty) {
       for (final l in locations) {
-        buf.writeln('【${l.name}】${l.category != null ? " (${l.category})" : ""}');
-        if (l.description != null && l.description!.isNotEmpty) buf.writeln('  ${l.description}');
-        if (l.rules != null && l.rules!.isNotEmpty) buf.writeln('  规则: ${l.rules}');
+        buf.writeln(
+          '【${l.name}】${l.category != null ? " (${l.category})" : ""}',
+        );
+        if (l.description != null && l.description!.isNotEmpty)
+          buf.writeln('  ${l.description}');
+        if (l.rules != null && l.rules!.isNotEmpty)
+          buf.writeln('  规则: ${l.rules}');
       }
     } else {
       buf.writeln('（暂无地点）');
@@ -134,8 +154,11 @@ class NovelMemoryGenerator {
     final factions = await matRepo.getFactions(novelId);
     if (factions.isNotEmpty) {
       for (final f in factions) {
-        buf.writeln('【${f.name}】${f.category != null ? " (${f.category})" : ""}');
-        if (f.description != null && f.description!.isNotEmpty) buf.writeln('  ${f.description}');
+        buf.writeln(
+          '【${f.name}】${f.category != null ? " (${f.category})" : ""}',
+        );
+        if (f.description != null && f.description!.isNotEmpty)
+          buf.writeln('  ${f.description}');
         if (f.leader != null) buf.writeln('  首领: ${f.leader}');
         if (f.members.isNotEmpty) buf.writeln('  成员: ${f.members.join("、")}');
       }
@@ -150,8 +173,11 @@ class NovelMemoryGenerator {
     if (items.isNotEmpty) {
       for (final i in items) {
         final marker = i.isKeyItem ? " ⭐" : "";
-        buf.writeln('【${i.name}】${i.category != null ? " (${i.category})" : ""}$marker');
-        if (i.description != null && i.description!.isNotEmpty) buf.writeln('  ${i.description}');
+        buf.writeln(
+          '【${i.name}】${i.category != null ? " (${i.category})" : ""}$marker',
+        );
+        if (i.description != null && i.description!.isNotEmpty)
+          buf.writeln('  ${i.description}');
         if (i.powerLevel != null) buf.writeln('  品阶: ${i.powerLevel}');
         if (i.owner != null) buf.writeln('  持有者: ${i.owner}');
       }

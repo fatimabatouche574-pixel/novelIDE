@@ -743,7 +743,7 @@ class _RelationshipGraphPainter extends CustomPainter {
     canvas.drawRRect(
       bgRect,
       Paint()
-        ..color = isDark ? Colors.white24 : Colors.grey[300]!
+        ..color = isDark ? Colors.white24 : Colors.grey.shade300
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.5,
     );

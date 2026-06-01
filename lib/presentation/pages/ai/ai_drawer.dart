@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:novel_ide/core/constants.dart';
 import 'package:novel_ide/presentation/state/app_providers.dart';
 import 'package:novel_ide/data/services/ai_service.dart';
 import 'package:novel_ide/presentation/pages/tomato/shuangdian_report_page.dart';
@@ -17,6 +16,7 @@ class AiDrawer extends ConsumerStatefulWidget {
   final String chapterId;
   final TextEditingController controller;
   final VoidCallback onClose;
+
   /// 插入文本后触发的保存回调（编辑器传入）
   final VoidCallback? onSave;
 
@@ -54,15 +54,21 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
     try {
       if (config == null) {
         setState(() {
-          _messages.add({'role': 'assistant', 'content': '请先配置AI模型（我的 → AI设置）'});
+          _messages.add({
+            'role': 'assistant',
+            'content': '请先配置AI模型（我的 → AI设置）',
+          });
           _isLoading = false;
         });
         return;
       }
 
-      final systemPrompt = preset?.systemPrompt ?? '你是一位网文写作助手，帮助作者润色、扩写、续写和检查小说内容。';
+      final systemPrompt =
+          preset?.systemPrompt ?? '你是一位网文写作助手，帮助作者润色、扩写、续写和检查小说内容。';
       final context = widget.controller.text.length > 2000
-          ? widget.controller.text.substring(widget.controller.text.length - 2000)
+          ? widget.controller.text.substring(
+              widget.controller.text.length - 2000,
+            )
           : widget.controller.text;
 
       final aiService = ref.read(aiServiceProvider);
@@ -72,19 +78,27 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
       try {
         final novel = ref.read(selectedNovelProvider);
         if (novel != null) {
-          memoryContext = await NovelMemory.getForAiContext(novel.id, novel.title);
+          memoryContext = await NovelMemory.getForAiContext(
+            novel.id,
+            novel.title,
+          );
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load memory error: $e');
+      }
 
       // Load user-level global memory
       String userMemoryContext = '';
       try {
         userMemoryContext = await UserMemory.getForAiContext();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load memory error: $e');
+      }
 
       final aiText = await aiService.send(
         config: config,
-        systemPrompt: '$systemPrompt\n\n小说记忆文件（当前状态）：\n$memoryContext$userMemoryContext',
+        systemPrompt:
+            '$systemPrompt\n\n小说记忆文件（当前状态）：\n$memoryContext$userMemoryContext',
         userMessage: '当前章节内容：\n$context\n\n用户请求：$text',
         taskType: 'chat',
       );
@@ -94,7 +108,10 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
       });
     } catch (e) {
       setState(() {
-        _messages.add({'role': 'assistant', 'content': '请求失败: $e\n请检查网络或API配置'});
+        _messages.add({
+          'role': 'assistant',
+          'content': '请求失败: $e\n请检查网络或API配置',
+        });
         _isLoading = false;
       });
     }
@@ -107,9 +124,12 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
     final end = selection.end.clamp(0, current.length);
     final safeStart = start <= end ? start : end;
     final safeEnd = start <= end ? end : start;
-    final newText = current.substring(0, safeStart) + text + current.substring(safeEnd);
+    final newText =
+        current.substring(0, safeStart) + text + current.substring(safeEnd);
     widget.controller.text = newText;
-    widget.controller.selection = TextSelection.collapsed(offset: safeStart + text.length);
+    widget.controller.selection = TextSelection.collapsed(
+      offset: safeStart + text.length,
+    );
     widget.onSave?.call();
     widget.onClose();
   }
@@ -133,17 +153,24 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
       final aiService = ref.read(aiServiceProvider);
       final response = await aiService.send(
         config: config,
-        systemPrompt: '你是番茄小说爽点密度检查器。分析规则：\n1. 爽点分类：身份揭露、打脸、实力碾压、财富展示、情感反转、系统奖励\n2. 密度标准：每3000字至少2-3个爽点\n3. 评分标准：0-10分\n4. 输出格式：评分数+爽点列表(位置/类型/强度)+优化建议',
+        systemPrompt:
+            '你是番茄小说爽点密度检查器。分析规则：\n1. 爽点分类：身份揭露、打脸、实力碾压、财富展示、情感反转、系统奖励\n2. 密度标准：每3000字至少2-3个爽点\n3. 评分标准：0-10分\n4. 输出格式：评分数+爽点列表(位置/类型/强度)+优化建议',
         userMessage: '请分析以下章节的爽点密度：\n\n$content',
         taskType: 'analysis',
       );
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => ShuangdianReportPage(chapterContent: content, aiResponse: response),
-        ));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ShuangdianReportPage(
+              chapterContent: content,
+              aiResponse: response,
+            ),
+          ),
+        );
       }
     } catch (e) {
-      if (mounted) TopNotification.success(context, '分析失败: $e');
+      if (mounted) TopNotification.error(context, '分析失败: $e');
     }
   }
 
@@ -164,17 +191,22 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
       final aiService = ref.read(aiServiceProvider);
       final response = await aiService.send(
         config: config,
-        systemPrompt: '你是番茄小说水文检测器。检测规则：\n1. 水文分类：废话对话、冗余环境描写、无推进日常、重复说明\n2. 水文率：<15%优秀，15-25%及格，>25%需精简\n3. 输出格式：水文率+水文段落列表+优化方案',
+        systemPrompt:
+            '你是番茄小说水文检测器。检测规则：\n1. 水文分类：废话对话、冗余环境描写、无推进日常、重复说明\n2. 水文率：<15%优秀，15-25%及格，>25%需精简\n3. 输出格式：水文率+水文段落列表+优化方案',
         userMessage: '请检测以下章节的水文：\n\n$content',
         taskType: 'analysis',
       );
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => WaterReportPage(chapterContent: content, aiResponse: response),
-        ));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                WaterReportPage(chapterContent: content, aiResponse: response),
+          ),
+        );
       }
     } catch (e) {
-      if (mounted) TopNotification.success(context, '检测失败: $e');
+      if (mounted) TopNotification.error(context, '检测失败: $e');
     }
   }
 
@@ -191,17 +223,23 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
       final aiService = ref.read(aiServiceProvider);
       final response = await aiService.send(
         config: config,
-        systemPrompt: '你是番茄小说爆款标题生成器。标题要求：\n1. 长度：8-15字\n2. 风格：悬念式、爽点式、反转式\n3. 生成5个标题，按吸引力排序',
-        userMessage: content.isEmpty ? '请生成5个爆款标题' : '请根据以下章节内容生成5个爆款标题：\n\n$content',
+        systemPrompt:
+            '你是番茄小说爆款标题生成器。标题要求：\n1. 长度：8-15字\n2. 风格：悬念式、爽点式、反转式\n3. 生成5个标题，按吸引力排序',
+        userMessage: content.isEmpty
+            ? '请生成5个爆款标题'
+            : '请根据以下章节内容生成5个爆款标题：\n\n$content',
         taskType: 'titleGen',
       );
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => TitleGeneratorResultPage(aiResponse: response),
-        ));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TitleGeneratorResultPage(aiResponse: response),
+          ),
+        );
       }
     } catch (e) {
-      if (mounted) TopNotification.success(context, '生成失败: $e');
+      if (mounted) TopNotification.error(context, '生成失败: $e');
     }
   }
 
@@ -214,7 +252,9 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20),
+        ],
       ),
       child: Column(
         children: [
@@ -233,9 +273,16 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
             padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
             child: Row(
               children: [
-                Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.primary, size: 20),
+                Icon(
+                  Icons.auto_awesome,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
-                const Text('AI写作助手', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'AI写作助手',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(width: 12),
                 // 模型选择器
                 if (configs.isNotEmpty)
@@ -243,21 +290,38 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(maxWidth: 240),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.smart_toy, size: 14, color: Theme.of(context).colorScheme.primary),
+                          Icon(
+                            Icons.smart_toy,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             selectedConfig?.name ?? '',
-                            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          Icon(Icons.arrow_drop_down, size: 14, color: Theme.of(context).colorScheme.primary),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ],
                       ),
                     ),
@@ -268,34 +332,70 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                         );
                       } else {
                         final config = configs.firstWhere((c) => c.id == value);
-                        ref.read(selectedAiConfigProvider.notifier).state = config;
+                        ref.read(selectedAiConfigProvider.notifier).state =
+                            config;
                       }
                     },
                     itemBuilder: (context) => [
-                      ...configs.map((c) => PopupMenuItem(
-                        value: c.id,
-                        child: Row(
-                          children: [
-                            Icon(c.id == selectedConfig?.id ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                                size: 16, color: c.id == selectedConfig?.id ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(c.name, style: const TextStyle(fontSize: 14)),
-                                Text('${c.modelName}', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
-                              ]),
-                            ),
-                          ],
+                      ...configs.map(
+                        (c) => PopupMenuItem(
+                          value: c.id,
+                          child: Row(
+                            children: [
+                              Icon(
+                                c.id == selectedConfig?.id
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                                size: 16,
+                                color: c.id == selectedConfig?.id
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      c.name,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                    Text(
+                                      '${c.modelName}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )),
+                      ),
                       const PopupMenuDivider(),
                       PopupMenuItem(
                         value: 'add_new',
                         child: Row(
                           children: [
-                            Icon(Icons.add_circle_outline, size: 16, color: Theme.of(context).colorScheme.primary),
+                            Icon(
+                              Icons.add_circle_outline,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                             const SizedBox(width: 8),
-                            Text('添加新模型', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                            Text(
+                              '添加新模型',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -315,22 +415,53 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                _ActionChip(label: '续写', icon: Icons.arrow_forward, onTap: () => _sendMessage(presetAction: '请根据上文续写下一部分内容，保持风格一致')),
+                _ActionChip(
+                  label: '续写',
+                  icon: Icons.arrow_forward,
+                  onTap: () =>
+                      _sendMessage(presetAction: '请根据上文续写下一部分内容，保持风格一致'),
+                ),
                 const SizedBox(width: 8),
-                _ActionChip(label: '润色', icon: Icons.brush, onTap: () => _sendMessage(presetAction: '请润色以下段落，改善语病、节奏和描写')),
+                _ActionChip(
+                  label: '润色',
+                  icon: Icons.brush,
+                  onTap: () => _sendMessage(presetAction: '请润色以下段落，改善语病、节奏和描写'),
+                ),
                 const SizedBox(width: 8),
-                _ActionChip(label: '起标题', icon: Icons.title, onTap: () => _runTitleGeneration()),
+                _ActionChip(
+                  label: '起标题',
+                  icon: Icons.title,
+                  onTap: () => _runTitleGeneration(),
+                ),
                 const SizedBox(width: 8),
-                _ActionChip(label: '爽点检查', icon: Icons.bolt, onTap: () => _runShuangdianCheck()),
+                _ActionChip(
+                  label: '爽点检查',
+                  icon: Icons.bolt,
+                  onTap: () => _runShuangdianCheck(),
+                ),
                 const SizedBox(width: 8),
-                _ActionChip(label: '水文检测', icon: Icons.water_drop, onTap: () => _runWaterCheck()),
+                _ActionChip(
+                  label: '水文检测',
+                  icon: Icons.water_drop,
+                  onTap: () => _runWaterCheck(),
+                ),
                 const SizedBox(width: 8),
-                _ActionChip(label: '全文审查', icon: Icons.fact_check, onTap: () {
-                  widget.onClose();
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => FullTextReviewPage(novelId: widget.novelId, novelTitle: ''),
-                  ));
-                }),
+                _ActionChip(
+                  label: '全文审查',
+                  icon: Icons.fact_check,
+                  onTap: () {
+                    widget.onClose();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FullTextReviewPage(
+                          novelId: widget.novelId,
+                          novelTitle: '',
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -342,9 +473,22 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.auto_awesome, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 48,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.2),
+                        ),
                         const SizedBox(height: 12),
-                        Text('选择上方快捷动作或输入指令', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                        Text(
+                          '选择上方快捷动作或输入指令',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
                       ],
                     ),
                   )
@@ -356,7 +500,9 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                       final isUser = msg['role'] == 'user';
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment: isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Container(
                           constraints: BoxConstraints(
                             maxWidth: MediaQuery.of(context).size.width * 0.8,
@@ -364,7 +510,9 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isUser
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.1)
                                 : Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -375,7 +523,9 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                                 msg['content'],
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: isUser ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                                  color: isUser
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               if (!isUser)
@@ -383,19 +533,33 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     TextButton.icon(
-                                      icon: const Icon(Icons.content_copy, size: 16),
-                                      label: const Text('复制', style: TextStyle(fontSize: 12)),
+                                      icon: const Icon(
+                                        Icons.content_copy,
+                                        size: 16,
+                                      ),
+                                      label: const Text(
+                                        '复制',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
                                       onPressed: () {
-                                        Clipboard.setData(ClipboardData(text: msg['content']));
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        Clipboard.setData(
+                                          ClipboardData(text: msg['content']),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(content: Text('已复制')),
                                         );
                                       },
                                     ),
                                     TextButton.icon(
                                       icon: const Icon(Icons.add, size: 16),
-                                      label: const Text('插入', style: TextStyle(fontSize: 12)),
-                                      onPressed: () => _insertToEditor(msg['content']),
+                                      label: const Text(
+                                        '插入',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      onPressed: () =>
+                                          _insertToEditor(msg['content']),
                                     ),
                                   ],
                                 ),
@@ -406,14 +570,15 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                     },
                   ),
           ),
-          if (_isLoading)
-            const LinearProgressIndicator(minHeight: 2),
+          if (_isLoading) const LinearProgressIndicator(minHeight: 2),
           // 输入框
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+              border: Border(
+                top: BorderSide(color: Theme.of(context).dividerColor),
+              ),
             ),
             child: Row(
               children: [
@@ -428,7 +593,10 @@ class _AiDrawerState extends ConsumerState<AiDrawer> {
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),
@@ -454,15 +622,25 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  const _ActionChip({required this.label, required this.icon, required this.onTap});
+  const _ActionChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ActionChip(
-      avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+      avatar: Icon(
+        icon,
+        size: 16,
+        color: Theme.of(context).colorScheme.primary,
+      ),
       label: Text(label, style: const TextStyle(fontSize: 12)),
       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-      side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+      side: BorderSide(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      ),
       onPressed: onTap,
     );
   }

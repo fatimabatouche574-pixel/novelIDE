@@ -14,7 +14,8 @@ class CostTracker {
   }) async {
     final db = await _db.database;
     await db.insert('billing_records', {
-      'id': '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecondsSinceEpoch % 10000}',
+      'id':
+          '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecondsSinceEpoch % 10000}',
       'config_id': configId,
       'model': model,
       'task_type': taskType,
@@ -27,20 +28,27 @@ class CostTracker {
   /// Get today's usage summary.
   Future<CostSummary> getTodaySummary() async {
     final db = await _db.database;
-    final startOfDay = DateTime.now().subtract(Duration(
-      hours: DateTime.now().hour,
-      minutes: DateTime.now().minute,
-      seconds: DateTime.now().second,
-    )).millisecondsSinceEpoch;
+    final startOfDay = DateTime.now()
+        .subtract(
+          Duration(
+            hours: DateTime.now().hour,
+            minutes: DateTime.now().minute,
+            seconds: DateTime.now().second,
+          ),
+        )
+        .millisecondsSinceEpoch;
 
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT
         COUNT(*) as call_count,
         COALESCE(SUM(token_count), 0) as total_tokens,
         COALESCE(SUM(estimated_cost), 0) as total_cost
       FROM billing_records
       WHERE created_at >= ?
-    ''', [startOfDay]);
+    ''',
+      [startOfDay],
+    );
 
     final row = result.first;
     return CostSummary(
@@ -53,13 +61,18 @@ class CostTracker {
   /// Get usage breakdown by task type for today.
   Future<List<TaskCostItem>> getTodayByTask() async {
     final db = await _db.database;
-    final startOfDay = DateTime.now().subtract(Duration(
-      hours: DateTime.now().hour,
-      minutes: DateTime.now().minute,
-      seconds: DateTime.now().second,
-    )).millisecondsSinceEpoch;
+    final startOfDay = DateTime.now()
+        .subtract(
+          Duration(
+            hours: DateTime.now().hour,
+            minutes: DateTime.now().minute,
+            seconds: DateTime.now().second,
+          ),
+        )
+        .millisecondsSinceEpoch;
 
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT
         task_type,
         COUNT(*) as call_count,
@@ -69,14 +82,20 @@ class CostTracker {
       WHERE created_at >= ?
       GROUP BY task_type
       ORDER BY total_tokens DESC
-    ''', [startOfDay]);
+    ''',
+      [startOfDay],
+    );
 
-    return result.map((row) => TaskCostItem(
-      taskType: row['task_type'] as String,
-      callCount: row['call_count'] as int,
-      totalTokens: row['total_tokens'] as int,
-      totalCost: (row['total_cost'] as num).toDouble(),
-    )).toList();
+    return result
+        .map(
+          (row) => TaskCostItem(
+            taskType: row['task_type'] as String,
+            callCount: row['call_count'] as int,
+            totalTokens: row['total_tokens'] as int,
+            totalCost: (row['total_cost'] as num).toDouble(),
+          ),
+        )
+        .toList();
   }
 }
 
@@ -85,7 +104,11 @@ class CostSummary {
   final int totalTokens;
   final double totalCost;
 
-  CostSummary({required this.callCount, required this.totalTokens, required this.totalCost});
+  CostSummary({
+    required this.callCount,
+    required this.totalTokens,
+    required this.totalCost,
+  });
 }
 
 class TaskCostItem {
@@ -94,5 +117,10 @@ class TaskCostItem {
   final int totalTokens;
   final double totalCost;
 
-  TaskCostItem({required this.taskType, required this.callCount, required this.totalTokens, required this.totalCost});
+  TaskCostItem({
+    required this.taskType,
+    required this.callCount,
+    required this.totalTokens,
+    required this.totalCost,
+  });
 }

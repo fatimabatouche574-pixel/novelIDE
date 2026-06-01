@@ -12,5 +12,6 @@ class ChapterSnapshot with _$ChapterSnapshot {
     required DateTime createdAt,
   }) = _ChapterSnapshot;
 
-  factory ChapterSnapshot.fromJson(Map<String, dynamic> json) => _$ChapterSnapshotFromJson(json);
+  factory ChapterSnapshot.fromJson(Map<String, dynamic> json) =>
+      _$ChapterSnapshotFromJson(json);
 }

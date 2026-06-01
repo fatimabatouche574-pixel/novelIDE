@@ -1,5 +1,3 @@
-import 'package:novel_ide/data/models/ai_config_model.dart';
-import 'package:novel_ide/data/datasources/secure_storage_datasource.dart';
 import 'package:novel_ide/data/datasources/database_helper.dart';
 
 /// 默认配置服务
@@ -58,12 +56,16 @@ class DefaultConfigService {
 
   /// 获取所有内置模型列表（用于用户选择添加）
   static List<Map<String, String>> getAllBuiltinModels() {
-    return _builtinModels.map((m) => {
-      'id': m['id']!,
-      'name': m['name']!,
-      'desc': m['desc']!,
-      'apiUrl': m['apiUrl']!,
-    }).toList();
+    return _builtinModels
+        .map(
+          (m) => {
+            'id': m['id']!,
+            'name': m['name']!,
+            'desc': m['desc']!,
+            'apiUrl': m['apiUrl']!,
+          },
+        )
+        .toList();
   }
 
   /// 检查是否是内置模型ID

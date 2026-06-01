@@ -37,14 +37,17 @@ class _AppConfigPageState extends State<AppConfigPage> {
     try {
       final config = await AppConfig.instance();
       final newConfig = Map<String, dynamic>.from(
-        const JsonDecoder().convert(_ctrl.text) as Map<String, dynamic>
+        const JsonDecoder().convert(_ctrl.text) as Map<String, dynamic>,
       );
       final path = await config.configPath;
       final encoder = JsonEncoder.withIndent('  ');
       await File(path).writeAsString(encoder.convert(newConfig));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('配置已保存，请重启应用生效'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('配置已保存，请重启应用生效'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
@@ -63,7 +66,10 @@ class _AppConfigPageState extends State<AppConfigPage> {
         title: const Text('恢复默认配置？'),
         content: const Text('所有自定义配置将被清除'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.orange),
             onPressed: () => Navigator.pop(ctx, true),
@@ -80,7 +86,10 @@ class _AppConfigPageState extends State<AppConfigPage> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已恢复默认配置'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('已恢复默认配置'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     }
@@ -92,11 +101,19 @@ class _AppConfigPageState extends State<AppConfigPage> {
       appBar: AppBar(
         title: const Text('软件配置'),
         actions: [
-          IconButton(icon: const Icon(Icons.copy, size: 20), tooltip: '复制', onPressed: () {
-            Clipboard.setData(ClipboardData(text: _ctrl.text));
-            TopNotification.success(context, '已复制');
-          }),
-          IconButton(icon: const Icon(Icons.refresh, size: 20), tooltip: '重载', onPressed: _loadConfig),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 20),
+            tooltip: '复制',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: _ctrl.text));
+              TopNotification.success(context, '已复制');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20),
+            tooltip: '重载',
+            onPressed: _loadConfig,
+          ),
         ],
       ),
       body: _isLoading
@@ -122,7 +139,10 @@ class _AppConfigPageState extends State<AppConfigPage> {
                       maxLines: null,
                       expands: true,
                       textAlignVertical: TextAlignVertical.top,
-                      style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'monospace',
+                      ),
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.all(12),
@@ -132,7 +152,12 @@ class _AppConfigPageState extends State<AppConfigPage> {
                 ),
                 // Buttons
                 Padding(
-                  padding: EdgeInsets.fromLTRB(12, 12, 12, 12 + MediaQuery.of(context).padding.bottom),
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    12,
+                    12,
+                    12 + MediaQuery.of(context).padding.bottom,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -147,7 +172,9 @@ class _AppConfigPageState extends State<AppConfigPage> {
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.save, size: 18),
                           label: const Text('保存配置'),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
                           onPressed: _saveConfig,
                         ),
                       ),

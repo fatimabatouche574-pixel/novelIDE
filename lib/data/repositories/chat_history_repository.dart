@@ -35,7 +35,8 @@ class ChatHistoryRepository {
       final sessionList = AiChatSessionList.fromJsonString(jsonString);
 
       // 按更新时间排序（最新的在前）
-      final sorted = List.of(sessionList.sessions)..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      final sorted = List.of(sessionList.sessions)
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
       return sorted;
     } catch (e) {
@@ -61,8 +62,9 @@ class ChatHistoryRepository {
       for (final session in trimmedSessions) {
         if (session.messages.length > _maxMessagesPerSession) {
           // 保留最新的消息
-          session.messages = session.messages
-              .sublist(session.messages.length - _maxMessagesPerSession);
+          session.messages = session.messages.sublist(
+            session.messages.length - _maxMessagesPerSession,
+          );
         }
       }
 

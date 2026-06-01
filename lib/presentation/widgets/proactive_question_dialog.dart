@@ -34,7 +34,8 @@ class ProactiveQuestionDialog extends StatefulWidget {
   }
 
   @override
-  State<ProactiveQuestionDialog> createState() => _ProactiveQuestionDialogState();
+  State<ProactiveQuestionDialog> createState() =>
+      _ProactiveQuestionDialogState();
 }
 
 class _ProactiveQuestionDialogState extends State<ProactiveQuestionDialog> {
@@ -136,11 +137,15 @@ class _ProactiveQuestionDialogState extends State<ProactiveQuestionDialog> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey[300]!,
                             width: isSelected ? 2 : 1,
                           ),
                           borderRadius: BorderRadius.circular(8),
-                          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+                          color: isSelected
+                              ? AppColors.primary.withOpacity(0.1)
+                              : null,
                         ),
                         child: Row(
                           children: [
@@ -148,7 +153,9 @@ class _ProactiveQuestionDialogState extends State<ProactiveQuestionDialog> {
                               isSelected
                                   ? Icons.check_circle
                                   : Icons.circle_outlined,
-                              color: isSelected ? AppColors.primary : Colors.grey,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -158,7 +165,9 @@ class _ProactiveQuestionDialogState extends State<ProactiveQuestionDialog> {
                                   Text(
                                     opt.label,
                                     style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
                                     ),
                                   ),
                                   if (opt.description != null)
@@ -196,9 +205,13 @@ class _ProactiveQuestionDialogState extends State<ProactiveQuestionDialog> {
                 TextField(
                   controller: _customInputController,
                   decoration: InputDecoration(
-                    hintText: widget.question.customInputPlaceholder ?? '请输入...',
+                    hintText:
+                        widget.question.customInputPlaceholder ?? '请输入...',
                     border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                 ),
             ],
@@ -206,13 +219,11 @@ class _ProactiveQuestionDialogState extends State<ProactiveQuestionDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _skip,
-          child: const Text('跳过'),
-        ),
+        TextButton(onPressed: _skip, child: const Text('跳过')),
         FilledButton(
-          onPressed: _selectedIds.isNotEmpty ||
-                    (_customInputController.text.trim().isNotEmpty)
+          onPressed:
+              _selectedIds.isNotEmpty ||
+                  (_customInputController.text.trim().isNotEmpty)
               ? _confirm
               : null,
           child: const Text('确定'),

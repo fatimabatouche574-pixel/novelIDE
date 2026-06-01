@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 /// API文档: https://open.bigmodel.cn/dev/api
 class ZhipuAIService {
   static const String _baseUrl = 'https://open.bigmodel.cn/api/paas/v4';
-  
+
   final String apiKey;
-  
+
   ZhipuAIService({required this.apiKey});
 
   /// 发送聊天请求
@@ -43,7 +43,9 @@ class ZhipuAIService {
         return '';
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
-        throw Exception('智谱AI错误: ${error['error']['message'] ?? response.body}');
+        throw Exception(
+          '智谱AI错误: ${error['error']['message'] ?? response.body}',
+        );
       }
     } catch (e) {
       throw Exception('智谱AI请求失败: $e');
@@ -58,7 +60,10 @@ class ZhipuAIService {
     int maxTokens = 2048,
   }) async* {
     try {
-      final request = http.Request('POST', Uri.parse('$_baseUrl/chat/completions'));
+      final request = http.Request(
+        'POST',
+        Uri.parse('$_baseUrl/chat/completions'),
+      );
       request.headers.addAll({
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $apiKey',
@@ -110,16 +115,8 @@ class ZhipuAIService {
         'name': 'GLM-4-Flash',
         'description': '完全免费，128K上下文，适合日常对话',
       },
-      {
-        'id': 'glm-4-7b',
-        'name': 'GLM-4-7B',
-        'description': '轻量模型，200K上下文',
-      },
-      {
-        'id': 'glm-4',
-        'name': 'GLM-4',
-        'description': '旗舰模型，128K上下文（按量计费）',
-      },
+      {'id': 'glm-4-7b', 'name': 'GLM-4-7B', 'description': '轻量模型，200K上下文'},
+      {'id': 'glm-4', 'name': 'GLM-4', 'description': '旗舰模型，128K上下文（按量计费）'},
       {
         'id': 'glm-4-plus',
         'name': 'GLM-4-Plus',
@@ -133,9 +130,7 @@ class ZhipuAIService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/models'),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-        },
+        headers: {'Authorization': 'Bearer $apiKey'},
       );
       return response.statusCode == 200;
     } catch (e) {

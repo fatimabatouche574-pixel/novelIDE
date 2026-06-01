@@ -49,43 +49,43 @@ class SkinTheme {
   });
 
   ThemeData toThemeData() => ThemeData(
-        useMaterial3: true,
-        brightness: brightness,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primary,
-          brightness: brightness,
-          primary: primary,
-          secondary: secondary,
-          surface: surface,
-        ),
-        scaffoldBackgroundColor: background,
-        appBarTheme: AppBarTheme(
-          elevation: 0,
-          centerTitle: true,
-          backgroundColor: appBarBg,
-          foregroundColor: textPrimary,
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          color: cardBg,
-        ),
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: navBg,
-          selectedItemColor: navSelected,
-          unselectedItemColor: navUnselected,
-          type: BottomNavigationBarType.fixed,
-          elevation: 8,
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: primary,
-          foregroundColor: Colors.white,
-        ),
-        dividerTheme: DividerThemeData(
-          color: textSecondary.withOpacity(0.2),
-          thickness: 0.5,
-        ),
-      );
+    useMaterial3: true,
+    brightness: brightness,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: brightness,
+      primary: primary,
+      secondary: secondary,
+      surface: surface,
+    ),
+    scaffoldBackgroundColor: background,
+    appBarTheme: AppBarTheme(
+      elevation: 0,
+      centerTitle: true,
+      backgroundColor: appBarBg,
+      foregroundColor: textPrimary,
+    ),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: cardBg,
+    ),
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: navBg,
+      selectedItemColor: navSelected,
+      unselectedItemColor: navUnselected,
+      type: BottomNavigationBarType.fixed,
+      elevation: 8,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: primary,
+      foregroundColor: Colors.white,
+    ),
+    dividerTheme: DividerThemeData(
+      color: textSecondary.withOpacity(0.2),
+      thickness: 0.5,
+    ),
+  );
 }
 
 /// 8种主题定义

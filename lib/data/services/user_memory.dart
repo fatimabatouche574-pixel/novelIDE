@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
@@ -7,7 +6,7 @@ import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 /// 类似 Claude Code 的 MEMORY.md —— 记录用户偏好、习惯、指令。
 /// 与 NovelMemory（每部小说独立）互补。
 class UserMemory {
-static String? _cachedContent;
+  static String? _cachedContent;
 
   /// 记忆文件路径
   static Future<String> get _memoryPath async {

@@ -46,6 +46,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   final TextEditingController _findCtrl = TextEditingController();
   int _findIndex = 0;
   Chapter? _currentChapter;
+
   /// dispose 安全：缓存 novel title 和 projectPath，避免 dispose 后 ref 失效
   String _novelTitle = '';
   String _projectPath = '';
@@ -74,7 +75,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     if (_undoStack.length <= 1) return;
     _redoStack.add(_undoStack.removeLast());
     _controller.text = _undoStack.last;
-    _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
   }
 
   void _redo() {
@@ -96,9 +99,13 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   int goal = 3000;
 
   Future<void> _loadChapterList() async {
-    final chapters = await ref.read(chapterRepoProvider).getChaptersByNovel(widget.novelId);
+    final chapters = await ref
+        .read(chapterRepoProvider)
+        .getChaptersByNovel(widget.novelId);
     _allChapters = chapters;
-    _currentChapterIndex = _allChapters.indexWhere((c) => c.id == widget.chapterId);
+    _currentChapterIndex = _allChapters.indexWhere(
+      (c) => c.id == widget.chapterId,
+    );
     if (_currentChapterIndex < 0) _currentChapterIndex = 0;
   }
 
@@ -108,7 +115,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => EditorPage(novelId: widget.novelId, chapterId: _allChapters[_currentChapterIndex - 1].id),
+        builder: (_) => EditorPage(
+          novelId: widget.novelId,
+          chapterId: _allChapters[_currentChapterIndex - 1].id,
+        ),
       ),
     );
   }
@@ -119,7 +129,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => EditorPage(novelId: widget.novelId, chapterId: _allChapters[_currentChapterIndex + 1].id),
+        builder: (_) => EditorPage(
+          novelId: widget.novelId,
+          chapterId: _allChapters[_currentChapterIndex + 1].id,
+        ),
       ),
     );
   }
@@ -139,7 +152,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       final fs = LocalFileDataSource();
       _projectPath = await fs.getProjectDir(widget.novelId, _novelTitle);
     }
-    final chapter = await ref.read(chapterRepoProvider).getChapter(widget.chapterId);
+    final chapter = await ref
+        .read(chapterRepoProvider)
+        .getChapter(widget.chapterId);
     if (chapter != null) {
       _currentChapter = chapter;
       _controller.text = chapter.content;
@@ -171,7 +186,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   Future<void> _saveChapter() async {
     final novel = ref.read(selectedNovelProvider);
     if (novel == null) return;
-    final chapter = await ref.read(chapterRepoProvider).getChapter(widget.chapterId);
+    final chapter = await ref
+        .read(chapterRepoProvider)
+        .getChapter(widget.chapterId);
     if (chapter == null) return;
     final newWordCount = _controller.text.length;
     final updated = chapter.copyWith(
@@ -194,7 +211,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       }
     }
 
-    ref.read(saveStatusProvider.notifier).state = '已保存 ${DateFormat('HH:mm').format(DateTime.now())}';
+    ref.read(saveStatusProvider.notifier).state =
+        '已保存 ${DateFormat('HH:mm').format(DateTime.now())}';
     _lastSavedWordCount = newWordCount;
     ref.invalidate(chaptersProvider(widget.novelId));
 
@@ -208,20 +226,26 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     final elapsed = DateTime.now().difference(_lastSnapshotTime);
     if (elapsed >= const Duration(minutes: 3)) {
       // More than 3 minutes since last snapshot — fire immediately
-      ref.read(chapterRepoProvider).createSnapshot(widget.chapterId, _controller.text);
+      ref
+          .read(chapterRepoProvider)
+          .createSnapshot(widget.chapterId, _controller.text);
       _lastSnapshotTime = DateTime.now();
     } else {
       // Schedule for the remaining time
       final remaining = const Duration(minutes: 3) - elapsed;
       _snapshotTimer = Timer(remaining, () {
-        ref.read(chapterRepoProvider).createSnapshot(widget.chapterId, _controller.text);
+        ref
+            .read(chapterRepoProvider)
+            .createSnapshot(widget.chapterId, _controller.text);
         _lastSnapshotTime = DateTime.now();
       });
     }
   }
 
   void _showSnapshots() async {
-    final snapshots = await ref.read(chapterRepoProvider).getSnapshots(widget.chapterId);
+    final snapshots = await ref
+        .read(chapterRepoProvider)
+        .getSnapshots(widget.chapterId);
     if (!mounted) return;
     showModalBottomSheet(
       context: context,
@@ -236,7 +260,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                child: const Text('历史版本', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  '历史版本',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
               Expanded(
                 child: ListView.builder(
@@ -246,7 +273,11 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     final snap = snapshots[index];
                     return ListTile(
                       title: Text('版本 ${index + 1}'),
-                      subtitle: Text(DateFormat('yyyy-MM-dd HH:mm:ss').format(snap.createdAt)),
+                      subtitle: Text(
+                        DateFormat(
+                          'yyyy-MM-dd HH:mm:ss',
+                        ).format(snap.createdAt),
+                      ),
                       trailing: Text('${snap.content.length}字'),
                       onTap: () {
                         _controller.text = snap.content;
@@ -350,7 +381,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('删除章节', style: TextStyle(color: AppColors.error)),
+              title: const Text(
+                '删除章节',
+                style: TextStyle(color: AppColors.error),
+              ),
               onTap: () async {
                 Navigator.pop(context);
                 final confirm = await showDialog<bool>(
@@ -359,9 +393,14 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     title: const Text('删除章节'),
                     content: const Text('确定删除此章节吗？内容将移至回收站。'),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('取消'),
+                      ),
                       FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                        ),
                         onPressed: () => Navigator.pop(context, true),
                         child: const Text('删除'),
                       ),
@@ -369,7 +408,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   ),
                 );
                 if (confirm == true) {
-                  await ref.read(chapterRepoProvider).deleteChapter(widget.chapterId);
+                  await ref
+                      .read(chapterRepoProvider)
+                      .deleteChapter(widget.chapterId);
                   ref.invalidate(chaptersProvider(widget.novelId));
                   if (mounted) Navigator.pop(context);
                 }
@@ -384,15 +425,18 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   void _splitChapter() {
     final text = _controller.text;
     if (text.length < 1000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('章节内容太短，不适合拆分')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('章节内容太短，不适合拆分')));
       return;
     }
     final midpoint = text.length ~/ 2;
     int splitPos = midpoint;
     for (int i = midpoint; i < text.length && i < midpoint + 500; i++) {
-      if (text[i] == '\n' || text[i] == '。' || text[i] == '！' || text[i] == '？') {
+      if (text[i] == '\n' ||
+          text[i] == '。' ||
+          text[i] == '！' ||
+          text[i] == '？') {
         splitPos = i + 1;
         break;
       }
@@ -404,9 +448,18 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('将在第${splitPos}字处拆分（约${text.substring(0, splitPos).length}字 / ${text.substring(splitPos).length}字）'),
+            Text(
+              '将在第${splitPos}字处拆分（约${text.substring(0, splitPos).length}字 / ${text.substring(splitPos).length}字）',
+            ),
             const SizedBox(height: 8),
-            Text('前段预览：', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey[500])),
+            Text(
+              '前段预览：',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
+            ),
             Container(
               padding: const EdgeInsets.all(8),
               margin: const EdgeInsets.only(top: 4),
@@ -424,37 +477,60 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
               final novel = ref.read(selectedNovelProvider);
-              final chapter = await ref.read(chapterRepoProvider).getChapter(widget.chapterId);
+              final chapter = await ref
+                  .read(chapterRepoProvider)
+                  .getChapter(widget.chapterId);
               if (chapter == null || novel == null) return;
               final firstPart = text.substring(0, splitPos).trim();
               final secondPart = text.substring(splitPos).trim();
-              final chapters = await ref.read(chapterRepoProvider).getChaptersByNovel(widget.novelId);
-              final newOrder = chapters.where((c) => c.id != widget.chapterId).length;
-              await ref.read(chapterRepoProvider).updateChapter(
-                chapter.copyWith(content: firstPart, wordCount: firstPart.length, updatedAt: DateTime.now()),
-                novel.title,
-              );
-              final newChapter = await ref.read(chapterRepoProvider).createChapter(
-                novelId: widget.novelId,
-                volumeId: chapter.volumeId,
-                title: '${chapter.title}（续）',
-                orderIndex: newOrder,
-              );
-              await ref.read(chapterRepoProvider).updateChapter(
-                newChapter.copyWith(content: secondPart, wordCount: secondPart.length, updatedAt: DateTime.now()),
-                novel.title,
-              );
+              final chapters = await ref
+                  .read(chapterRepoProvider)
+                  .getChaptersByNovel(widget.novelId);
+              final newOrder = chapters
+                  .where((c) => c.id != widget.chapterId)
+                  .length;
+              await ref
+                  .read(chapterRepoProvider)
+                  .updateChapter(
+                    chapter.copyWith(
+                      content: firstPart,
+                      wordCount: firstPart.length,
+                      updatedAt: DateTime.now(),
+                    ),
+                    novel.title,
+                  );
+              final newChapter = await ref
+                  .read(chapterRepoProvider)
+                  .createChapter(
+                    novelId: widget.novelId,
+                    volumeId: chapter.volumeId,
+                    title: '${chapter.title}（续）',
+                    orderIndex: newOrder,
+                  );
+              await ref
+                  .read(chapterRepoProvider)
+                  .updateChapter(
+                    newChapter.copyWith(
+                      content: secondPart,
+                      wordCount: secondPart.length,
+                      updatedAt: DateTime.now(),
+                    ),
+                    novel.title,
+                  );
               _lastSavedWordCount = firstPart.length;
               ref.invalidate(chaptersProvider(widget.novelId));
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('章节已拆分')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('章节已拆分')));
               }
             },
             child: const Text('确认拆分'),
@@ -478,26 +554,36 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     super.dispose();
   }
 
-
   /// dispose 时同步保存文件+更新数据库
   void _forceSaveSync() {
     try {
       final content = _controller.text;
       if (content.isEmpty || _projectPath.isEmpty) return;
       // 1. 同步写文件
-      final filePath = p.join(_projectPath, 'chapters', '${widget.chapterId}.md');
+      final filePath = p.join(
+        _projectPath,
+        'chapters',
+        '${widget.chapterId}.md',
+      );
       File(filePath).writeAsStringSync(content, encoding: utf8);
       // 2. 异步更新数据库（文件优先，数据库后台补）
       final db = DatabaseHelper();
-      db.database.then((database) => database.update(
-        'chapters',
-        {'word_count': content.length, 'updated_at': DateTime.now().millisecondsSinceEpoch},
-        where: 'id = ?',
-        whereArgs: [widget.chapterId],
-      )).catchError((e) {
-        debugPrint('dispose DB update failed: $e');
-        return 0;
-      });
+      db.database
+          .then(
+            (database) => database.update(
+              'chapters',
+              {
+                'word_count': content.length,
+                'updated_at': DateTime.now().millisecondsSinceEpoch,
+              },
+              where: 'id = ?',
+              whereArgs: [widget.chapterId],
+            ),
+          )
+          .catchError((e) {
+            debugPrint('dispose DB update failed: $e');
+            return 0;
+          });
     } catch (e) {
       debugPrint('dispose 强制保存失败: $e');
     }
@@ -538,7 +624,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   icon: const Icon(Icons.chevron_right, size: 20),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: _currentChapterIndex < _allChapters.length - 1 ? _nextChapter : null,
+                  onPressed: _currentChapterIndex < _allChapters.length - 1
+                      ? _nextChapter
+                      : null,
                   tooltip: '下一章',
                 ),
               ],
@@ -559,10 +647,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               if (novel != null) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => ExportPage(
-                    novelId: novel.id,
-                    novelTitle: novel.title,
-                  )),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ExportPage(novelId: novel.id, novelTitle: novel.title),
+                  ),
                 );
               }
             },
@@ -611,7 +699,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                 children: [
                   Icon(Icons.wifi_off, size: 14, color: Colors.orange[700]),
                   const SizedBox(width: 8),
-                  const Text('离线模式：AI功能不可用', style: TextStyle(fontSize: 11, color: Colors.orange)),
+                  const Text(
+                    '离线模式：AI功能不可用',
+                    style: TextStyle(fontSize: 11, color: Colors.orange),
+                  ),
                 ],
               ),
             ),
@@ -622,10 +713,16 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
+                  Icon(
+                    Icons.warning_amber,
+                    size: 16,
+                    color: Colors.orange[700],
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    wordCount > 15000 ? '本章超过15000字，建议立即拆章以保证性能' : '本章超过10000字，建议拆章',
+                    wordCount > 15000
+                        ? '本章超过15000字，建议立即拆章以保证性能'
+                        : '本章超过10000字，建议拆章',
                     style: TextStyle(fontSize: 12, color: Colors.orange[800]),
                   ),
                 ],
@@ -698,7 +795,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+              ],
             ),
             child: SafeArea(
               child: SizedBox(
@@ -707,13 +806,22 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   children: [
-                    _ToolbarButton(icon: Icons.undo, label: '撤销', onPressed: _undo),
-                    _ToolbarButton(icon: Icons.redo, label: '重做', onPressed: _redo),
+                    _ToolbarButton(
+                      icon: Icons.undo,
+                      label: '撤销',
+                      onPressed: _undo,
+                    ),
+                    _ToolbarButton(
+                      icon: Icons.redo,
+                      label: '重做',
+                      onPressed: _redo,
+                    ),
                     _ToolbarButton(
                       icon: _showFindBar ? Icons.close : Icons.search,
                       label: '查找',
                       isActive: _showFindBar,
-                      onPressed: () => setState(() => _showFindBar = !_showFindBar),
+                      onPressed: () =>
+                          setState(() => _showFindBar = !_showFindBar),
                     ),
                     _ToolbarButton(
                       icon: Icons.find_replace,
@@ -726,7 +834,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                         label: 'AI',
                         color: AppColors.primary,
                         isActive: _showAiDrawer,
-                        onPressed: () => setState(() => _showAiDrawer = !_showAiDrawer),
+                        onPressed: () =>
+                            setState(() => _showAiDrawer = !_showAiDrawer),
                       ),
                     _ToolbarButton(
                       icon: Icons.text_snippet,
@@ -767,11 +876,11 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               onSave: () => _onTextChanged(_controller.text),
             )
           : _showSearchDrawer
-              ? SearchDrawer(
-                  novelId: widget.novelId,
-                  onClose: () => setState(() => _showSearchDrawer = false),
-                )
-              : null,
+          ? SearchDrawer(
+              novelId: widget.novelId,
+              onClose: () => setState(() => _showSearchDrawer = false),
+            )
+          : null,
     );
   }
 
@@ -789,13 +898,28 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: findCtrl, decoration: const InputDecoration(labelText: '查找内容', isDense: true)),
+            TextField(
+              controller: findCtrl,
+              decoration: const InputDecoration(
+                labelText: '查找内容',
+                isDense: true,
+              ),
+            ),
             const SizedBox(height: 8),
-            TextField(controller: replaceCtrl, decoration: const InputDecoration(labelText: '替换为', isDense: true)),
+            TextField(
+              controller: replaceCtrl,
+              decoration: const InputDecoration(
+                labelText: '替换为',
+                isDense: true,
+              ),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               final text = _controller.text;
@@ -806,7 +930,11 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                 _onTextChanged(newText); // 触发自动保存 + 更新字数
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('已替换 ${findCtrl.text.allMatches(text).length} 处')),
+                    SnackBar(
+                      content: Text(
+                        '已替换 ${findCtrl.text.allMatches(text).length} 处',
+                      ),
+                    ),
                   );
                 }
               }
@@ -821,7 +949,23 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
   /// 快捷短语底部弹窗
   void _showQuickWordsSheet() {
-    final quickWords = ['……', '——', '………', '「」', '『』', '【】', '（）', '：', '；', '，', '。', '！', '？', '……。', '——！'];
+    final quickWords = [
+      '……',
+      '——',
+      '………',
+      '「」',
+      '『』',
+      '【】',
+      '（）',
+      '：',
+      '；',
+      '，',
+      '。',
+      '！',
+      '？',
+      '……。',
+      '——！',
+    ];
 
     showModalBottomSheet(
       context: context,
@@ -831,24 +975,37 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           children: [
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Text('快捷短语', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                '快捷短语',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: quickWords.map((w) => ActionChip(
-                label: Text(w, style: const TextStyle(fontSize: 16)),
-                onPressed: () {
-                  final sel = _controller.selection;
-                  final text = _controller.text;
-                  final newText = text.replaceRange(sel.start, sel.end, w);
-                  _controller.text = newText;
-                  _controller.selection = TextSelection.collapsed(offset: sel.start + w.length);
-                  _recordHistory();
-                  _onTextChanged(newText);
-                  Navigator.pop(ctx);
-                },
-              )).toList(),
+              children: quickWords
+                  .map(
+                    (w) => ActionChip(
+                      label: Text(w, style: const TextStyle(fontSize: 16)),
+                      onPressed: () {
+                        final sel = _controller.selection;
+                        final text = _controller.text;
+                        final newText = text.replaceRange(
+                          sel.start,
+                          sel.end,
+                          w,
+                        );
+                        _controller.text = newText;
+                        _controller.selection = TextSelection.collapsed(
+                          offset: sel.start + w.length,
+                        );
+                        _recordHistory();
+                        _onTextChanged(newText);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 16),
           ],
@@ -889,8 +1046,11 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                 Navigator.pop(ctx);
                 final novel = ref.read(selectedNovelProvider);
                 if (novel != null) {
-                  Navigator.pushNamed(context, '/global-search',
-                    arguments: {'novelId': novel.id, 'novelTitle': novel.title});
+                  Navigator.pushNamed(
+                    context,
+                    '/global-search',
+                    arguments: {'novelId': novel.id, 'novelTitle': novel.title},
+                  );
                 }
               },
             ),
@@ -900,11 +1060,15 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               subtitle: const Text('检查设定冲突'),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => SettingReminderPage(
-                    novelId: widget.novelId,
-                    editorController: _controller,
-                  )));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SettingReminderPage(
+                      novelId: widget.novelId,
+                      editorController: _controller,
+                    ),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 8),

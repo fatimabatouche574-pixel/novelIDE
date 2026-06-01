@@ -16,7 +16,8 @@ class ConfigService {
   static double get fontSize => _box.get('fontSize', defaultValue: 18.0);
   static set fontSize(double value) => _box.put('fontSize', value);
 
-  static String get fontFamily => _box.get('fontFamily', defaultValue: 'NotoSerifSC');
+  static String get fontFamily =>
+      _box.get('fontFamily', defaultValue: 'NotoSerifSC');
   static set fontFamily(String value) => _box.put('fontFamily', value);
 
   static double get lineHeight => _box.get('lineHeight', defaultValue: 1.8);
@@ -33,11 +34,14 @@ class ConfigService {
   static String? get lastNovelId => _box.get('lastNovelId');
   static set lastNovelId(String? value) => _box.put('lastNovelId', value);
 
-  static List<String> get recentNovelIds => _box.get('recentNovelIds', defaultValue: <String>[]).cast<String>();
-  static set recentNovelIds(List<String> value) => _box.put('recentNovelIds', value);
+  static List<String> get recentNovelIds =>
+      _box.get('recentNovelIds', defaultValue: <String>[]).cast<String>();
+  static set recentNovelIds(List<String> value) =>
+      _box.put('recentNovelIds', value);
 
   // Voice config - 语音通话使用的AI模型ID（空=使用默认对话模型）
-  static String get voiceConfigId => _box.get('voiceConfigId', defaultValue: '');
+  static String get voiceConfigId =>
+      _box.get('voiceConfigId', defaultValue: '');
   static set voiceConfigId(String value) => _box.put('voiceConfigId', value);
 
   // Active AI config - 当前使用的文本对话AI模型ID

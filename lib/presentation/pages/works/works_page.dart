@@ -9,7 +9,8 @@ import 'package:novel_ide/presentation/pages/writing/editor_page.dart';
 import 'package:novel_ide/data/datasources/local_file_datasource.dart';
 import 'package:novel_ide/data/services/novel_import_service.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:novel_ide/presentation/pages/works/export_page.dart' hide FileTreeNode;
+import 'package:novel_ide/presentation/pages/works/export_page.dart'
+    hide FileTreeNode;
 import 'package:novel_ide/presentation/pages/profile/profile_page.dart';
 import 'package:novel_ide/presentation/widgets/file_tree_view.dart';
 import 'package:path/path.dart' as p;
@@ -57,7 +58,10 @@ class _WorksPageState extends ConsumerState<WorksPage> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: Icon(Icons.file_upload_outlined, color: colorScheme.onSurface),
+            icon: Icon(
+              Icons.file_upload_outlined,
+              color: colorScheme.onSurface,
+            ),
             tooltip: '导入作品',
             onPressed: () => _showImportDialog(context, ref),
           ),
@@ -84,9 +88,7 @@ class _WorksPageState extends ConsumerState<WorksPage> {
               // 顶部统计栏
               _buildStatsHeader(novels),
               // 作品列表（树形）
-              Expanded(
-                child: _buildWorksTree(novels),
-              ),
+              Expanded(child: _buildWorksTree(novels)),
             ],
           );
         },
@@ -128,9 +130,17 @@ class _WorksPageState extends ConsumerState<WorksPage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _StatItem(label: '作品', value: '${novels.length}'),
-          Container(width: 1, height: 28, color: colorScheme.onSurface.withOpacity(0.3)),
+          Container(
+            width: 1,
+            height: 28,
+            color: colorScheme.onSurface.withOpacity(0.3),
+          ),
           _StatItem(label: '总字数', value: _formatWordCount(totalWords)),
-          Container(width: 1, height: 28, color: colorScheme.onSurface.withOpacity(0.3)),
+          Container(
+            width: 1,
+            height: 28,
+            color: colorScheme.onSurface.withOpacity(0.3),
+          ),
           _StatItem(label: '总章节', value: '$totalChapters'),
         ],
       ),
@@ -159,7 +169,10 @@ class _WorksPageState extends ConsumerState<WorksPage> {
               height: 80,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                  colors: [
+                    colorScheme.primary,
+                    colorScheme.primary.withOpacity(0.8),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -172,7 +185,11 @@ class _WorksPageState extends ConsumerState<WorksPage> {
                   ),
                 ],
               ),
-              child: Icon(Icons.auto_stories, size: 40, color: colorScheme.onSurface),
+              child: Icon(
+                Icons.auto_stories,
+                size: 40,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 28),
             Text(
@@ -201,18 +218,30 @@ class _WorksPageState extends ConsumerState<WorksPage> {
               child: FilledButton.icon(
                 onPressed: () => _showCreateNovelDialog(context, ref),
                 icon: const Icon(Icons.add_rounded, size: 22),
-                label: const Text('新建作品', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                label: const Text(
+                  '新建作品',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 14),
             TextButton.icon(
               onPressed: () => _showImportDialog(context, ref),
-              icon: Icon(Icons.file_upload_outlined, size: 18, color: colorScheme.onSurface.withOpacity(0.5)),
-              label: Text('导入 TXT / MD / EPUB 文件', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
+              icon: Icon(
+                Icons.file_upload_outlined,
+                size: 18,
+                color: colorScheme.onSurface.withOpacity(0.5),
+              ),
+              label: Text(
+                '导入 TXT / MD / EPUB 文件',
+                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+              ),
             ),
             const SizedBox(height: 48),
             // 三大卖点
@@ -264,7 +293,9 @@ class _WorksPageState extends ConsumerState<WorksPage> {
               decoration: InputDecoration(
                 labelText: '作品名称',
                 hintText: '例如：都市神医',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               autofocus: true,
             ),
@@ -274,21 +305,28 @@ class _WorksPageState extends ConsumerState<WorksPage> {
               decoration: InputDecoration(
                 labelText: '简介（可选）',
                 hintText: '一句话简介',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               maxLines: 2,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () async {
               if (titleCtrl.text.trim().isEmpty) return;
               final repo = ref.read(novelRepoProvider);
               final novel = await repo.createNovel(
                 title: titleCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
               );
               ref.invalidate(novelsProvider);
               if (context.mounted) {
@@ -331,7 +369,10 @@ class _WorksPageState extends ConsumerState<WorksPage> {
               const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text('导入作品', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  '导入作品',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -343,16 +384,31 @@ class _WorksPageState extends ConsumerState<WorksPage> {
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.description_outlined, color: AppColors.primary),
+                  child: const Icon(
+                    Icons.description_outlined,
+                    color: AppColors.primary,
+                  ),
                 ),
-                title: const Text('导入 TXT / MD / EPUB 文件', style: TextStyle(fontSize: 16)),
-                subtitle: const Text('自动拆章创建新作品', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                title: const Text(
+                  '导入 TXT / MD / EPUB 文件',
+                  style: TextStyle(fontSize: 16),
+                ),
+                subtitle: const Text(
+                  '自动拆章创建新作品',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 onTap: () async {
                   Navigator.pop(ctx);
                   final result = await FilePicker.platform.pickFiles(
                     dialogTitle: '选择小说文件',
                     type: FileType.custom,
-                    allowedExtensions: ['txt', 'md', 'docx', 'epub', 'novelpack'],
+                    allowedExtensions: [
+                      'txt',
+                      'md',
+                      'docx',
+                      'epub',
+                      'novelpack',
+                    ],
                   );
                   if (result != null && result.files.single.path != null) {
                     final filePath = result.files.single.path!;
@@ -361,9 +417,14 @@ class _WorksPageState extends ConsumerState<WorksPage> {
                       if (ext == '.novelpack') {
                         final fs = LocalFileDataSource();
                         await fs.importNovelPack(filePath);
-                      } else if (ext == '.txt' || ext == '.md' || ext == '.docx' || ext == '.epub') {
+                      } else if (ext == '.txt' ||
+                          ext == '.md' ||
+                          ext == '.docx' ||
+                          ext == '.epub') {
                         final service = NovelImportService();
-                        final importResult = await service.importFromFile(filePath: filePath);
+                        final importResult = await service.importFromFile(
+                          filePath: filePath,
+                        );
                         if (!importResult.success) {
                           throw Exception(importResult.error ?? '导入失败');
                         }
@@ -372,15 +433,15 @@ class _WorksPageState extends ConsumerState<WorksPage> {
                       }
                       ref.invalidate(novelsProvider);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('导入成功')),
-                        );
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(const SnackBar(content: Text('导入成功')));
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('导入失败: $e')),
-                        );
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
                       }
                     }
                   }
@@ -402,11 +463,15 @@ class _WorksPageState extends ConsumerState<WorksPage> {
 
       List<FileTreeNode> volumeNodes = [];
       if (_loadingNovels.contains(novel.id)) {
-        volumeNodes = [FileTreeNode(id: 'loading_${novel.id}', name: '加载中...',)];
+        volumeNodes = [FileTreeNode(id: 'loading_${novel.id}', name: '加载中...')];
       } else if (volumes != null) {
-        volumeNodes = volumes.map((vol) => _buildVolumeNode(novel, vol)).toList();
+        volumeNodes = volumes
+            .map((vol) => _buildVolumeNode(novel, vol))
+            .toList();
         if (volumeNodes.isEmpty) {
-          volumeNodes = [FileTreeNode(id: 'empty_${novel.id}', name: '暂无卷，长按添加',)];
+          volumeNodes = [
+            FileTreeNode(id: 'empty_${novel.id}', name: '暂无卷，长按添加'),
+          ];
         }
       }
 
@@ -439,11 +504,15 @@ class _WorksPageState extends ConsumerState<WorksPage> {
 
     List<FileTreeNode> chapterNodes = [];
     if (_loadingVolumes.contains(volume.id)) {
-      chapterNodes = [FileTreeNode(id: 'loading_${volume.id}', name: '加载中...',)];
+      chapterNodes = [FileTreeNode(id: 'loading_${volume.id}', name: '加载中...')];
     } else if (chapters != null) {
-      chapterNodes = chapters.map((ch) => _buildChapterNode(novel, ch)).toList();
+      chapterNodes = chapters
+          .map((ch) => _buildChapterNode(novel, ch))
+          .toList();
       if (chapterNodes.isEmpty) {
-        chapterNodes = [FileTreeNode(id: 'empty_${volume.id}', name: '暂无章节，长按添加',)];
+        chapterNodes = [
+          FileTreeNode(id: 'empty_${volume.id}', name: '暂无章节，长按添加'),
+        ];
       }
     }
 
@@ -507,7 +576,8 @@ class _WorksPageState extends ConsumerState<WorksPage> {
   /// 路由节点点击：判断是作品/卷/章节
   void _handleNodeTap(FileTreeNode node, List<Novel> novels) {
     // 作品级节点
-    if (_expandedNovels.contains(node.id) || novels.any((n) => n.id == node.id)) {
+    if (_expandedNovels.contains(node.id) ||
+        novels.any((n) => n.id == node.id)) {
       _toggleNovelExpand(node.id);
       return;
     }
@@ -522,7 +592,12 @@ class _WorksPageState extends ConsumerState<WorksPage> {
       final (novel, chapter) = chapterData;
       ref.read(selectedNovelProvider.notifier).state = novel;
       ref.read(selectedChapterProvider.notifier).state = chapter;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => EditorPage(novelId: novel.id, chapterId: chapter.id)));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EditorPage(novelId: novel.id, chapterId: chapter.id),
+        ),
+      );
     }
   }
 
@@ -530,13 +605,21 @@ class _WorksPageState extends ConsumerState<WorksPage> {
   void _handleNodeLongPress(FileTreeNode node, List<Novel> novels) {
     // 作品级
     final novel = novels.where((n) => n.id == node.id).firstOrNull;
-    if (novel != null) { _showNovelMenu(novel); return; }
+    if (novel != null) {
+      _showNovelMenu(novel);
+      return;
+    }
     // 卷级
     final volumeData = _findVolumeById(node.id);
-    if (volumeData != null) { _showVolumeMenu(volumeData.$1, volumeData.$2); return; }
+    if (volumeData != null) {
+      _showVolumeMenu(volumeData.$1, volumeData.$2);
+      return;
+    }
     // 章节级
     final chapterData = _findChapterById(node.id);
-    if (chapterData != null) { _showChapterMenu(chapterData.$1, chapterData.$2); }
+    if (chapterData != null) {
+      _showChapterMenu(chapterData.$1, chapterData.$2);
+    }
   }
 
   /// 在已加载的卷数据中查找Volume
@@ -545,7 +628,11 @@ class _WorksPageState extends ConsumerState<WorksPage> {
       final novelId = entry.key;
       for (final vol in entry.value) {
         if (vol.id == volumeId) {
-          final novel = ref.read(novelsProvider).valueOrNull?.where((n) => n.id == novelId).firstOrNull;
+          final novel = ref
+              .read(novelsProvider)
+              .valueOrNull
+              ?.where((n) => n.id == novelId)
+              .firstOrNull;
           if (novel != null) return (novel, vol);
         }
       }
@@ -558,7 +645,11 @@ class _WorksPageState extends ConsumerState<WorksPage> {
     for (final entry in _loadedChapters.entries) {
       for (final ch in entry.value) {
         if (ch.id == chapterId) {
-          final novel = ref.read(novelsProvider).valueOrNull?.where((n) => n.id == ch.novelId).firstOrNull;
+          final novel = ref
+              .read(novelsProvider)
+              .valueOrNull
+              ?.where((n) => n.id == ch.novelId)
+              .firstOrNull;
           if (novel != null) return (novel, ch);
         }
       }
@@ -568,7 +659,9 @@ class _WorksPageState extends ConsumerState<WorksPage> {
 
   Future<void> _loadVolumes(String novelId) async {
     setState(() => _loadingNovels.add(novelId));
-    final volumes = await ref.read(volumeRepoProvider).getVolumesByNovel(novelId);
+    final volumes = await ref
+        .read(volumeRepoProvider)
+        .getVolumesByNovel(novelId);
     if (mounted) {
       setState(() {
         _loadingNovels.remove(novelId);
@@ -579,7 +672,9 @@ class _WorksPageState extends ConsumerState<WorksPage> {
 
   Future<void> _loadChapters(String volumeId) async {
     setState(() => _loadingVolumes.add(volumeId));
-    final chapters = await ref.read(chapterRepoProvider).getChaptersByVolume(volumeId);
+    final chapters = await ref
+        .read(chapterRepoProvider)
+        .getChaptersByVolume(volumeId);
     if (mounted) {
       setState(() {
         _loadingVolumes.remove(volumeId);
@@ -603,12 +698,61 @@ class _WorksPageState extends ConsumerState<WorksPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const SizedBox(height: 8),
-              ListTile(leading: const Icon(Icons.edit), title: const Text('重命名'), onTap: () { Navigator.pop(ctx); _showRenameNovelDialog(novel); }),
-              ListTile(leading: const Icon(Icons.file_download_outlined), title: const Text('导出'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => ExportPage(novelId: novel.id, novelTitle: novel.title))); }),
-              ListTile(leading: Icon(Icons.create_new_folder, color: AppColors.primary), title: const Text('新建卷'), onTap: () { Navigator.pop(ctx); _showCreateVolumeDialog(novel); }),
-              ListTile(leading: const Icon(Icons.delete_outline, color: AppColors.error), title: Text('删除作品', style: TextStyle(color: AppColors.error)), onTap: () async { Navigator.pop(ctx); _confirmDeleteNovel(novel); }),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('重命名'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showRenameNovelDialog(novel);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.file_download_outlined),
+                title: const Text('导出'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ExportPage(
+                        novelId: novel.id,
+                        novelTitle: novel.title,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.create_new_folder,
+                  color: AppColors.primary,
+                ),
+                title: const Text('新建卷'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showCreateVolumeDialog(novel);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                ),
+                title: Text('删除作品', style: TextStyle(color: AppColors.error)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  _confirmDeleteNovel(novel);
+                },
+              ),
             ],
           ),
         ),
@@ -618,27 +762,59 @@ class _WorksPageState extends ConsumerState<WorksPage> {
 
   void _showRenameNovelDialog(Novel novel) {
     final ctrl = TextEditingController(text: novel.title);
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('重命名作品'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: TextField(controller: ctrl, autofocus: true, decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () async { if (ctrl.text.trim().isEmpty) return; await ref.read(novelRepoProvider).updateNovel(novel.copyWith(title: ctrl.text.trim())); ref.invalidate(novelsProvider); if (ctx.mounted) Navigator.pop(ctx); }, child: const Text('确定')),
-      ],
-    ));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名作品'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isEmpty) return;
+              await ref
+                  .read(novelRepoProvider)
+                  .updateNovel(novel.copyWith(title: ctrl.text.trim()));
+              ref.invalidate(novelsProvider);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _confirmDeleteNovel(Novel novel) async {
-    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: Text('删除「${novel.title}」？'),
-      content: const Text('所有章节和资料将被删除，此操作不可恢复'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-        FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.error), onPressed: () => Navigator.pop(ctx, true), child: const Text('删除')),
-      ],
-    ));
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('删除「${novel.title}」？'),
+        content: const Text('所有章节和资料将被删除，此操作不可恢复'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
     if (confirm == true) {
       await ref.read(novelRepoProvider).deleteNovel(novel.id, novel.title);
       ref.invalidate(novelsProvider);
@@ -648,61 +824,160 @@ class _WorksPageState extends ConsumerState<WorksPage> {
   // --- 卷操作 ---
   void _showCreateVolumeDialog(Novel novel) {
     final ctrl = TextEditingController();
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('新建卷'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: '卷名', hintText: '例如：第一卷 潜龙在渊')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () async {
-          if (ctrl.text.trim().isEmpty) return;
-          final existing = _loadedVolumes[novel.id] ?? [];
-          await ref.read(volumeRepoProvider).createVolume(novelId: novel.id, title: ctrl.text.trim(), orderIndex: existing.length);
-          ref.invalidate(novelsProvider);
-          _loadedVolumes.remove(novel.id);
-          if (ctx.mounted) Navigator.pop(ctx);
-          setState(() {});
-        }, child: const Text('创建')),
-      ],
-    ));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建卷'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '卷名',
+            hintText: '例如：第一卷 潜龙在渊',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isEmpty) return;
+              final existing = _loadedVolumes[novel.id] ?? [];
+              await ref
+                  .read(volumeRepoProvider)
+                  .createVolume(
+                    novelId: novel.id,
+                    title: ctrl.text.trim(),
+                    orderIndex: existing.length,
+                  );
+              ref.invalidate(novelsProvider);
+              _loadedVolumes.remove(novel.id);
+              if (ctx.mounted) Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('创建'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showVolumeMenu(Novel novel, Volume volume) {
-    showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (ctx) => Container(
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 8),
-        ListTile(leading: Icon(Icons.add, color: AppColors.primary), title: const Text('添加章节'), onTap: () { Navigator.pop(ctx); _showCreateChapterDialog(novel, volume); }),
-        ListTile(leading: const Icon(Icons.edit), title: const Text('编辑卷概要'), onTap: () { Navigator.pop(ctx); _showEditVolumeSummaryDialog(volume); }),
-        ListTile(leading: const Icon(Icons.delete_outline, color: AppColors.error), title: Text('删除卷', style: TextStyle(color: AppColors.error)), onTap: () async { Navigator.pop(ctx); _confirmDeleteVolume(novel, volume); }),
-      ])),
-    ));
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Icon(Icons.add, color: AppColors.primary),
+                title: const Text('添加章节'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showCreateChapterDialog(novel, volume);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('编辑卷概要'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showEditVolumeSummaryDialog(volume);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                ),
+                title: Text('删除卷', style: TextStyle(color: AppColors.error)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  _confirmDeleteVolume(novel, volume);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showEditVolumeSummaryDialog(Volume volume) {
     final ctrl = TextEditingController(text: volume.summary ?? '');
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: Text('编辑「${volume.title}」概要'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: TextField(controller: ctrl, maxLines: 5, decoration: const InputDecoration(hintText: '输入卷概要...')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () async { await ref.read(volumeRepoProvider).updateVolume(volume.copyWith(summary: ctrl.text.trim().isEmpty ? null : ctrl.text.trim())); if (ctx.mounted) Navigator.pop(ctx); }, child: const Text('保存')),
-      ],
-    ));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('编辑「${volume.title}」概要'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 5,
+          decoration: const InputDecoration(hintText: '输入卷概要...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await ref
+                  .read(volumeRepoProvider)
+                  .updateVolume(
+                    volume.copyWith(
+                      summary: ctrl.text.trim().isEmpty
+                          ? null
+                          : ctrl.text.trim(),
+                    ),
+                  );
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _confirmDeleteVolume(Novel novel, Volume volume) async {
-    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: Text('删除「${volume.title}」？'),
-      content: const Text('该卷下所有章节将被删除'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-        FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.error), onPressed: () => Navigator.pop(ctx, true), child: const Text('删除')),
-      ],
-    ));
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('删除「${volume.title}」？'),
+        content: const Text('该卷下所有章节将被删除'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
     if (confirm == true) {
       await ref.read(volumeRepoProvider).deleteVolume(volume.id);
       _loadedVolumes.remove(novel.id);
@@ -715,62 +990,221 @@ class _WorksPageState extends ConsumerState<WorksPage> {
   // --- 章节操作 ---
   void _showCreateChapterDialog(Novel novel, Volume volume) {
     final ctrl = TextEditingController();
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('新建章节'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: '章节标题', hintText: '例如：第1章 退婚')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () async {
-          if (ctrl.text.trim().isEmpty) return;
-          final existing = _loadedChapters[volume.id] ?? [];
-          final chapter = await ref.read(chapterRepoProvider).createChapter(novelId: novel.id, volumeId: volume.id, title: ctrl.text.trim(), orderIndex: existing.length);
-          ref.invalidate(novelsProvider);
-          _loadedChapters.remove(volume.id);
-          if (ctx.mounted) {
-            Navigator.pop(ctx);
-            ref.read(selectedNovelProvider.notifier).state = novel;
-            ref.read(selectedChapterProvider.notifier).state = chapter;
-            Navigator.push(context, MaterialPageRoute(builder: (_) => EditorPage(novelId: novel.id, chapterId: chapter.id)));
-          }
-        }, child: const Text('创建并编辑')),
-      ],
-    ));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建章节'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '章节标题',
+            hintText: '例如：第1章 退婚',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isEmpty) return;
+              final existing = _loadedChapters[volume.id] ?? [];
+              final chapter = await ref
+                  .read(chapterRepoProvider)
+                  .createChapter(
+                    novelId: novel.id,
+                    volumeId: volume.id,
+                    title: ctrl.text.trim(),
+                    orderIndex: existing.length,
+                  );
+              ref.invalidate(novelsProvider);
+              _loadedChapters.remove(volume.id);
+              if (ctx.mounted) {
+                Navigator.pop(ctx);
+                ref.read(selectedNovelProvider.notifier).state = novel;
+                ref.read(selectedChapterProvider.notifier).state = chapter;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        EditorPage(novelId: novel.id, chapterId: chapter.id),
+                  ),
+                );
+              }
+            },
+            child: const Text('创建并编辑'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showChapterMenu(Novel novel, Chapter chapter) {
-    final status = ChapterStatus.values.firstWhere((e) => e.name == chapter.status, orElse: () => ChapterStatus.draft);
-    showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (ctx) => Container(
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 8),
-        ListTile(leading: const Icon(Icons.edit), title: const Text('编辑'), onTap: () { Navigator.pop(ctx); ref.read(selectedNovelProvider.notifier).state = novel; ref.read(selectedChapterProvider.notifier).state = chapter; Navigator.push(context, MaterialPageRoute(builder: (_) => EditorPage(novelId: novel.id, chapterId: chapter.id))); }),
-        ListTile(leading: const Icon(Icons.summarize), title: const Text('编辑梗概'), onTap: () { Navigator.pop(ctx); _showEditSummaryDialog(novel, chapter); }),
-        ...ChapterStatus.values.map((s) => ListTile(
-          leading: Container(width: 12, height: 12, decoration: BoxDecoration(color: s.color, borderRadius: BorderRadius.circular(6))),
-          title: Text(s.label),
-          trailing: s == status ? const Icon(Icons.check, size: 18) : null,
-          onTap: () async { Navigator.pop(ctx); await ref.read(chapterRepoProvider).updateChapter(chapter.copyWith(status: s.name), novel.title); _loadedChapters.remove(chapter.volumeId); ref.invalidate(novelsProvider); setState(() {}); },
-        )),
-        const Divider(),
-        ListTile(leading: const Icon(Icons.delete_outline, color: AppColors.error), title: Text('删除章节', style: TextStyle(color: AppColors.error)), onTap: () async { Navigator.pop(ctx); final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('删除章节？'), content: Text('确定删除「${chapter.title}」？'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')), FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.error), onPressed: () => Navigator.pop(ctx, true), child: const Text('删除'))])); if (confirm == true) { await ref.read(chapterRepoProvider).deleteChapter(chapter.id); _loadedChapters.remove(chapter.volumeId); ref.invalidate(novelsProvider); setState(() {}); } }),
-      ])),
-    ));
+    final status = ChapterStatus.values.firstWhere(
+      (e) => e.name == chapter.status,
+      orElse: () => ChapterStatus.draft,
+    );
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('编辑'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ref.read(selectedNovelProvider.notifier).state = novel;
+                  ref.read(selectedChapterProvider.notifier).state = chapter;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          EditorPage(novelId: novel.id, chapterId: chapter.id),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.summarize),
+                title: const Text('编辑梗概'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showEditSummaryDialog(novel, chapter);
+                },
+              ),
+              ...ChapterStatus.values.map(
+                (s) => ListTile(
+                  leading: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: s.color,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  title: Text(s.label),
+                  trailing: s == status
+                      ? const Icon(Icons.check, size: 18)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await ref
+                        .read(chapterRepoProvider)
+                        .updateChapter(
+                          chapter.copyWith(status: s.name),
+                          novel.title,
+                        );
+                    _loadedChapters.remove(chapter.volumeId);
+                    ref.invalidate(novelsProvider);
+                    setState(() {});
+                  },
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                ),
+                title: Text('删除章节', style: TextStyle(color: AppColors.error)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('删除章节？'),
+                      content: Text('确定删除「${chapter.title}」？'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('取消'),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('删除'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await ref
+                        .read(chapterRepoProvider)
+                        .deleteChapter(chapter.id);
+                    _loadedChapters.remove(chapter.volumeId);
+                    ref.invalidate(novelsProvider);
+                    setState(() {});
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showEditSummaryDialog(Novel novel, Chapter chapter) {
     final ctrl = TextEditingController(text: chapter.summary ?? '');
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: Text('编辑「${chapter.title}」梗概'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: TextField(controller: ctrl, maxLines: 5, decoration: const InputDecoration(hintText: '输入本章梗概...')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-        FilledButton(onPressed: () async { await ref.read(chapterRepoProvider).updateChapter(chapter.copyWith(summary: ctrl.text.trim().isEmpty ? null : ctrl.text.trim()), novel.title); _loadedChapters.remove(chapter.volumeId); if (ctx.mounted) Navigator.pop(ctx); setState(() {}); }, child: const Text('保存')),
-      ],
-    ));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('编辑「${chapter.title}」梗概'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 5,
+          decoration: const InputDecoration(hintText: '输入本章梗概...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await ref
+                  .read(chapterRepoProvider)
+                  .updateChapter(
+                    chapter.copyWith(
+                      summary: ctrl.text.trim().isEmpty
+                          ? null
+                          : ctrl.text.trim(),
+                    ),
+                    novel.title,
+                  );
+              _loadedChapters.remove(chapter.volumeId);
+              if (ctx.mounted) Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -780,7 +1214,12 @@ class _FeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color color;
-  const _FeatureCard({required this.icon, required this.title, required this.subtitle, required this.color});
+  const _FeatureCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -805,9 +1244,19 @@ class _FeatureCard extends StatelessWidget {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 10),
-            Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+            ),
           ],
         ),
       ),
@@ -827,11 +1276,23 @@ class _StatItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.8))),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: colorScheme.onSurface.withOpacity(0.8),
+          ),
+        ),
       ],
     );
   }
 }
-

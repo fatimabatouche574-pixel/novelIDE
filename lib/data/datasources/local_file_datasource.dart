@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:archive/archive.dart';
@@ -60,19 +59,29 @@ class LocalFileDataSource {
     return p.join(dir.path, '${novelId}_${title}');
   }
 
-  Future<void> saveProjectJson(String projectPath, Map<String, dynamic> data) async {
+  Future<void> saveProjectJson(
+    String projectPath,
+    Map<String, dynamic> data,
+  ) async {
     final file = File(p.join(projectPath, 'project.json'));
     await file.writeAsString(jsonEncode(data));
   }
 
-  Future<void> saveChapterContent(String projectPath, String chapterId, String content) async {
+  Future<void> saveChapterContent(
+    String projectPath,
+    String chapterId,
+    String content,
+  ) async {
     final dir = Directory(p.join(projectPath, 'chapters'));
     if (!await dir.exists()) await dir.create(recursive: true);
     final file = File(p.join(dir.path, '$chapterId.md'));
     await file.writeAsString(content, encoding: utf8);
   }
 
-  Future<String> readChapterContent(String projectPath, String chapterId) async {
+  Future<String> readChapterContent(
+    String projectPath,
+    String chapterId,
+  ) async {
     final file = File(p.join(projectPath, 'chapters', '$chapterId.md'));
     if (await file.exists()) {
       return await file.readAsString(encoding: utf8);
@@ -80,12 +89,18 @@ class LocalFileDataSource {
     return '';
   }
 
-  Future<void> saveVolumesJson(String projectPath, List<Map<String, dynamic>> volumes) async {
+  Future<void> saveVolumesJson(
+    String projectPath,
+    List<Map<String, dynamic>> volumes,
+  ) async {
     final file = File(p.join(projectPath, 'volumes.json'));
     await file.writeAsString(jsonEncode(volumes));
   }
 
-  Future<void> saveChapterIndex(String projectPath, List<Map<String, dynamic>> chapters) async {
+  Future<void> saveChapterIndex(
+    String projectPath,
+    List<Map<String, dynamic>> chapters,
+  ) async {
     final file = File(p.join(projectPath, 'chapter_index.json'));
     await file.writeAsString(jsonEncode(chapters));
   }
@@ -106,7 +121,11 @@ class LocalFileDataSource {
   }
 
   /// 递归将目录添加到 Archive
-  Future<void> _addDirectoryToArchive(Directory dir, String rootPath, Archive archive) async {
+  Future<void> _addDirectoryToArchive(
+    Directory dir,
+    String rootPath,
+    Archive archive,
+  ) async {
     final entities = dir.listSync();
     for (final entity in entities) {
       final relativePath = p.relative(entity.path, from: rootPath);
@@ -161,9 +180,15 @@ class LocalFileDataSource {
   /// 保存导入文件的原始备份
   /// 备份路径：NovelProjects/original/{novelId}/{timestamp}_{fileName}
   /// 返回备份文件路径
-  Future<String> saveOriginalBackup(String novelId, String fileName, List<int> fileBytes) async {
+  Future<String> saveOriginalBackup(
+    String novelId,
+    String fileName,
+    List<int> fileBytes,
+  ) async {
     final baseDir = await getBaseDir();
-    final originalDir = Directory(p.join(baseDir.path, 'NovelProjects', 'original', novelId));
+    final originalDir = Directory(
+      p.join(baseDir.path, 'NovelProjects', 'original', novelId),
+    );
     if (!await originalDir.exists()) {
       await originalDir.create(recursive: true);
     }
@@ -187,7 +212,16 @@ class LocalFileDataSource {
       final name = p.basename(d.path);
       // 旧格式：{novelId}_{title} 直接在 NovelProjects/ 下
       // 新格式：作品区/资料区/Skill/Agent/记忆包
-      return !['作品区', '资料区', 'Skill', 'Agent', '记忆包', 'materials', 'memories', 'skills'].contains(name);
+      return ![
+        '作品区',
+        '资料区',
+        'Skill',
+        'Agent',
+        '记忆包',
+        'materials',
+        'memories',
+        'skills',
+      ].contains(name);
     }).toList();
 
     if (oldWorkDirs.isEmpty) return; // 无需迁移
@@ -216,7 +250,9 @@ class LocalFileDataSource {
           }
         }
       }
-      try { await oldMaterials.delete(); } catch (_) {}
+      try {
+        await oldMaterials.delete();
+      } catch (_) {}
     }
 
     // 迁移旧的 memories 目录
@@ -233,7 +269,9 @@ class LocalFileDataSource {
           }
         }
       }
-      try { await oldMemories.delete(); } catch (_) {}
+      try {
+        await oldMemories.delete();
+      } catch (_) {}
     }
 
     // 迁移旧的 skills 目录
@@ -250,7 +288,9 @@ class LocalFileDataSource {
           }
         }
       }
-      try { await oldSkills.delete(); } catch (_) {}
+      try {
+        await oldSkills.delete();
+      } catch (_) {}
     }
   }
 }

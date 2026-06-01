@@ -92,14 +92,18 @@ class ExportPage extends StatefulWidget {
   final String novelId;
   final String novelTitle;
 
-  const ExportPage({super.key, required this.novelId, required this.novelTitle});
+  const ExportPage({
+    super.key,
+    required this.novelId,
+    required this.novelTitle,
+  });
 
   @override
   State<ExportPage> createState() => _ExportPageState();
 }
 
 class _ExportPageState extends State<ExportPage> {
-  FileTreeNode? _worksTree;  // 作品区
+  FileTreeNode? _worksTree; // 作品区
   FileTreeNode? _materialsTree; // 资料区
   bool _isLoading = true;
   String _searchQuery = '';
@@ -118,23 +122,38 @@ class _ExportPageState extends State<ExportPage> {
   Future<void> _loadData() async {
     final fs = LocalFileDataSource();
     final db = await DatabaseHelper().database;
-    final projectPath = await fs.getProjectDir(widget.novelId, widget.novelTitle);
+    final projectPath = await fs.getProjectDir(
+      widget.novelId,
+      widget.novelTitle,
+    );
 
     // 加载章节列表
-    final rows = await db.query('chapters',
-        where: 'novel_id = ?', whereArgs: [widget.novelId], orderBy: 'order_index ASC');
-    _allChapters = rows.map((r) => Chapter(
-      id: r['id'] as String,
-      novelId: r['novel_id'] as String,
-      volumeId: r['volume_id'] as String,
-      title: r['title'] as String,
-      wordCount: r['word_count'] as int? ?? 0,
-      status: r['status'] as String? ?? 'draft',
-      orderIndex: r['order_index'] as int? ?? 0,
-      summary: r['summary'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(r['updated_at'] as int),
-    )).toList();
+    final rows = await db.query(
+      'chapters',
+      where: 'novel_id = ?',
+      whereArgs: [widget.novelId],
+      orderBy: 'order_index ASC',
+    );
+    _allChapters = rows
+        .map(
+          (r) => Chapter(
+            id: r['id'] as String,
+            novelId: r['novel_id'] as String,
+            volumeId: r['volume_id'] as String,
+            title: r['title'] as String,
+            wordCount: r['word_count'] as int? ?? 0,
+            status: r['status'] as String? ?? 'draft',
+            orderIndex: r['order_index'] as int? ?? 0,
+            summary: r['summary'] as String?,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              r['created_at'] as int,
+            ),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(
+              r['updated_at'] as int,
+            ),
+          ),
+        )
+        .toList();
 
     // 构建作品区树
     _worksTree = await _buildWorksTree(projectPath);
@@ -168,28 +187,38 @@ class _ExportPageState extends State<ExportPage> {
       files.sort((a, b) => a.path.compareTo(b.path));
       for (final file in files) {
         final name = p.basename(file.path);
-        final chapter = _allChapters.where((c) => '${c.id}.md' == name).firstOrNull;
+        final chapter = _allChapters
+            .where((c) => '${c.id}.md' == name)
+            .firstOrNull;
         final displayName = chapter != null
             ? '${chapter.orderIndex.toString().padLeft(3, '0')}_${chapter.title}.txt'
             : name.replaceAll('.md', '.txt');
-        chaptersFolder.children.add(FileTreeNode(
-          name: displayName,
-          path: 'chapters/$name',
-          type: TreeNodeType.file,
-        ));
+        chaptersFolder.children.add(
+          FileTreeNode(
+            name: displayName,
+            path: 'chapters/$name',
+            type: TreeNodeType.file,
+          ),
+        );
       }
     }
     root.children.add(chaptersFolder);
 
     // 项目根目录文件
-    for (final fileName in ['project.json', 'volumes.json', 'chapter_index.json']) {
+    for (final fileName in [
+      'project.json',
+      'volumes.json',
+      'chapter_index.json',
+    ]) {
       final file = File(p.join(projectPath, fileName));
       if (await file.exists()) {
-        root.children.add(FileTreeNode(
-          name: fileName.replaceAll('.json', '.txt'),
-          path: fileName,
-          type: TreeNodeType.file,
-        ));
+        root.children.add(
+          FileTreeNode(
+            name: fileName.replaceAll('.json', '.txt'),
+            path: fileName,
+            type: TreeNodeType.file,
+          ),
+        );
       }
     }
 
@@ -215,7 +244,9 @@ class _ExportPageState extends State<ExportPage> {
         final name = p.basename(file.path);
         if (!name.startsWith(novelId)) continue;
         // 从文件名提取类型：{novelId}_characters.json → characters
-        final type = name.replaceFirst('${novelId}_', '').replaceAll('.json', '');
+        final type = name
+            .replaceFirst('${novelId}_', '')
+            .replaceAll('.json', '');
         categories.putIfAbsent(type, () => []).add(file);
       }
 
@@ -240,11 +271,13 @@ class _ExportPageState extends State<ExportPage> {
         );
         for (final file in entry.value) {
           final name = p.basename(file.path);
-          folder.children.add(FileTreeNode(
-            name: '${folderName}.txt',
-            path: 'materials/$name',
-            type: TreeNodeType.file,
-          ));
+          folder.children.add(
+            FileTreeNode(
+              name: '${folderName}.txt',
+              path: 'materials/$name',
+              type: TreeNodeType.file,
+            ),
+          );
         }
         root.children.add(folder);
       }
@@ -265,12 +298,17 @@ class _ExportPageState extends State<ExportPage> {
   Future<void> _doExport({bool shareOnly = false}) async {
     try {
       final tempDir = await getTemporaryDirectory();
-      final exportDir = Directory(p.join(tempDir.path, 'export_${widget.novelTitle}'));
+      final exportDir = Directory(
+        p.join(tempDir.path, 'export_${widget.novelTitle}'),
+      );
       if (await exportDir.exists()) await exportDir.delete(recursive: true);
       await exportDir.create(recursive: true);
 
       final fs = LocalFileDataSource();
-      final projectPath = await fs.getProjectDir(widget.novelId, widget.novelTitle);
+      final projectPath = await fs.getProjectDir(
+        widget.novelId,
+        widget.novelTitle,
+      );
       final matDir = await PublicStorageHelper.materialsDir;
 
       // ====== workspace/ 目录：当前工作版本 ======
@@ -296,7 +334,9 @@ class _ExportPageState extends State<ExportPage> {
           if (await chapterFile.exists()) {
             final rawContent = await chapterFile.readAsString();
             final chapterId = p.basename(relPath).replaceAll('.md', '');
-            final chapter = _allChapters.where((c) => c.id == chapterId).firstOrNull;
+            final chapter = _allChapters
+                .where((c) => c.id == chapterId)
+                .firstOrNull;
             final buf = StringBuffer();
             if (chapter != null) {
               buf.writeln('标题: ${chapter.title}');
@@ -334,8 +374,11 @@ class _ExportPageState extends State<ExportPage> {
               buf.writeln(rawContent);
             }
             content = buf.toString();
-            final folderName = relPath.replaceFirst('materials/', '').replaceAll('.json', '');
-            outputName = '资料区/$folderName/${p.basename(relPath).replaceAll('.json', '.txt')}';
+            final folderName = relPath
+                .replaceFirst('materials/', '')
+                .replaceAll('.json', '');
+            outputName =
+                '资料区/$folderName/${p.basename(relPath).replaceAll('.json', '.txt')}';
           }
         } else if (relPath.endsWith('.json')) {
           // 项目根目录 JSON 文件
@@ -372,21 +415,31 @@ class _ExportPageState extends State<ExportPage> {
       }
 
       // 记忆包（固定导出到 workspace/ 下）
-      final memory = NovelMemory(novelId: widget.novelId, novelTitle: widget.novelTitle);
+      final memory = NovelMemory(
+        novelId: widget.novelId,
+        novelTitle: widget.novelTitle,
+      );
       final memoryContent = await memory.autoUpdate();
-      await File(p.join(workspaceDir.path, '记忆包', '小说记忆文件.txt'))
-          .create(recursive: true)
-          .then((f) => f.writeAsString(memoryContent));
+      await File(
+        p.join(workspaceDir.path, '记忆包', '小说记忆文件.txt'),
+      ).create(recursive: true).then((f) => f.writeAsString(memoryContent));
       exportedWorkspaceFiles.add('workspace/记忆包/小说记忆文件.txt');
 
       // ====== original/ 目录：原始导入文件备份 ======
-      final originalBaseDir = Directory(p.join(PublicStorageHelper.publicRoot.path, 'original', widget.novelId));
+      final originalBaseDir = Directory(
+        p.join(PublicStorageHelper.publicRoot.path, 'original', widget.novelId),
+      );
       final originalFilesMeta = <Map<String, String>>[];
 
       if (await originalBaseDir.exists()) {
-        final originalEntities = await originalBaseDir.list().where((e) => e is File).toList();
+        final originalEntities = await originalBaseDir
+            .list()
+            .where((e) => e is File)
+            .toList();
         if (originalEntities.isNotEmpty) {
-          final originalExportDir = Directory(p.join(exportDir.path, 'original'));
+          final originalExportDir = Directory(
+            p.join(exportDir.path, 'original'),
+          );
           await originalExportDir.create(recursive: true);
 
           for (final entity in originalEntities) {
@@ -406,7 +459,8 @@ class _ExportPageState extends State<ExportPage> {
 
       // ====== metadata.json ======
       final now = DateTime.now();
-      final exportTime = '${now.year.toString().padLeft(4, '0')}-'
+      final exportTime =
+          '${now.year.toString().padLeft(4, '0')}-'
           '${now.month.toString().padLeft(2, '0')}-'
           '${now.day.toString().padLeft(2, '0')} '
           '${now.hour.toString().padLeft(2, '0')}:'
@@ -425,7 +479,9 @@ class _ExportPageState extends State<ExportPage> {
       };
 
       final metadataFile = File(p.join(exportDir.path, 'metadata.json'));
-      await metadataFile.writeAsString(const JsonEncoder.withIndent('  ').convert(metadata));
+      await metadataFile.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(metadata),
+      );
 
       // ====== 创建 ZIP ======
       final zipPath = p.join(tempDir.path, '${widget.novelTitle}_导出.zip');
@@ -433,7 +489,9 @@ class _ExportPageState extends State<ExportPage> {
       final archive = Archive();
       await for (final entity in exportDir.list(recursive: true)) {
         if (entity is File) {
-          final relativePath = p.relative(entity.path, from: exportDir.path).replaceAll('\\', '/');
+          final relativePath = p
+              .relative(entity.path, from: exportDir.path)
+              .replaceAll('\\', '/');
           final bytes = await entity.readAsBytes();
           archive.addFile(ArchiveFile(relativePath, bytes.length, bytes));
         }
@@ -454,32 +512,39 @@ class _ExportPageState extends State<ExportPage> {
         );
         if (outputPath != null) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('已保存到: $outputPath')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('已保存到: $outputPath')));
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('未选择保存位置')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('未选择保存位置')));
           }
           return;
         }
       }
 
       if (mounted) {
-        final totalSelected = (_worksTree?.countSelected() ?? 0) + (_materialsTree?.countSelected() ?? 0) + 1;
+        final totalSelected =
+            (_worksTree?.countSelected() ?? 0) +
+            (_materialsTree?.countSelected() ?? 0) +
+            1;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已导出 $totalSelected 个文件（含记忆包${originalFilesMeta.isNotEmpty ? '及原始备份' : ''}）')),
+          SnackBar(
+            content: Text(
+              '已导出 $totalSelected 个文件（含记忆包${originalFilesMeta.isNotEmpty ? '及原始备份' : ''}）',
+            ),
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导出失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导出失败: $e')));
       }
     }
   }
@@ -529,15 +594,15 @@ class _ExportPageState extends State<ExportPage> {
 
       if (outputPath != null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('EPUB 已保存到: $outputPath')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('EPUB 已保存到: $outputPath')));
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('未选择保存位置')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('未选择保存位置')));
         }
       }
 
@@ -547,9 +612,9 @@ class _ExportPageState extends State<ExportPage> {
       } catch (_) {}
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('EPUB 导出失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('EPUB 导出失败: $e')));
       }
     } finally {
       if (mounted) setState(() => _isExportingEpub = false);
@@ -601,15 +666,15 @@ class _ExportPageState extends State<ExportPage> {
 
       if (outputPath != null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('DOCX 已保存到: $outputPath')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('DOCX 已保存到: $outputPath')));
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('未选择保存位置')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('未选择保存位置')));
         }
       }
 
@@ -619,9 +684,9 @@ class _ExportPageState extends State<ExportPage> {
       } catch (_) {}
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('DOCX 导出失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('DOCX 导出失败: $e')));
       }
     } finally {
       if (mounted) setState(() => _isExportingDocx = false);
@@ -630,8 +695,14 @@ class _ExportPageState extends State<ExportPage> {
 
   @override
   Widget build(BuildContext context) {
-    final totalSelected = (_worksTree?.countSelected() ?? 0) + (_materialsTree?.countSelected() ?? 0) + 1;
-    final totalFiles = (_worksTree?.countTotal() ?? 0) + (_materialsTree?.countTotal() ?? 0) + 1;
+    final totalSelected =
+        (_worksTree?.countSelected() ?? 0) +
+        (_materialsTree?.countSelected() ?? 0) +
+        1;
+    final totalFiles =
+        (_worksTree?.countTotal() ?? 0) +
+        (_materialsTree?.countTotal() ?? 0) +
+        1;
 
     return Scaffold(
       appBar: AppBar(
@@ -639,7 +710,10 @@ class _ExportPageState extends State<ExportPage> {
         actions: [
           TextButton(
             onPressed: _isLoading ? null : () => _doExport(shareOnly: false),
-            child: Text('导出 ($totalSelected)', style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              '导出 ($totalSelected)',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -654,10 +728,16 @@ class _ExportPageState extends State<ExportPage> {
                     decoration: InputDecoration(
                       hintText: '搜索文件...',
                       prefixIcon: const Icon(Icons.search, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       filled: true,
                       fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       isDense: true,
                     ),
                     onChanged: (value) => setState(() => _searchQuery = value),
@@ -678,7 +758,10 @@ class _ExportPageState extends State<ExportPage> {
                         child: const Text('全不选'),
                       ),
                       const Spacer(),
-                      Text('已选 $totalSelected/$totalFiles', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                      Text(
+                        '已选 $totalSelected/$totalFiles',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
                     ],
                   ),
                 ),
@@ -687,13 +770,17 @@ class _ExportPageState extends State<ExportPage> {
                 // 文件树
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     children: [
                       // 作品区
                       if (_worksTree != null) _buildTreeNode(_worksTree!, 0),
                       const SizedBox(height: 8),
                       // 资料区
-                      if (_materialsTree != null) _buildTreeNode(_materialsTree!, 0),
+                      if (_materialsTree != null)
+                        _buildTreeNode(_materialsTree!, 0),
                       const SizedBox(height: 8),
                       // 记忆包（固定导出）
                       _buildMemoryTile(),
@@ -703,10 +790,20 @@ class _ExportPageState extends State<ExportPage> {
 
                 // 底部按钮
                 Container(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 8),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    MediaQuery.of(context).padding.bottom + 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -720,9 +817,13 @@ class _ExportPageState extends State<ExportPage> {
                               label: Text('保存到本地 ($totalSelected项)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
-                              onPressed: _isLoading ? null : () => _doExport(shareOnly: false),
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _doExport(shareOnly: false),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -731,9 +832,13 @@ class _ExportPageState extends State<ExportPage> {
                               icon: const Icon(Icons.share),
                               label: const Text('分享'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
-                              onPressed: _isLoading ? null : () => _doExport(shareOnly: true),
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _doExport(shareOnly: true),
                             ),
                           ),
                         ],
@@ -745,28 +850,50 @@ class _ExportPageState extends State<ExportPage> {
                           Expanded(
                             child: ElevatedButton.icon(
                               icon: _isExportingEpub
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
                                   : const Icon(Icons.menu_book),
                               label: const Text('导出EPUB'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.teal,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
-                              onPressed: (_isLoading || _isExportingEpub) ? null : _doExportEpub,
+                              onPressed: (_isLoading || _isExportingEpub)
+                                  ? null
+                                  : _doExportEpub,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: ElevatedButton.icon(
                               icon: _isExportingDocx
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
                                   : const Icon(Icons.description),
                               label: const Text('导出DOCX'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.indigo,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
-                              onPressed: (_isLoading || _isExportingDocx) ? null : _doExportDocx,
+                              onPressed: (_isLoading || _isExportingDocx)
+                                  ? null
+                                  : _doExportDocx,
                             ),
                           ),
                         ],
@@ -809,20 +936,36 @@ class _ExportPageState extends State<ExportPage> {
       onTap: () => setState(() => node.isExpanded = !node.isExpanded),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: EdgeInsets.only(left: depth * 16.0, top: 6, bottom: 6, right: 4),
+        padding: EdgeInsets.only(
+          left: depth * 16.0,
+          top: 6,
+          bottom: 6,
+          right: 4,
+        ),
         child: Row(
           children: [
             Icon(
-              node.isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+              node.isExpanded
+                  ? Icons.keyboard_arrow_down
+                  : Icons.keyboard_arrow_right,
               size: 20,
               color: Colors.grey[600],
             ),
             Icon(Icons.folder, size: 18, color: Colors.amber[700]),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(node.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              child: Text(
+                node.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
             ),
-            Text('$selectedCount/$totalCount', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+            Text(
+              '$selectedCount/$totalCount',
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
             const SizedBox(width: 4),
             SizedBox(
               width: 24,
@@ -831,10 +974,11 @@ class _ExportPageState extends State<ExportPage> {
                 value: selectedCount == totalCount && totalCount > 0
                     ? true
                     : selectedCount == 0
-                        ? false
-                        : null, // 半选
+                    ? false
+                    : null, // 半选
                 tristate: true,
-                onChanged: (val) => setState(() => node.setAllSelected(val ?? true)),
+                onChanged: (val) =>
+                    setState(() => node.setAllSelected(val ?? true)),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
@@ -852,14 +996,19 @@ class _ExportPageState extends State<ExportPage> {
           Icon(Icons.description, size: 16, color: Colors.grey[500]),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(node.name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+            child: Text(
+              node.name,
+              style: const TextStyle(fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           SizedBox(
             width: 24,
             height: 24,
             child: Checkbox(
               value: node.isSelected,
-              onChanged: (val) => setState(() => node.isSelected = val ?? false),
+              onChanged: (val) =>
+                  setState(() => node.isSelected = val ?? false),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
@@ -881,7 +1030,10 @@ class _ExportPageState extends State<ExportPage> {
           const Icon(Icons.psychology, size: 18, color: Colors.blue),
           const SizedBox(width: 8),
           const Expanded(
-            child: Text('小说记忆文件.txt', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            child: Text(
+              '小说记忆文件.txt',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -889,7 +1041,10 @@ class _ExportPageState extends State<ExportPage> {
               color: Colors.blue[100],
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text('固定导出', style: TextStyle(fontSize: 11, color: Colors.blue[700])),
+            child: Text(
+              '固定导出',
+              style: TextStyle(fontSize: 11, color: Colors.blue[700]),
+            ),
           ),
           const SizedBox(width: 8),
           Icon(Icons.check_circle, size: 20, color: Colors.blue[600]),

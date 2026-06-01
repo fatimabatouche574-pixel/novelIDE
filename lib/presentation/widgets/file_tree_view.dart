@@ -121,7 +121,9 @@ class FileTreeView extends StatelessWidget {
               Icon(
                 node.icon,
                 size: 18,
-                color: node.iconColor ?? (isDark ? Colors.grey[500] : Colors.grey[500]),
+                color:
+                    node.iconColor ??
+                    (isDark ? Colors.grey[500] : Colors.grey[500]),
               )
             else
               Icon(
@@ -136,8 +138,9 @@ class FileTreeView extends StatelessWidget {
                 node.name,
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight:
-                      node.isFolder ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: node.isFolder
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                   color: node.isFolder ? folderColor : fileColor,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -146,8 +149,7 @@ class FileTreeView extends StatelessWidget {
             // 状态 badge
             if (node.badge != null) ...[
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: (node.badgeColor ?? Colors.grey).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(4),
@@ -173,16 +175,12 @@ class FileTreeView extends StatelessWidget {
                 ),
               ),
             // 文件类型标签
-            if (!node.isFolder &&
-                node.fileType != null &&
-                node.badge == null)
+            if (!node.isFolder && node.fileType != null && node.badge == null)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color:
-                      (_getFileColor(node.fileType, isDark) ?? Colors.grey)
-                          .withOpacity(0.1),
+                  color: (_getFileColor(node.fileType, isDark) ?? Colors.grey)
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

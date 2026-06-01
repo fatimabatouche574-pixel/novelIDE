@@ -11,7 +11,10 @@ class TitleGeneratorResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Parse titles from AI response (split by newlines, filter numbered items)
-    final lines = aiResponse.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    final lines = aiResponse
+        .split('\n')
+        .where((l) => l.trim().isNotEmpty)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('爆款标题生成')),
@@ -26,31 +29,49 @@ class TitleGeneratorResultPage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.title, color: AppColors.primary, size: 20),
+                      const Icon(
+                        Icons.title,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
-                      const Text('生成结果', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text(
+                        '生成结果',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(),
-                  ...lines.map((line) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(line, style: const TextStyle(fontSize: 15, height: 1.5)),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.copy, size: 18),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: line));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('已复制'), duration: Duration(seconds: 1)),
-                            );
-                          },
-                        ),
-                      ],
+                  ...lines.map(
+                    (line) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              line,
+                              style: const TextStyle(fontSize: 15, height: 1.5),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, size: 18),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: line));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('已复制'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  )),
+                  ),
                 ],
               ),
             ),

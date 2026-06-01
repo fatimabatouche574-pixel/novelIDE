@@ -1,4 +1,3 @@
-
 /// Skill模型
 class WritingSkill {
   final String id;
@@ -23,8 +22,8 @@ class WritingSkill {
     this.isBuiltIn = false,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   factory WritingSkill.fromJson(Map<String, dynamic> json) {
     return WritingSkill(
@@ -36,8 +35,12 @@ class WritingSkill {
       keywords: (json['keywords'] as List<dynamic>?)?.cast<String>() ?? [],
       isEnabled: json['isEnabled'] as bool? ?? true,
       isBuiltIn: json['isBuiltIn'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      ),
+      updatedAt: DateTime.parse(
+        json['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 

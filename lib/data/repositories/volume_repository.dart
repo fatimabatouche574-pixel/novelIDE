@@ -14,14 +14,20 @@ class VolumeRepository {
       whereArgs: [novelId],
       orderBy: 'order_index ASC',
     );
-    return maps.map((m) => Volume(
-      id: m['id'] as String,
-      novelId: m['novel_id'] as String,
-      title: m['title'] as String,
-      orderIndex: m['order_index'] as int? ?? 0,
-      summary: m['summary'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
-    )).toList();
+    return maps
+        .map(
+          (m) => Volume(
+            id: m['id'] as String,
+            novelId: m['novel_id'] as String,
+            title: m['title'] as String,
+            orderIndex: m['order_index'] as int? ?? 0,
+            summary: m['summary'] as String?,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              m['created_at'] as int,
+            ),
+          ),
+        )
+        .toList();
   }
 
   Future<Volume> createVolume({
@@ -54,11 +60,16 @@ class VolumeRepository {
 
   Future<void> updateVolume(Volume volume) async {
     final db = await _db.database;
-    await db.update('volumes', {
-      'title': volume.title,
-      'order_index': volume.orderIndex,
-      'summary': volume.summary,
-    }, where: 'id = ?', whereArgs: [volume.id]);
+    await db.update(
+      'volumes',
+      {
+        'title': volume.title,
+        'order_index': volume.orderIndex,
+        'summary': volume.summary,
+      },
+      where: 'id = ?',
+      whereArgs: [volume.id],
+    );
   }
 
   Future<void> deleteVolume(String volumeId) async {

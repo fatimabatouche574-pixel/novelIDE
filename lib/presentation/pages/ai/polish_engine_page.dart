@@ -7,10 +7,16 @@ import 'package:novel_ide/data/services/ai_service.dart';
 class PolishEnginePage extends ConsumerStatefulWidget {
   final String chapterContent;
   final String novelTitle;
+
   /// 精修完成后回传修改结果到编辑器
   final void Function(String modifiedContent)? onApply;
 
-  const PolishEnginePage({super.key, required this.chapterContent, required this.novelTitle, this.onApply});
+  const PolishEnginePage({
+    super.key,
+    required this.chapterContent,
+    required this.novelTitle,
+    this.onApply,
+  });
 
   @override
   ConsumerState<PolishEnginePage> createState() => _PolishEnginePageState();
@@ -30,7 +36,9 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
   void _applyAllAccepted() {
     var result = widget.chapterContent;
     for (final item in _items) {
-      if (item.isAccepted && item.suggestion.isNotEmpty && result.contains(item.original)) {
+      if (item.isAccepted &&
+          item.suggestion.isNotEmpty &&
+          result.contains(item.original)) {
         result = result.replaceFirst(item.original, item.suggestion);
       }
     }
@@ -38,17 +46,14 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
     widget.onApply?.call(_content);
     if (mounted) {
       final count = _items.where((i) => i.isAccepted).length;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("已应用 $count 条建议")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("已应用 $count 条建议")));
     }
     Navigator.pop(context);
   }
 
-  static const _dimensions = [
-    '语病', '节奏', '文风', '冗余',
-    '对话', '描写', '钩子', '战力',
-  ];
+  static const _dimensions = ['语病', '节奏', '文风', '冗余', '对话', '描写', '钩子', '战力'];
 
   bool _allEnabled = false;
   final List<bool> _enabled = List.generate(8, (_) => true);
@@ -56,9 +61,9 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
   Future<void> _startPolish() async {
     final config = ref.read(effectiveAiConfigProvider);
     if (config == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先配置AI模型')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请先配置AI模型')));
       return;
     }
 
@@ -68,9 +73,9 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
       if (_enabled[i]) selectedDims.add(_dimensions[i]);
     }
     if (selectedDims.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请至少选择一个维度')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请至少选择一个维度')));
       return;
     }
 
@@ -80,8 +85,11 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
       final aiService = ref.read(aiServiceProvider);
       final aiText = await aiService.send(
         config: config,
-        systemPrompt: preset?.systemPrompt ?? '你是一位网文精修专家。分析以下文本，针对${selectedDims.join('、')}维度找出问题段落，给出原文、问题和修改建议。',
-        userMessage: '请对以下章节进行${selectedDims.join('、')}维度的精修分析。\n\n${widget.chapterContent}',
+        systemPrompt:
+            preset?.systemPrompt ??
+            '你是一位网文精修专家。分析以下文本，针对${selectedDims.join('、')}维度找出问题段落，给出原文、问题和修改建议。',
+        userMessage:
+            '请对以下章节进行${selectedDims.join('、')}维度的精修分析。\n\n${widget.chapterContent}',
         taskType: 'polish',
       );
 
@@ -89,9 +97,9 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('请求失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('请求失败: $e')));
       }
     }
   }
@@ -112,8 +120,12 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
             suggestion: '',
             isAccepted: false,
           );
-        } else if (line.startsWith('->') || line.contains('修改') || line.contains('建议')) {
-          current?.suggestion = line.replaceAll(RegExp(r'[#\-【】\[\]>\->]+'), '').trim();
+        } else if (line.startsWith('->') ||
+            line.contains('修改') ||
+            line.contains('建议')) {
+          current?.suggestion = line
+              .replaceAll(RegExp(r'[#\-【】\[\]>\->]+'), '')
+              .trim();
         }
       }
       if (current != null) _items.add(current);
@@ -144,7 +156,10 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                 children: [
                   Icon(Icons.smart_toy, size: 18, color: AppColors.primary),
                   const SizedBox(width: 4),
-                  Text(selectedConfig?.name ?? '', style: const TextStyle(fontSize: 12)),
+                  Text(
+                    selectedConfig?.name ?? '',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   const Icon(Icons.arrow_drop_down, size: 16),
                 ],
               ),
@@ -152,20 +167,43 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                 final config = configs.firstWhere((c) => c.id == configId);
                 ref.read(selectedAiConfigProvider.notifier).state = config;
               },
-              itemBuilder: (context) => configs.map((c) => PopupMenuItem(
-                value: c.id,
-                child: Row(
-                  children: [
-                    Icon(c.id == selectedConfig?.id ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                        size: 16, color: c.id == selectedConfig?.id ? AppColors.primary : Colors.grey),
-                    const SizedBox(width: 8),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(c.name, style: const TextStyle(fontSize: 14)),
-                      Text('${c.modelName}', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                    ]),
-                  ],
-                ),
-              )).toList(),
+              itemBuilder: (context) => configs
+                  .map(
+                    (c) => PopupMenuItem(
+                      value: c.id,
+                      child: Row(
+                        children: [
+                          Icon(
+                            c.id == selectedConfig?.id
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            size: 16,
+                            color: c.id == selectedConfig?.id
+                                ? AppColors.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                c.name,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              Text(
+                                '${c.modelName}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           const SizedBox(width: 8),
           TextButton(
@@ -199,7 +237,10 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                     runSpacing: 6,
                     children: List.generate(_dimensions.length, (i) {
                       return FilterChip(
-                        label: Text(_dimensions[i], style: const TextStyle(fontSize: 12)),
+                        label: Text(
+                          _dimensions[i],
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         selected: _enabled[i],
                         selectedColor: AppColors.primary.withOpacity(0.15),
                         onSelected: (v) => setState(() => _enabled[i] = v),
@@ -230,9 +271,16 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.auto_fix_high, size: 64, color: Colors.grey[300]),
+                          Icon(
+                            Icons.auto_fix_high,
+                            size: 64,
+                            color: Colors.grey[300],
+                          ),
                           const SizedBox(height: 16),
-                          Text('选择精修维度后点击开始', style: TextStyle(color: Colors.grey[400])),
+                          Text(
+                            '选择精修维度后点击开始',
+                            style: TextStyle(color: Colors.grey[400]),
+                          ),
                         ],
                       ),
                     ),
@@ -254,8 +302,12 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                                 Row(
                                   children: [
                                     Chip(
-                                      label: Text(item.dimension, style: const TextStyle(fontSize: 11)),
-                                      backgroundColor: AppColors.tomatoOrange.withOpacity(0.1),
+                                      label: Text(
+                                        item.dimension,
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                      backgroundColor: AppColors.tomatoOrange
+                                          .withOpacity(0.1),
                                       side: BorderSide.none,
                                       visualDensity: VisualDensity.compact,
                                     ),
@@ -267,22 +319,44 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                                   decoration: BoxDecoration(
                                     color: Colors.grey[100],
                                     borderRadius: BorderRadius.circular(8),
-                                    border: const Border(left: BorderSide(color: Colors.orange, width: 3)),
+                                    border: const Border(
+                                      left: BorderSide(
+                                        color: Colors.orange,
+                                        width: 3,
+                                      ),
+                                    ),
                                   ),
-                                  child: Text(item.original, style: const TextStyle(fontSize: 14)),
+                                  child: Text(
+                                    item.original,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
                                 ),
                                 if (item.suggestion.isNotEmpty) ...[
                                   const SizedBox(height: 8),
-                                  const Icon(Icons.arrow_downward, size: 20, color: AppColors.primary),
+                                  const Icon(
+                                    Icons.arrow_downward,
+                                    size: 20,
+                                    color: AppColors.primary,
+                                  ),
                                   const SizedBox(height: 8),
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.05),
+                                      color: AppColors.primary.withOpacity(
+                                        0.05,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: const Border(left: BorderSide(color: AppColors.primary, width: 3)),
+                                      border: const Border(
+                                        left: BorderSide(
+                                          color: AppColors.primary,
+                                          width: 3,
+                                        ),
+                                      ),
                                     ),
-                                    child: Text(item.suggestion, style: const TextStyle(fontSize: 14)),
+                                    child: Text(
+                                      item.suggestion,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
                                   ),
                                 ],
                                 const SizedBox(height: 12),
@@ -290,22 +364,54 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     TextButton.icon(
-                                      icon: Icon(item.isAccepted ? Icons.check_circle : Icons.check_circle_outline, size: 18),
-                                      label: Text(item.isAccepted ? '已采用' : '采用'),
+                                      icon: Icon(
+                                        item.isAccepted
+                                            ? Icons.check_circle
+                                            : Icons.check_circle_outline,
+                                        size: 18,
+                                      ),
+                                      label: Text(
+                                        item.isAccepted ? '已采用' : '采用',
+                                      ),
                                       onPressed: () {
-                                        setState(() { item.isAccepted = !item.isAccepted; if (item.isAccepted && item.suggestion.isNotEmpty && _content.contains(item.original)) { _content = _content.replaceFirst(item.original, item.suggestion); widget.onApply?.call(_content); } });
+                                        setState(() {
+                                          item.isAccepted = !item.isAccepted;
+                                          if (item.isAccepted &&
+                                              item.suggestion.isNotEmpty &&
+                                              _content.contains(
+                                                item.original,
+                                              )) {
+                                            _content = _content.replaceFirst(
+                                              item.original,
+                                              item.suggestion,
+                                            );
+                                            widget.onApply?.call(_content);
+                                          }
+                                        });
                                       },
                                     ),
                                     const SizedBox(width: 4),
                                     TextButton.icon(
-                                      icon: const Icon(Icons.add_circle_outline, size: 18),
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        size: 18,
+                                      ),
                                       label: const Text('插入下方'),
                                       onPressed: () {
-                                        if (item.suggestion.isNotEmpty && _content.contains(item.original)) {
-                                          _content = _content.replaceFirst(item.original, item.original + item.suggestion);
+                                        if (item.suggestion.isNotEmpty &&
+                                            _content.contains(item.original)) {
+                                          _content = _content.replaceFirst(
+                                            item.original,
+                                            item.original + item.suggestion,
+                                          );
                                           widget.onApply?.call(_content);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('建议已插入'), duration: Duration(seconds: 1)),
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('建议已插入'),
+                                              duration: Duration(seconds: 1),
+                                            ),
                                           );
                                         }
                                       },
@@ -316,13 +422,19 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
                                       label: const Text('重新生成'),
                                       onPressed: () async {
                                         setState(() => _isLoading = true);
-                                        final config = ref.read(selectedAiConfigProvider);
+                                        final config = ref.read(
+                                          selectedAiConfigProvider,
+                                        );
                                         if (config != null) {
-                                          final aiService = ref.read(aiServiceProvider);
+                                          final aiService = ref.read(
+                                            aiServiceProvider,
+                                          );
                                           final response = await aiService.send(
                                             config: config,
-                                            systemPrompt: '你是网文精修专家。请重新优化以下段落的${item.dimension}方面：',
-                                            userMessage: '原文：${item.original}\n\n请给出更好的修改建议。',
+                                            systemPrompt:
+                                                '你是网文精修专家。请重新优化以下段落的${item.dimension}方面：',
+                                            userMessage:
+                                                '原文：${item.original}\n\n请给出更好的修改建议。',
                                             taskType: 'polish',
                                           );
                                           setState(() {
@@ -358,7 +470,9 @@ class _PolishEnginePageState extends ConsumerState<PolishEnginePage> {
           ? FloatingActionButton.extended(
               onPressed: _applyAllAccepted,
               icon: const Icon(Icons.done_all),
-              label: Text('应用全部已采纳 (${_items.where((i) => i.isAccepted).length})'),
+              label: Text(
+                '应用全部已采纳 (${_items.where((i) => i.isAccepted).length})',
+              ),
             )
           : null,
     );

@@ -25,7 +25,10 @@ class StatsRepository {
     final startDate = DateFormat('yyyy-MM-dd').format(start);
     final endDate = DateFormat('yyyy-MM-dd').format(now);
 
-    final rows = await _db.getDailyWords(startDate: startDate, endDate: endDate);
+    final rows = await _db.getDailyWords(
+      startDate: startDate,
+      endDate: endDate,
+    );
 
     // Group by date and sum across novels
     final Map<String, int> dateMap = {};
@@ -40,10 +43,7 @@ class StatsRepository {
     for (int i = days - 1; i >= 0; i--) {
       final d = now.subtract(Duration(days: i));
       final dateStr = DateFormat('yyyy-MM-dd').format(d);
-      stats.add(DailyStat(
-        date: d,
-        wordCount: dateMap[dateStr] ?? 0,
-      ));
+      stats.add(DailyStat(date: d, wordCount: dateMap[dateStr] ?? 0));
     }
     return stats;
   }

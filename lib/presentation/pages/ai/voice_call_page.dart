@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:novel_ide/core/constants.dart';
 import 'package:novel_ide/data/services/voice_service.dart';
 import 'package:novel_ide/data/services/ai_service.dart';
 import 'package:novel_ide/presentation/state/app_providers.dart';
@@ -115,8 +114,14 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
     });
     _displayTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
-        final mins = (_callTimer.elapsed.inSeconds ~/ 60).toString().padLeft(2, '0');
-        final secs = (_callTimer.elapsed.inSeconds % 60).toString().padLeft(2, '0');
+        final mins = (_callTimer.elapsed.inSeconds ~/ 60).toString().padLeft(
+          2,
+          '0',
+        );
+        final secs = (_callTimer.elapsed.inSeconds % 60).toString().padLeft(
+          2,
+          '0',
+        );
         _callDuration = '$mins:$secs';
       });
     });
@@ -130,8 +135,14 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
     _callTimer.stop();
 
     // 构建通话记录
-    final userText = _transcript.where((t) => t.startsWith('👤')).map((t) => t.substring(2)).join('\n');
-    final aiText = _transcript.where((t) => t.startsWith('🤖')).map((t) => t.substring(2)).join('\n');
+    final userText = _transcript
+        .where((t) => t.startsWith('👤'))
+        .map((t) => t.substring(2))
+        .join('\n');
+    final aiText = _transcript
+        .where((t) => t.startsWith('🤖'))
+        .map((t) => t.substring(2))
+        .join('\n');
 
     if (mounted) {
       widget.onCallEnd(userText, aiText);
@@ -202,7 +213,10 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+            icon: Icon(
+              Icons.close,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
@@ -211,11 +225,22 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
             children: [
               Text(
                 _isCallActive ? '通话中' : '语音通话',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
-                _isCallActive ? _callDuration : (_isInitialized ? '准备就绪' : '初始化中...'),
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
+                _isCallActive
+                    ? _callDuration
+                    : (_isInitialized ? '准备就绪' : '初始化中...'),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -233,7 +258,9 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
           painter: _WavePainter(
             amplitude: _waveAmplitude,
             progress: _waveController.value,
-            color: _isCallActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            color: _isCallActive
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
           ),
         );
       },
@@ -244,12 +271,17 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
     if (_transcript.isEmpty && _currentPartial.isEmpty) {
       return Text(
         _isCallActive ? '正在聆听...' : '点击下方按钮开始通话',
-        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 15),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          fontSize: 15,
+        ),
       );
     }
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.3,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: ListView.builder(
         shrinkWrap: true,
@@ -263,7 +295,9 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
               child: Text(
                 text,
                 style: TextStyle(
-                  color: isUser ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.primary,
+                  color: isUser
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(context).colorScheme.primary,
                   fontSize: 14,
                 ),
                 textAlign: isUser ? TextAlign.right : TextAlign.left,
@@ -275,7 +309,10 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
               '👤 $_currentPartial...',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                fontSize: 14,
+              ),
               textAlign: TextAlign.right,
             ),
           );
@@ -308,10 +345,16 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
                 height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _isCallActive ? Colors.red : Theme.of(context).colorScheme.primary,
+                  color: _isCallActive
+                      ? Colors.red
+                      : Theme.of(context).colorScheme.primary,
                   boxShadow: [
                     BoxShadow(
-                      color: (_isCallActive ? Colors.red : Theme.of(context).colorScheme.primary).withOpacity(0.3),
+                      color:
+                          (_isCallActive
+                                  ? Colors.red
+                                  : Theme.of(context).colorScheme.primary)
+                              .withOpacity(0.3),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -326,7 +369,9 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage>
             ),
             const SizedBox(width: 40),
             _ControlButton(
-              icon: _voiceService.isSpeakerOn ? Icons.volume_up : Icons.headphones,
+              icon: _voiceService.isSpeakerOn
+                  ? Icons.volume_up
+                  : Icons.headphones,
               label: _voiceService.isSpeakerOn ? '扬声器' : '耳机',
               isActive: _voiceService.isSpeakerOn,
               onTap: () {
@@ -368,12 +413,17 @@ class _ControlButton extends StatelessWidget {
                   ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
                   : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               border: isActive
-                  ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 2,
+                    )
                   : null,
             ),
             child: Icon(
               icon,
-              color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
               size: 22,
             ),
           ),
@@ -381,7 +431,9 @@ class _ControlButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               fontSize: 11,
             ),
           ),
@@ -397,7 +449,11 @@ class _WavePainter extends CustomPainter {
   final double progress;
   final Color color;
 
-  _WavePainter({required this.amplitude, required this.progress, required this.color});
+  _WavePainter({
+    required this.amplitude,
+    required this.progress,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -433,8 +489,7 @@ class _WavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WavePainter oldDelegate) {
-    return oldDelegate.amplitude != amplitude || oldDelegate.progress != progress;
+    return oldDelegate.amplitude != amplitude ||
+        oldDelegate.progress != progress;
   }
 }
-
-

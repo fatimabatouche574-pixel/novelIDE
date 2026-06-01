@@ -20,18 +20,26 @@ class ChapterRepository {
       whereArgs: [novelId],
       orderBy: 'order_index ASC',
     );
-    return maps.map((m) => Chapter(
-      id: m['id'] as String,
-      novelId: m['novel_id'] as String,
-      volumeId: m['volume_id'] as String,
-      title: m['title'] as String,
-      wordCount: m['word_count'] as int? ?? 0,
-      status: m['status'] as String? ?? 'draft',
-      orderIndex: m['order_index'] as int? ?? 0,
-      summary: m['summary'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(m['updated_at'] as int),
-    )).toList();
+    return maps
+        .map(
+          (m) => Chapter(
+            id: m['id'] as String,
+            novelId: m['novel_id'] as String,
+            volumeId: m['volume_id'] as String,
+            title: m['title'] as String,
+            wordCount: m['word_count'] as int? ?? 0,
+            status: m['status'] as String? ?? 'draft',
+            orderIndex: m['order_index'] as int? ?? 0,
+            summary: m['summary'] as String?,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              m['created_at'] as int,
+            ),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(
+              m['updated_at'] as int,
+            ),
+          ),
+        )
+        .toList();
   }
 
   Future<List<Chapter>> getChaptersByVolume(String volumeId) async {
@@ -42,29 +50,50 @@ class ChapterRepository {
       whereArgs: [volumeId],
       orderBy: 'order_index ASC',
     );
-    return maps.map((m) => Chapter(
-      id: m['id'] as String,
-      novelId: m['novel_id'] as String,
-      volumeId: m['volume_id'] as String,
-      title: m['title'] as String,
-      wordCount: m['word_count'] as int? ?? 0,
-      status: m['status'] as String? ?? 'draft',
-      orderIndex: m['order_index'] as int? ?? 0,
-      summary: m['summary'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(m['updated_at'] as int),
-    )).toList();
+    return maps
+        .map(
+          (m) => Chapter(
+            id: m['id'] as String,
+            novelId: m['novel_id'] as String,
+            volumeId: m['volume_id'] as String,
+            title: m['title'] as String,
+            wordCount: m['word_count'] as int? ?? 0,
+            status: m['status'] as String? ?? 'draft',
+            orderIndex: m['order_index'] as int? ?? 0,
+            summary: m['summary'] as String?,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              m['created_at'] as int,
+            ),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(
+              m['updated_at'] as int,
+            ),
+          ),
+        )
+        .toList();
   }
 
   Future<Chapter?> getChapter(String chapterId) async {
     final db = await _db.database;
-    final maps = await db.query('chapters', where: 'id = ?', whereArgs: [chapterId]);
+    final maps = await db.query(
+      'chapters',
+      where: 'id = ?',
+      whereArgs: [chapterId],
+    );
     if (maps.isEmpty) return null;
     final m = maps.first;
     // 从 novels 表获取 title，确保路径与写入时一致
-    final novelMaps = await db.query('novels', where: 'id = ?', whereArgs: [m['novel_id']]);
-    final novelTitle = novelMaps.isNotEmpty ? (novelMaps.first['title'] as String) : '';
-    final projectPath = await _fs.getProjectDir(m['novel_id'] as String, novelTitle);
+    final novelMaps = await db.query(
+      'novels',
+      where: 'id = ?',
+      whereArgs: [m['novel_id']],
+    );
+    final novelTitle = novelMaps.isNotEmpty
+        ? (novelMaps.first['title'] as String)
+        : '';
+    final projectPath = await _fs.getProjectDir(
+      m['novel_id'] as String,
+      novelTitle,
+    );
     final content = await _fs.readChapterContent(projectPath, chapterId);
     return Chapter(
       id: m['id'] as String,
@@ -119,19 +148,30 @@ class ChapterRepository {
   Future<void> updateChapter(Chapter chapter, [String? novelTitle]) async {
     final db = await _db.database;
     final now = DateTime.now();
-    await db.update('chapters', {
-      'title': chapter.title,
-      'word_count': chapter.wordCount,
-      'status': chapter.status,
-      'order_index': chapter.orderIndex,
-      'summary': chapter.summary,
-      'updated_at': now.millisecondsSinceEpoch,
-    }, where: 'id = ?', whereArgs: [chapter.id]);
+    await db.update(
+      'chapters',
+      {
+        'title': chapter.title,
+        'word_count': chapter.wordCount,
+        'status': chapter.status,
+        'order_index': chapter.orderIndex,
+        'summary': chapter.summary,
+        'updated_at': now.millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [chapter.id],
+    );
 
     // 自动从数据库获取 novelTitle，确保路径一致性
     if (novelTitle == null || novelTitle.isEmpty) {
-      final novelMaps = await db.query('novels', where: 'id = ?', whereArgs: [chapter.novelId]);
-      novelTitle = novelMaps.isNotEmpty ? (novelMaps.first['title'] as String) : '';
+      final novelMaps = await db.query(
+        'novels',
+        where: 'id = ?',
+        whereArgs: [chapter.novelId],
+      );
+      novelTitle = novelMaps.isNotEmpty
+          ? (novelMaps.first['title'] as String)
+          : '';
     }
     final projectPath = await _fs.getProjectDir(chapter.novelId, novelTitle);
     await _fs.saveChapterContent(projectPath, chapter.id, chapter.content);
@@ -141,10 +181,18 @@ class ChapterRepository {
     final db = await _db.database;
     // 同时删除文件系统上的 .md 文件
     try {
-      final maps = await db.query('chapters', where: 'id = ?', whereArgs: [chapterId]);
+      final maps = await db.query(
+        'chapters',
+        where: 'id = ?',
+        whereArgs: [chapterId],
+      );
       if (maps.isNotEmpty) {
         final novelId = maps.first['novel_id'] as String;
-        final novelMaps = await db.query('novels', where: 'id = ?', whereArgs: [novelId]);
+        final novelMaps = await db.query(
+          'novels',
+          where: 'id = ?',
+          whereArgs: [novelId],
+        );
         if (novelMaps.isNotEmpty) {
           final novelTitle = novelMaps.first['title'] as String;
           final projectPath = await _fs.getProjectDir(novelId, novelTitle);
@@ -167,10 +215,14 @@ class ChapterRepository {
       'created_at': now.millisecondsSinceEpoch,
     });
 
-    final count = Sqflite.firstIntValue(await db.rawQuery(
-      'SELECT COUNT(*) FROM chapter_snapshots WHERE chapter_id = ?',
-      [chapterId],
-    )) ?? 0;
+    final count =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM chapter_snapshots WHERE chapter_id = ?',
+            [chapterId],
+          ),
+        ) ??
+        0;
 
     if (count > 20) {
       final old = await db.query(
@@ -181,7 +233,11 @@ class ChapterRepository {
         limit: count - 20,
       );
       for (final row in old) {
-        await db.delete('chapter_snapshots', where: 'id = ?', whereArgs: [row['id']]);
+        await db.delete(
+          'chapter_snapshots',
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
       }
     }
   }
@@ -194,11 +250,17 @@ class ChapterRepository {
       whereArgs: [chapterId],
       orderBy: 'created_at DESC',
     );
-    return maps.map((m) => ChapterSnapshot(
-      id: m['id'] as String,
-      chapterId: m['chapter_id'] as String,
-      content: m['content'] as String,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
-    )).toList();
+    return maps
+        .map(
+          (m) => ChapterSnapshot(
+            id: m['id'] as String,
+            chapterId: m['chapter_id'] as String,
+            content: m['content'] as String,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              m['created_at'] as int,
+            ),
+          ),
+        )
+        .toList();
   }
 }

@@ -41,11 +41,7 @@ class AppConfig {
       'temperature': 1.0,
       'maxTokens': 4096,
     },
-    'stats': {
-      'dailyWordGoal': 3000,
-      'reminderHour': 21,
-      'reminderMinute': 0,
-    },
+    'stats': {'dailyWordGoal': 3000, 'reminderHour': 21, 'reminderMinute': 0},
     'export': {
       'format': 'txt',
       'includeMemory': true,
@@ -124,7 +120,10 @@ class AppConfig {
   void _deepMerge(Map<String, dynamic> target, Map<String, dynamic> source) {
     for (final key in source.keys) {
       if (source[key] is Map && target[key] is Map) {
-        _deepMerge(target[key] as Map<String, dynamic>, source[key] as Map<String, dynamic>);
+        _deepMerge(
+          target[key] as Map<String, dynamic>,
+          source[key] as Map<String, dynamic>,
+        );
       } else {
         target[key] = source[key];
       }

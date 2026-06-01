@@ -51,7 +51,10 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
             children: [
               const Icon(Icons.file_upload, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Text('导入小说文件', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                '导入小说文件',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -78,7 +81,9 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _filePath != null ? AppColors.primary : Colors.grey[300]!,
+                  color: _filePath != null
+                      ? AppColors.primary
+                      : Colors.grey[300]!,
                   width: 2,
                   style: BorderStyle.solid,
                 ),
@@ -90,26 +95,55 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
               child: _filePath != null
                   ? Column(
                       children: [
-                        const Icon(Icons.description, size: 36, color: AppColors.primary),
+                        const Icon(
+                          Icons.description,
+                          size: 36,
+                          color: AppColors.primary,
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           _fileName ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text('点击更换文件', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                        Text(
+                          '点击更换文件',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
                       ],
                     )
                   : Column(
                       children: [
-                        Icon(Icons.cloud_upload_outlined, size: 36, color: Colors.grey[400]),
+                        Icon(
+                          Icons.cloud_upload_outlined,
+                          size: 36,
+                          color: Colors.grey[400],
+                        ),
                         const SizedBox(height: 8),
-                        Text('点击选择文件', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                        Text(
+                          '点击选择文件',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text('TXT / MD / DOCX / EPUB', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                        Text(
+                          'TXT / MD / DOCX / EPUB',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -126,8 +160,8 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
                 color: _importResult?.success == true
                     ? Colors.green.shade50
                     : _importResult?.success == false
-                        ? Colors.red.shade50
-                        : AppColors.primary.withOpacity(0.05),
+                    ? Colors.red.shade50
+                    : AppColors.primary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -139,7 +173,9 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
                     LinearProgressIndicator(
                       value: _progress > 0 ? _progress : null,
                       backgroundColor: Colors.grey[200],
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
                     ),
                   ],
                 ],
@@ -152,11 +188,17 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
           if (_importResult?.success == true) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('AI 智能分析', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+              title: const Text(
+                'AI 智能分析',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              ),
               subtitle: const Text('自动提取角色、设定、地点、势力、道具、伏笔'),
               value: true,
               onChanged: _isAnalyzing ? null : (v) {},
-              secondary: const Icon(Icons.auto_awesome, color: AppColors.primary),
+              secondary: const Icon(
+                Icons.auto_awesome,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 8),
           ],
@@ -168,7 +210,9 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: (_isImporting || _isAnalyzing) ? null : () => Navigator.pop(context),
+                  onPressed: (_isImporting || _isAnalyzing)
+                      ? null
+                      : () => Navigator.pop(context),
                   child: const Text('取消'),
                 ),
               ),
@@ -176,21 +220,33 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
               Expanded(
                 child: ElevatedButton.icon(
                   icon: _isImporting
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Icon(Icons.check),
-                  label: Text(_isImporting
-                      ? '导入中...'
-                      : _isAnalyzing
-                          ? '分析中...'
-                          : _importResult?.success == true
-                              ? '完成'
-                              : '开始导入'),
+                  label: Text(
+                    _isImporting
+                        ? '导入中...'
+                        : _isAnalyzing
+                        ? '分析中...'
+                        : _importResult?.success == true
+                        ? '完成'
+                        : '开始导入',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  onPressed: (_isImporting || _isAnalyzing || _importResult?.success == true)
+                  onPressed:
+                      (_isImporting ||
+                          _isAnalyzing ||
+                          _importResult?.success == true)
                       ? null
                       : _startImport,
                 ),
@@ -234,7 +290,8 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
       final service = NovelImportService();
       final preview = await service.previewImport(_filePath!);
       setState(() {
-        _statusText = '识别结果：${preview.detectedType}（来源：${preview.matchSource}）\n${preview.chapters.length} 段内容，${preview.totalWords} 字';
+        _statusText =
+            '识别结果：${preview.detectedType}（来源：${preview.matchSource}）\n${preview.chapters.length} 段内容，${preview.totalWords} 字';
       });
     } catch (e) {
       setState(() {
@@ -334,7 +391,8 @@ class _NovelImportDialogState extends ConsumerState<NovelImportDialog> {
       setState(() {
         _isAnalyzing = false;
         _progress = 1.0;
-        _statusText = '全部完成！\n导入 ${_importResult?.chapterCount ?? 0} 章 → AI 提取 $result';
+        _statusText =
+            '全部完成！\n导入 ${_importResult?.chapterCount ?? 0} 章 → AI 提取 $result';
       });
     } catch (e) {
       if (!mounted) return;

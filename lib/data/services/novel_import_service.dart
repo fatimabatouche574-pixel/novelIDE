@@ -12,10 +12,10 @@ import 'package:novel_ide/data/repositories/material_repository.dart';
 
 /// 导入内容类型
 enum ImportContentType {
-  chapters,   // 正文章节（默认）
-  outline,    // 大纲/总纲
+  chapters, // 正文章节（默认）
+  outline, // 大纲/总纲
   characters, // 角色卡
-  settings,   // 设定
+  settings, // 设定
 }
 
 /// 解析后的章节（公开，供 ImportPreview 使用）
@@ -51,14 +51,23 @@ class NovelImportService {
 
   // 文件名语义关键词映射
   static const _filenameKeywords = {
-    ImportContentType.outline:    ['总纲', '大纲', '纲要', '主线', 'outline'],
+    ImportContentType.outline: ['总纲', '大纲', '纲要', '主线', 'outline'],
     ImportContentType.characters: ['角色', '人物', '人设', 'character'],
-    ImportContentType.settings:   ['设定', '世界观', '背景', 'setting'],
+    ImportContentType.settings: ['设定', '世界观', '背景', 'setting'],
   };
 
   // 内容结构特征关键词
   static const _contentOutlineMarkers = ['总纲', '主线剧情', '世界观设定', '分卷大纲', '故事线'];
-  static const _contentCharacterMarkers = ['姓名：', '年龄：', '身份：', '性格：', '外貌：', '主角', '配角', '反派'];
+  static const _contentCharacterMarkers = [
+    '姓名：',
+    '年龄：',
+    '身份：',
+    '性格：',
+    '外貌：',
+    '主角',
+    '配角',
+    '反派',
+  ];
   static const _contentSettingMarkers = ['世界观', '修炼体系', '势力分布', '魔法体系', '战力体系'];
 
   /// 预览导入：分析文件，返回识别结果（不写入数据库）
@@ -69,7 +78,8 @@ class NovelImportService {
     final ext = p.extension(filePath).toLowerCase();
     String content;
     switch (ext) {
-      case '.txt': case '.md':
+      case '.txt':
+      case '.md':
         content = await _readTextFile(file);
         break;
       case '.docx':
@@ -120,7 +130,10 @@ class NovelImportService {
       chapters = [ParsedChapter(title: detectedType, content: content.trim())];
     }
 
-    final totalWords = chapters.fold<int>(0, (sum, ch) => sum + ch.content.length);
+    final totalWords = chapters.fold<int>(
+      0,
+      (sum, ch) => sum + ch.content.length,
+    );
 
     return ImportPreview(
       contentType: contentType,
@@ -166,7 +179,9 @@ class NovelImportService {
       settingScore += kw.allMatches(content).length;
     }
 
-    if (characterScore >= 3 && characterScore > outlineScore && characterScore > settingScore) {
+    if (characterScore >= 3 &&
+        characterScore > outlineScore &&
+        characterScore > settingScore) {
       return const MapEntry(ImportContentType.characters, '角色卡（内容结构识别）');
     }
     if (settingScore >= 3 && settingScore > outlineScore) {
@@ -215,7 +230,8 @@ class NovelImportService {
 
     try {
       switch (ext) {
-        case '.txt': case '.md':
+        case '.txt':
+        case '.md':
           content = await _readTextFile(file);
           break;
         case '.docx':
@@ -318,11 +334,13 @@ class NovelImportService {
     final chaptersDir = Directory(p.join(projectPath, 'chapters'));
     if (!await chaptersDir.exists()) await chaptersDir.create(recursive: true);
 
-    final existing = await db.query('chapters',
-        where: 'novel_id = ? AND volume_id = ?',
-        whereArgs: [actualNovelId, volumeId ?? ''],
-        orderBy: 'order_index DESC',
-        limit: 1);
+    final existing = await db.query(
+      'chapters',
+      where: 'novel_id = ? AND volume_id = ?',
+      whereArgs: [actualNovelId, volumeId ?? ''],
+      orderBy: 'order_index DESC',
+      limit: 1,
+    );
     int startIndex = 0;
     if (existing.isNotEmpty) {
       startIndex = (existing.first['order_index'] as int? ?? 0) + 1;
@@ -330,9 +348,12 @@ class NovelImportService {
 
     String? actualVolumeId = volumeId;
     if (actualVolumeId == null || actualVolumeId.isEmpty) {
-      final volumes = await db.query('volumes',
-          where: 'novel_id = ?', whereArgs: [actualNovelId],
-          orderBy: 'order_index ASC');
+      final volumes = await db.query(
+        'volumes',
+        where: 'novel_id = ?',
+        whereArgs: [actualNovelId],
+        orderBy: 'order_index ASC',
+      );
       if (volumes.isEmpty) {
         actualVolumeId = _uuid.v4();
         await db.insert('volumes', {
@@ -391,11 +412,11 @@ class NovelImportService {
     required String detectedTitle,
   }) async {
     final db = await DatabaseHelper().database;
-    
+
     // 如果没有选择作品，自动创建一个新作品
     String actualNovelId = novelId ?? '';
     String actualNovelTitle = novelTitle ?? '';
-    
+
     if (actualNovelId.isEmpty) {
       actualNovelTitle = p.basenameWithoutExtension(filePath);
       if (actualNovelTitle.length > 50) {
@@ -501,7 +522,8 @@ class NovelImportService {
     // 读取章节的 HTML 内容
     if (chapter.HtmlContent != null && chapter.HtmlContent!.isNotEmpty) {
       buffer.write(_stripHtmlTags(chapter.HtmlContent!));
-    } else if (chapter.ContentFileName != null && chapter.ContentFileName!.isNotEmpty) {
+    } else if (chapter.ContentFileName != null &&
+        chapter.ContentFileName!.isNotEmpty) {
       // 尝试从 book 的 Content 中按文件名查找
       // epubx 库通常会将内容解析到 HtmlContent 中
     }
@@ -521,13 +543,25 @@ class NovelImportService {
         .replaceAll('&#39;', "'");
 
     // 去除 script 和 style 标签及其内容
-    text = text.replaceAll(RegExp(r'<script[^>]*>[\s\S]*?</script>', caseSensitive: false), '');
-    text = text.replaceAll(RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false), '');
+    text = text.replaceAll(
+      RegExp(r'<script[^>]*>[\s\S]*?</script>', caseSensitive: false),
+      '',
+    );
+    text = text.replaceAll(
+      RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false),
+      '',
+    );
 
     // 将块级标签替换为换行
     text = text.replaceAll(RegExp(r'<br\s*/?\s*>', caseSensitive: false), '\n');
-    text = text.replaceAll(RegExp(r'</(p|div|h[1-6]|li|tr|blockquote)>', caseSensitive: false), '\n');
-    text = text.replaceAll(RegExp(r'<(p|div|h[1-6]|li|tr|blockquote)[^>]*>', caseSensitive: false), '\n');
+    text = text.replaceAll(
+      RegExp(r'</(p|div|h[1-6]|li|tr|blockquote)>', caseSensitive: false),
+      '\n',
+    );
+    text = text.replaceAll(
+      RegExp(r'<(p|div|h[1-6]|li|tr|blockquote)[^>]*>', caseSensitive: false),
+      '\n',
+    );
 
     // 去除所有剩余 HTML 标签
     text = text.replaceAll(RegExp(r'<[^>]+>'), '');
@@ -561,7 +595,10 @@ class NovelImportService {
       chapters.add(ParsedChapter(title: '导入内容', content: fullText.trim()));
     }
 
-    final totalWords = chapters.fold<int>(0, (sum, ch) => sum + ch.content.length);
+    final totalWords = chapters.fold<int>(
+      0,
+      (sum, ch) => sum + ch.content.length,
+    );
 
     return ImportPreview(
       contentType: ImportContentType.chapters,
@@ -573,7 +610,10 @@ class NovelImportService {
   }
 
   /// 递归收集 EPUB 章节为 ParsedChapter 列表
-  void _collectEpubChapters(List<EpubChapter> epubChapters, List<ParsedChapter> result) {
+  void _collectEpubChapters(
+    List<EpubChapter> epubChapters,
+    List<ParsedChapter> result,
+  ) {
     for (final chapter in epubChapters) {
       final title = chapter.Title?.trim() ?? '';
       final content = _extractEpubChapterContent(chapter).trim();
@@ -587,10 +627,12 @@ class NovelImportService {
         _collectEpubChapters(chapter.SubChapters!, result);
       } else if (content.isNotEmpty) {
         // 叶子章节：有内容就添加
-        result.add(ParsedChapter(
-          title: title.isNotEmpty ? title : '未命名章节',
-          content: content,
-        ));
+        result.add(
+          ParsedChapter(
+            title: title.isNotEmpty ? title : '未命名章节',
+            content: content,
+          ),
+        );
       }
     }
   }
@@ -608,7 +650,9 @@ class NovelImportService {
         novelId: novelId,
         novelTitle: novelTitle,
         filePath: filePath,
-        content: preview.chapters.map((c) => '${c.title}\n${c.content}').join('\n\n'),
+        content: preview.chapters
+            .map((c) => '${c.title}\n${c.content}')
+            .join('\n\n'),
         contentType: preview.contentType,
         chapters: preview.chapters,
         volumeId: volumeId,
@@ -684,10 +728,12 @@ class NovelImportService {
     void flushChapter() {
       final text = currentContent.toString().trim();
       if (text.isNotEmpty || hasChapter) {
-        chapters.add(ParsedChapter(
-          title: currentTitle.isNotEmpty ? currentTitle : '未命名章节',
-          content: text,
-        ));
+        chapters.add(
+          ParsedChapter(
+            title: currentTitle.isNotEmpty ? currentTitle : '未命名章节',
+            content: text,
+          ),
+        );
       }
       currentContent.clear();
       currentTitle = '';

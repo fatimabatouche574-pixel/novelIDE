@@ -69,13 +69,18 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
 
     final db = await DatabaseHelper().database;
     final fs = LocalFileDataSource();
-    final projectPath = await fs.getProjectDir(widget.novelId, widget.novelTitle);
+    final projectPath = await fs.getProjectDir(
+      widget.novelId,
+      widget.novelTitle,
+    );
 
     // 获取所有章节
-    final chapterRows = await db.query('chapters',
-        where: 'novel_id = ?',
-        whereArgs: [widget.novelId],
-        orderBy: 'order_index ASC');
+    final chapterRows = await db.query(
+      'chapters',
+      where: 'novel_id = ?',
+      whereArgs: [widget.novelId],
+      orderBy: 'order_index ASC',
+    );
 
     for (final row in chapterRows) {
       final chapterId = row['id'] as String;
@@ -96,14 +101,16 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
             final idx = line.indexOf(keyword, startIndex);
             if (idx == -1) break;
 
-            _results.add(_SearchResult(
-              chapterId: chapterId,
-              chapterTitle: chapterTitle,
-              matchedLine: line.trim(),
-              lineIndex: i,
-              charOffset: idx,
-              content: content,
-            ));
+            _results.add(
+              _SearchResult(
+                chapterId: chapterId,
+                chapterTitle: chapterTitle,
+                matchedLine: line.trim(),
+                lineIndex: i,
+                charOffset: idx,
+                content: content,
+              ),
+            );
             startIndex = idx + 1;
           }
         }
@@ -124,8 +131,13 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
 
     final db = await DatabaseHelper().database;
     final fs = LocalFileDataSource();
-    final projectPath = await fs.getProjectDir(widget.novelId, widget.novelTitle);
-    final contentFile = File(p.join(projectPath, 'chapters', '${result.chapterId}.md'));
+    final projectPath = await fs.getProjectDir(
+      widget.novelId,
+      widget.novelTitle,
+    );
+    final contentFile = File(
+      p.join(projectPath, 'chapters', '${result.chapterId}.md'),
+    );
 
     if (await contentFile.exists()) {
       String content = await contentFile.readAsString();
@@ -134,8 +146,15 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
       await contentFile.writeAsString(content);
 
       // 更新字数
-      await db.update('chapters', {'word_count': content.length, 'updated_at': DateTime.now().millisecondsSinceEpoch},
-          where: 'id = ?', whereArgs: [result.chapterId]);
+      await db.update(
+        'chapters',
+        {
+          'word_count': content.length,
+          'updated_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [result.chapterId],
+      );
 
       // 移除已替换的结果
       setState(() {
@@ -161,14 +180,19 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
 
     final db = await DatabaseHelper().database;
     final fs = LocalFileDataSource();
-    final projectPath = await fs.getProjectDir(widget.novelId, widget.novelTitle);
+    final projectPath = await fs.getProjectDir(
+      widget.novelId,
+      widget.novelTitle,
+    );
 
     // 按章节分组处理
     final chapterIds = _results.map((r) => r.chapterId).toSet();
     int replacedCount = 0;
 
     for (final chapterId in chapterIds) {
-      final contentFile = File(p.join(projectPath, 'chapters', '$chapterId.md'));
+      final contentFile = File(
+        p.join(projectPath, 'chapters', '$chapterId.md'),
+      );
       if (await contentFile.exists()) {
         String content = await contentFile.readAsString();
         final count = keyword.allMatches(content).length;
@@ -176,10 +200,15 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
         await contentFile.writeAsString(content);
         replacedCount += count;
 
-        await db.update('chapters', {
-          'word_count': content.length,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
-        }, where: 'id = ?', whereArgs: [chapterId]);
+        await db.update(
+          'chapters',
+          {
+            'word_count': content.length,
+            'updated_at': DateTime.now().millisecondsSinceEpoch,
+          },
+          where: 'id = ?',
+          whereArgs: [chapterId],
+        );
       }
     }
 
@@ -189,9 +218,9 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
     });
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已替换 $replacedCount 处')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已替换 $replacedCount 处')));
     }
   }
 
@@ -261,8 +290,13 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                                   },
                                 )
                               : null,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           isDense: true,
                         ),
                         onSubmitted: (_) => _doSearch(),
@@ -273,7 +307,14 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                     FilledButton(
                       onPressed: _isSearching ? null : _doSearch,
                       child: _isSearching
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Text('搜索'),
                     ),
                   ],
@@ -288,16 +329,30 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                           controller: _replaceCtrl,
                           decoration: InputDecoration(
                             hintText: '替换为...',
-                            prefixIcon: const Icon(Icons.find_replace, size: 20),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            prefixIcon: const Icon(
+                              Icons.find_replace,
+                              size: 20,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             isDense: true,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton(
-                        onPressed: _results.isEmpty ? null : () => _replaceSingle(_currentResultIndex >= 0 ? _currentResultIndex : 0),
+                        onPressed: _results.isEmpty
+                            ? null
+                            : () => _replaceSingle(
+                                _currentResultIndex >= 0
+                                    ? _currentResultIndex
+                                    : 0,
+                              ),
                         child: const Text('替换'),
                       ),
                       const SizedBox(width: 4),
@@ -315,7 +370,9 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
           if (_results.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
               child: Row(
                 children: [
                   Text(
@@ -349,7 +406,11 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 64, color: Colors.grey[300]),
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           _searchCtrl.text.isEmpty ? '输入关键词开始搜索' : '未找到匹配结果',
@@ -373,7 +434,9 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                               : null,
                           border: Border(
                             left: BorderSide(
-                              color: isCurrent ? AppColors.primary : Colors.transparent,
+                              color: isCurrent
+                                  ? AppColors.primary
+                                  : Colors.transparent,
                               width: 3,
                             ),
                           ),
@@ -389,7 +452,9 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                               '${index + 1}',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: isCurrent ? Colors.white : Colors.grey[700],
+                                color: isCurrent
+                                    ? Colors.white
+                                    : Colors.grey[700],
                               ),
                             ),
                           ),
@@ -397,7 +462,9 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                             result.chapterTitle,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isCurrent
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                           subtitle: _HighlightText(
@@ -407,7 +474,11 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                           ),
                           trailing: _showReplace
                               ? IconButton(
-                                  icon: const Icon(Icons.check, size: 18, color: Colors.green),
+                                  icon: const Icon(
+                                    Icons.check,
+                                    size: 18,
+                                    color: Colors.green,
+                                  ),
                                   onPressed: () => _replaceSingle(index),
                                 )
                               : null,
@@ -440,7 +511,12 @@ class _HighlightText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (keyword.isEmpty) {
-      return Text(text, maxLines: maxLines, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12));
+      return Text(
+        text,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 12),
+      );
     }
 
     final spans = <TextSpan>[];
@@ -459,14 +535,16 @@ class _HighlightText extends StatelessWidget {
       if (idx > start) {
         spans.add(TextSpan(text: text.substring(start, idx)));
       }
-      spans.add(TextSpan(
-        text: text.substring(idx, idx + keyword.length),
-        style: TextStyle(
-          backgroundColor: Colors.yellow.withOpacity(0.4),
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
+      spans.add(
+        TextSpan(
+          text: text.substring(idx, idx + keyword.length),
+          style: TextStyle(
+            backgroundColor: Colors.yellow.withOpacity(0.4),
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
-      ));
+      );
       start = idx + keyword.length;
     }
 

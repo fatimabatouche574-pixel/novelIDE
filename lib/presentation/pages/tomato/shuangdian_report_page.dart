@@ -29,7 +29,13 @@ class ShuangdianReportPage extends StatelessWidget {
                     children: [
                       const Icon(Icons.bolt, color: Colors.amber, size: 20),
                       const SizedBox(width: 8),
-                      const Text('AI 分析结果', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'AI 分析结果',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(),
@@ -50,13 +56,20 @@ class ShuangdianReportPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('章节内容（前500字）', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text(
+                    '章节内容（前500字）',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     chapterContent.length > 500
                         ? '${chapterContent.substring(0, 500)}...'
                         : chapterContent,
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),

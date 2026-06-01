@@ -30,7 +30,6 @@ import 'package:novel_ide/presentation/widgets/top_notification.dart';
 import 'package:novel_ide/presentation/widgets/skill_indicator.dart';
 import 'package:novel_ide/presentation/widgets/proactive_question_dialog.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
-import 'package:novel_ide/core/theme/app_themes.dart';
 
 /// AI chat session model.
 class AiChatSession {
@@ -44,8 +43,8 @@ class AiChatSession {
     required this.title,
     List<Map<String, String>>? messages,
     DateTime? createdAt,
-  })  : messages = messages != null ? List.from(messages) : [],
-        createdAt = createdAt ?? DateTime.now();
+  }) : messages = messages != null ? List.from(messages) : [],
+       createdAt = createdAt ?? DateTime.now();
 }
 
 /// GPT风格聊天页面 - 纯聊天消息列表 + 底部胶囊式输入框
@@ -56,13 +55,13 @@ class AiChatPage extends ConsumerStatefulWidget {
   ConsumerState<AiChatPage> createState() => _AiChatPageState();
 }
 
-class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObserver {
+class _AiChatPageState extends ConsumerState<AiChatPage>
+    with WidgetsBindingObserver {
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
   final List<AiChatSession> _sessions = [];
   AiChatSession? _currentSession;
   bool _isLoading = false;
-  String _selectedModel = 'GLM-4.7-Flash';
 
   // 语音相关
   final VoiceService _voiceService = VoiceService();
@@ -80,7 +79,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     WidgetsBinding.instance.addObserver(this);
     _initVoice();
     _loadHistory();
-    
+
     // 监听新建会话触发器
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listen<int>(newSessionTriggerProvider, (previous, next) {
@@ -94,7 +93,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       _saveHistory();
     }
   }
@@ -106,12 +106,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         setState(() {
           _sessions.clear();
           for (final model in savedSessions) {
-            _sessions.add(AiChatSession(
-              id: model.id,
-              title: model.title,
-              messages: model.messages,
-              createdAt: model.createdAt,
-            ));
+            _sessions.add(
+              AiChatSession(
+                id: model.id,
+                title: model.title,
+                messages: model.messages,
+                createdAt: model.createdAt,
+              ),
+            );
           }
           _currentSession = _sessions.first;
         });
@@ -126,13 +128,17 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   Future<void> _saveHistory() async {
     if (!_isHistoryLoaded) return;
     try {
-      final models = _sessions.map((s) => AiChatSessionModel(
-        id: s.id,
-        title: s.title,
-        messages: s.messages,
-        createdAt: s.createdAt,
-        updatedAt: DateTime.now(),
-      )).toList();
+      final models = _sessions
+          .map(
+            (s) => AiChatSessionModel(
+              id: s.id,
+              title: s.title,
+              messages: s.messages,
+              createdAt: s.createdAt,
+              updatedAt: DateTime.now(),
+            ),
+          )
+          .toList();
       await _historyRepo.saveSessions(models);
     } catch (e) {
       debugPrint('Save history error: $e');
@@ -156,7 +162,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     });
   }
 
-
   /// 停止AI生成
   void _stopGenerate() {
     setState(() {
@@ -165,7 +170,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     // 如果有部分生成的内容，保留它
     if (_currentSession != null && _currentSession!.messages.isNotEmpty) {
       final lastMsg = _currentSession!.messages.last;
-      if (lastMsg['role'] == 'assistant' && (lastMsg['content']?.isEmpty ?? true)) {
+      if (lastMsg['role'] == 'assistant' &&
+          (lastMsg['content']?.isEmpty ?? true)) {
         _currentSession!.messages.removeLast();
       }
     }
@@ -197,13 +203,15 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
             ).catchError((_) => '')
           : null,
     );
-    
+
     if (fuzzyType != null) {
       List<WritingSkill>? skills;
       try {
         final skillRepo = ref.read(skillRepoProvider);
         skills = await skillRepo.getAllSkills();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load materials error: $e');
+      }
 
       final question = await detector.generateQuestion(
         text,
@@ -237,9 +245,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     final shouldTriggerAgent = detector.shouldTriggerWorkspaceAgent(text);
 
     setState(() {
-      _currentSession!.messages.add({'role': 'user', 'content': _inputCtrl.text.trim()});
+      _currentSession!.messages.add({
+        'role': 'user',
+        'content': _inputCtrl.text.trim(),
+      });
       if (_currentSession!.messages.length == 1) {
-        _currentSession!.title = text.length > 20 ? '${text.substring(0, 20)}...' : text;
+        _currentSession!.title = text.length > 20
+            ? '${text.substring(0, 20)}...'
+            : text;
       }
       _isLoading = true;
     });
@@ -248,7 +261,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
 
     try {
       final preset = ref.read(currentPresetProvider);
-      var systemPrompt = preset?.systemPrompt ?? '你是一位专业的网文写作助手，擅长帮助作者构思剧情、润色文字、生成大纲和角色设定。请用中文回复。';
+      var systemPrompt =
+          preset?.systemPrompt ??
+          '你是一位专业的网文写作助手，擅长帮助作者构思剧情、润色文字、生成大纲和角色设定。请用中文回复。';
 
       List<WritingSkill> matchedSkills = [];
       try {
@@ -257,22 +272,34 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         final enabled = allSkills.where((s) => s.isEnabled).toList();
         matchedSkills = SkillMatcher.match(text, enabled);
         if (matchedSkills.isNotEmpty) {
-          systemPrompt = SkillMatcher.injectSkillContext(systemPrompt, matchedSkills);
+          systemPrompt = SkillMatcher.injectSkillContext(
+            systemPrompt,
+            matchedSkills,
+          );
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load materials error: $e');
+      }
 
       String memoryContext = '';
       try {
         final novel = ref.read(selectedNovelProvider);
         if (novel != null) {
-          memoryContext = await NovelMemory.getForAiContext(novel.id, novel.title);
+          memoryContext = await NovelMemory.getForAiContext(
+            novel.id,
+            novel.title,
+          );
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load materials error: $e');
+      }
 
       String userMemoryContext = '';
       try {
         userMemoryContext = await UserMemory.getForAiContext();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load materials error: $e');
+      }
 
       if (_currentSession!.messages.length > 600) {
         await _compactMessages(config);
@@ -284,7 +311,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       if (needsAgent) {
         final agent = WorkspaceAgent();
         if (novel != null) {
-          registerAllToolExecutors(agent: agent, novelId: novel.id, novelTitle: novel.title);
+          registerAllToolExecutors(
+            agent: agent,
+            novelId: novel.id,
+            novelTitle: novel.title,
+          );
         } else {
           registerGeneralToolExecutors(
             agent: agent,
@@ -323,7 +354,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         );
 
         setState(() {
-          _currentSession!.messages.add({'role': 'assistant', 'content': response.content});
+          _currentSession!.messages.add({
+            'role': 'assistant',
+            'content': response.content,
+          });
           if (matchedSkills.isNotEmpty) {
             _skillMatches[_currentSession!.messages.length - 1] = matchedSkills;
           }
@@ -338,7 +372,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         );
 
         setState(() {
-          _currentSession!.messages.add({'role': 'assistant', 'content': aiText});
+          _currentSession!.messages.add({
+            'role': 'assistant',
+            'content': aiText,
+          });
           if (matchedSkills.isNotEmpty) {
             _skillMatches[_currentSession!.messages.length - 1] = matchedSkills;
           }
@@ -348,7 +385,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       _scrollToBottom();
     } catch (e) {
       setState(() {
-        _currentSession!.messages.add({'role': 'assistant', 'content': '请求失败: $e'});
+        _currentSession!.messages.add({
+          'role': 'assistant',
+          'content': '请求失败: $e',
+        });
         _isLoading = false;
       });
     }
@@ -357,7 +397,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   Future<void> _compactMessages(AiConfig config) async {
     try {
       final msgs = _currentSession!.messages;
-      final toSummarize = msgs.take(30).map((m) => '${m['role']}: ${m['content']}').join('\n');
+      final toSummarize = msgs
+          .take(30)
+          .map((m) => '${m['role']}: ${m['content']}')
+          .join('\n');
       final aiService = ref.read(aiServiceProvider);
       final summary = await aiService.send(
         config: config,
@@ -408,7 +451,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final messages = _currentSession?.messages ?? [];
-    
+
     // 从主题系统读取颜色
     final skin = ref.watch(skinThemeProvider);
     _bgColor = skin.background;
@@ -438,7 +481,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                       final msg = messages[index];
                       final isUser = msg['role'] == 'user';
                       final matchedForThis = _skillMatches[index];
-                      return _buildMessage(msg['content']!, isUser, matchedForThis, index);
+                      return _buildMessage(
+                        msg['content']!,
+                        isUser,
+                        matchedForThis,
+                        index,
+                      );
                     },
                   ),
           ),
@@ -466,13 +514,24 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Center(
-                child: Text('AI', style: TextStyle(color: _bgColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'AI',
+                  style: TextStyle(
+                    color: _bgColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 20),
             Text(
               '欢迎使用网文写作IDE！',
-              style: TextStyle(color: _textPrimary, fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: _textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             SizedBox(height: 8),
             Text(
@@ -519,7 +578,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   }
 
   /// 消息气泡
-  Widget _buildMessage(String content, bool isUser, List<WritingSkill>? skills, int index) {
+  Widget _buildMessage(
+    String content,
+    bool isUser,
+    List<WritingSkill>? skills,
+    int index,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -556,19 +620,30 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                   onLongPress: () => _showMessageMenu(content, index),
                   child: isUser
                       ? Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: _cardBg2,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             content,
-                            style: TextStyle(color: _textPrimary, fontSize: 15, height: 1.6),
+                            style: TextStyle(
+                              color: _textPrimary,
+                              fontSize: 15,
+                              height: 1.6,
+                            ),
                           ),
                         )
                       : SelectableText(
                           content,
-                          style: TextStyle(color: _textPrimary, fontSize: 15, height: 1.6),
+                          style: TextStyle(
+                            color: _textPrimary,
+                            fontSize: 15,
+                            height: 1.6,
+                          ),
                         ),
                 ),
               ),
@@ -594,13 +669,21 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
               borderRadius: BorderRadius.circular(4),
             ),
             child: Center(
-              child: Text('AI', style: TextStyle(color: _bgColor, fontSize: 12, fontWeight: FontWeight.bold)),
+              child: Text(
+                'AI',
+                style: TextStyle(
+                  color: _bgColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(3, (i) => 
-              Container(
+            children: List.generate(
+              3,
+              (i) => Container(
                 width: 6,
                 height: 6,
                 margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -619,7 +702,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   /// 底部胶囊式输入框
   Widget _buildInputBar() {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 10, 16, 20 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -654,7 +742,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                   hintText: 'Message',
                   hintStyle: TextStyle(color: _textSecondary),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 4,
+                  ),
                 ),
                 onChanged: (_) => setState(() {}), // 输入时实时更新发送按钮状态
                 onSubmitted: (_) => _sendMessage(),
@@ -670,41 +761,45 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.stop_rounded, color: _textPrimary, size: 22),
+                      icon: Icon(
+                        Icons.stop_rounded,
+                        color: _textPrimary,
+                        size: 22,
+                      ),
                       onPressed: _stopGenerate,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
                   )
                 : _inputCtrl.text.isNotEmpty
-                    ? Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: _primaryColor,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.send, color: _bgColor, size: 20),
-                          onPressed: _sendMessage,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      )
-                    : Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: _cardBg2,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.mic, color: _textPrimary, size: 20),
-                          onPressed: _handleMic,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ),
+                ? Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _primaryColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.send, color: _bgColor, size: 20),
+                      onPressed: _sendMessage,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  )
+                : Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _cardBg2,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.mic, color: _textPrimary, size: 20),
+                      onPressed: _handleMic,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -718,7 +813,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.75),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+        ),
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -733,7 +830,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF444444),
+                  color: _cardBg2,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -751,27 +848,49 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                       Navigator.pop(ctx);
                       _handleMic();
                     }),
-                    _buildSheetItem(Icons.attach_file, '上传文件', 'TXT/DOCX/PDF', () {
+                    _buildSheetItem(
+                      Icons.attach_file,
+                      '上传文件',
+                      'TXT/DOCX/PDF',
+                      () {
+                        Navigator.pop(ctx);
+                        _handleFileUpload();
+                      },
+                    ),
+                    _buildSheetItem(Icons.library_books, '选择资料', '发给AI上下文', () {
                       Navigator.pop(ctx);
-                      _handleFileUpload();
+                      _showMaterialPicker();
                     }),
-                    _buildSheetItem(Icons.library_books, '选择资料', '发给AI上下文', () { Navigator.pop(ctx); _showMaterialPicker(); }),
                     _buildSheetItem(Icons.description, '选择模板', '写作模板库', () {
                       Navigator.pop(ctx);
                       _showWritingTemplates();
                     }),
-                    _buildSheetItem(Icons.local_fire_department, '番茄写作', '风格预设', () {
+                    _buildSheetItem(
+                      Icons.local_fire_department,
+                      '番茄写作',
+                      '风格预设',
+                      () {
+                        Navigator.pop(ctx);
+                        _showTomatoPresetPicker();
+                      },
+                    ),
+                    _buildSheetItem(Icons.phone, '语音通话', '实时AI对话', () {
                       Navigator.pop(ctx);
-                      _showTomatoPresetPicker();
+                      _openVoiceCall();
                     }),
-                    _buildSheetItem(Icons.phone, '语音通话', '实时AI对话', () { Navigator.pop(ctx); _openVoiceCall(); }),
                     _buildSheetItem(Icons.bar_chart, '写作统计', '字数趋势', () {
                       Navigator.pop(ctx);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const StatsPage()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const StatsPage()),
+                      );
                     }),
                     _buildSheetItem(Icons.settings, '更多设置', '模型/外观/数据', () {
                       Navigator.pop(ctx);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfilePage()),
+                      );
                     }),
                     _buildSheetItem(Icons.fact_check, '全文审查', '设定/角色/逻辑', () {
                       Navigator.pop(ctx);
@@ -810,19 +929,19 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         type: FileType.custom,
         allowedExtensions: ['txt', 'md', 'docx', 'pdf'],
       );
-      
+
       if (result == null || result.files.isEmpty) return;
-      
+
       final filePath = result.files.first.path;
       if (filePath == null) return;
-      
+
       final file = File(filePath);
       if (!await file.exists()) return;
-      
+
       // 读取文件内容
       String content = '';
       final ext = filePath.split('.').last.toLowerCase();
-      
+
       if (ext == 'txt' || ext == 'md') {
         content = await file.readAsString();
       } else {
@@ -830,23 +949,29 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         TopNotification.show(context, '暂不支持该格式，请使用TXT文件');
         return;
       }
-      
+
       if (content.length > 5000) {
         content = content.substring(0, 5000) + '\n...(内容过长已截断)';
       }
-      
+
       // 将文件内容插入输入框
       setState(() {
-        _inputCtrl.text = '[上传文件：${result.files.first.name}]\n\n$content\n\n请帮我分析以上内容。';
+        _inputCtrl.text =
+            '[上传文件：${result.files.first.name}]\n\n$content\n\n请帮我分析以上内容。';
       });
-      
+
       TopNotification.success(context, '已读取文件：${result.files.first.name}');
     } catch (e) {
       TopNotification.error(context, '读取文件失败: $e');
     }
   }
 
-  Widget _buildSheetItem(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildSheetItem(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -854,7 +979,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
         decoration: BoxDecoration(
           color: _cardBg2,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF333333)),
+          border: Border.all(color: _cardBg2),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -862,7 +987,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
             Icon(icon, color: _textPrimary, size: 24),
             SizedBox(height: 6),
             Text(title, style: TextStyle(color: _textPrimary, fontSize: 13)),
-            Text(subtitle, style: TextStyle(color: _textTertiary, fontSize: 10)),
+            Text(
+              subtitle,
+              style: TextStyle(color: _textTertiary, fontSize: 10),
+            ),
           ],
         ),
       ),
@@ -877,14 +1005,20 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Text('Agent（智能体）', style: TextStyle(color: _textSecondary, fontSize: 12)),
+          child: Text(
+            'Agent（智能体）',
+            style: TextStyle(color: _textSecondary, fontSize: 12),
+          ),
         ),
         SizedBox(
           height: 90,
           child: agents.isEmpty
               ? Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('暂无Agent', style: TextStyle(color: _textTertiary, fontSize: 12)),
+                  child: Text(
+                    '暂无Agent',
+                    style: TextStyle(color: _textTertiary, fontSize: 12),
+                  ),
                 )
               : ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -896,7 +1030,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                       return GestureDetector(
                         onTap: () {
                           Navigator.pop(ctx);
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentMarketplacePage()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AgentMarketplacePage(),
+                            ),
+                          );
                         },
                         child: Container(
                           width: 80,
@@ -905,15 +1044,26 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                           decoration: BoxDecoration(
                             color: _cardBg2,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF333333)),
+                            border: Border.all(color: _cardBg2),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.storefront, color: _primaryColor, size: 20),
+                              Icon(
+                                Icons.storefront,
+                                color: _primaryColor,
+                                size: 20,
+                              ),
                               SizedBox(height: 6),
-                              Text('更多', style: TextStyle(color: _textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                              Text(
+                                '更多',
+                                style: TextStyle(
+                                  color: _textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -932,16 +1082,31 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                         decoration: BoxDecoration(
                           color: _cardBg2,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF333333)),
+                          border: Border.all(color: _cardBg2),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(agent.icon, style: TextStyle(fontSize: 20)),
                             SizedBox(height: 6),
-                            Text(agent.name, style: TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text(
+                              agent.name,
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             SizedBox(height: 2),
-                            Text(agent.description, style: TextStyle(color: _textTertiary, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            Text(
+                              agent.description,
+                              style: TextStyle(
+                                color: _textTertiary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
                       ),
@@ -956,27 +1121,33 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   Widget _buildSkillSection(BuildContext ctx) {
     // 从 Provider 读取真实技能列表
     final skillsAsync = ref.watch(skillRepoProvider);
-    
+
     return FutureBuilder<List<WritingSkill>>(
       future: skillsAsync.getAllSkills(),
       builder: (context, snapshot) {
         final allSkills = snapshot.data ?? [];
         final enabledSkills = allSkills.where((s) => s.isEnabled).toList();
-        final displaySkills = enabledSkills;  // 显示全部技能
-        
+        final displaySkills = enabledSkills; // 显示全部技能
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text('Skill（写作技巧）', style: TextStyle(color: _textSecondary, fontSize: 12)),
+              child: Text(
+                'Skill（写作技巧）',
+                style: TextStyle(color: _textSecondary, fontSize: 12),
+              ),
             ),
             SizedBox(
               height: 70,
               child: displaySkills.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('暂无启用的技能', style: TextStyle(color: _textTertiary, fontSize: 12)),
+                      child: Text(
+                        '暂无启用的技能',
+                        style: TextStyle(color: _textTertiary, fontSize: 12),
+                      ),
                     )
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
@@ -988,15 +1159,20 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                           onTap: () {
                             Navigator.pop(ctx);
                             // 应用技能到当前会话
-                            ref.read(currentPresetProvider.notifier).state = TomatoPreset(
+                            ref
+                                .read(currentPresetProvider.notifier)
+                                .state = TomatoPreset(
                               id: skill.id,
                               name: skill.name,
                               category: skill.category,
-                              description: skill.description ?? '',
+                              description: skill.description,
                               systemPrompt: skill.content,
                               tags: skill.keywords,
                             );
-                            TopNotification.success(context, '已应用技能：${skill.name}');
+                            TopNotification.success(
+                              context,
+                              '已应用技能：${skill.name}',
+                            );
                           },
                           child: Container(
                             width: 120,
@@ -1005,15 +1181,30 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                             decoration: BoxDecoration(
                               color: _cardBg2,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF333333)),
+                              border: Border.all(color: _cardBg2),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(skill.name, style: TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text(
+                                  skill.name,
+                                  style: TextStyle(
+                                    color: _textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                                 SizedBox(height: 2),
-                                Text(skill.description ?? '', style: TextStyle(color: _textTertiary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                Text(
+                                  skill.description,
+                                  style: TextStyle(
+                                    color: _textTertiary,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ],
                             ),
                           ),
@@ -1030,21 +1221,27 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
   Widget _buildTomatoSection(BuildContext ctx) {
     // 从 Provider 读取真实番茄预设
     final presets = ref.watch(tomatoPresetsProvider);
-    final displayPresets = presets;  // 显示全部预设
-    
+    final displayPresets = presets; // 显示全部预设
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text('番茄写作', style: TextStyle(color: _textSecondary, fontSize: 12)),
+          child: Text(
+            '番茄写作',
+            style: TextStyle(color: _textSecondary, fontSize: 12),
+          ),
         ),
         SizedBox(
           height: 70,
           child: displayPresets.isEmpty
               ? Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('暂无预设', style: TextStyle(color: _textTertiary, fontSize: 12)),
+                  child: Text(
+                    '暂无预设',
+                    style: TextStyle(color: _textTertiary, fontSize: 12),
+                  ),
                 )
               : ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -1057,7 +1254,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                         Navigator.pop(ctx);
                         // 应用预设
                         ref.read(currentPresetProvider.notifier).state = preset;
-                        TopNotification.success(context, '已应用预设：${preset.name}');
+                        TopNotification.success(
+                          context,
+                          '已应用预设：${preset.name}',
+                        );
                       },
                       child: Container(
                         width: 120,
@@ -1066,15 +1266,30 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                         decoration: BoxDecoration(
                           color: _cardBg2,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF333333)),
+                          border: Border.all(color: _cardBg2),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(preset.name, style: TextStyle(color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text(
+                              preset.name,
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             SizedBox(height: 2),
-                            Text(preset.description, style: TextStyle(color: _textTertiary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text(
+                              preset.description,
+                              style: TextStyle(
+                                color: _textTertiary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
                       ),
@@ -1128,13 +1343,24 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(color: const Color(0xFF444444), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: _cardBg2,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
               Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('选择写作模板', style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                child: Text(
+                  '选择写作模板',
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               Flexible(
                 child: ListView.builder(
@@ -1145,17 +1371,33 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                     final t = templates[index];
                     return ListTile(
                       leading: Container(
-                        width: 40, height: 40,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           color: _cardBg2,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
-                          child: Text(t['name']!.substring(0, 1), style: TextStyle(color: _primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            t['name']!.substring(0, 1),
+                            style: TextStyle(
+                              color: _primaryColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                      title: Text('${t['name']}题材', style: TextStyle(color: _textPrimary, fontSize: 14)),
-                      subtitle: Text(t['prompt']!, style: TextStyle(color: _textTertiary, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      title: Text(
+                        '${t['name']}题材',
+                        style: TextStyle(color: _textPrimary, fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        t['prompt']!,
+                        style: TextStyle(color: _textTertiary, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       onTap: () {
                         Navigator.pop(ctx);
                         setState(() {
@@ -1184,7 +1426,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.65),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.65,
+        ),
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -1193,13 +1437,24 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(color: const Color(0xFF444444), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: _cardBg2,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             Padding(
               padding: EdgeInsets.all(16),
-              child: Text('选择番茄写作预设', style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(
+                '选择番茄写作预设',
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             Flexible(
               child: ListView.builder(
@@ -1207,22 +1462,46 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                 itemCount: presets.length,
                 itemBuilder: (context, index) {
                   final preset = presets[index];
-                  final isApplied = ref.read(currentPresetProvider)?.id == preset.id;
+                  final isApplied =
+                      ref.read(currentPresetProvider)?.id == preset.id;
                   return ListTile(
                     leading: Container(
-                      width: 40, height: 40,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: _cardBg2,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
-                        child: Text(preset.category.isNotEmpty ? preset.category.substring(0, 1) : preset.name.substring(0, 1),
-                          style: TextStyle(color: _primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          preset.category.isNotEmpty
+                              ? preset.category.substring(0, 1)
+                              : preset.name.substring(0, 1),
+                          style: TextStyle(
+                            color: _primaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                    title: Text(preset.name, style: TextStyle(color: _textPrimary, fontSize: 14)),
-                    subtitle: Text(preset.description, style: TextStyle(color: _textTertiary, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: isApplied ? Icon(Icons.check_circle, color: _primaryColor, size: 20) : null,
+                    title: Text(
+                      preset.name,
+                      style: TextStyle(color: _textPrimary, fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      preset.description,
+                      style: TextStyle(color: _textTertiary, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: isApplied
+                        ? Icon(
+                            Icons.check_circle,
+                            color: _primaryColor,
+                            size: 20,
+                          )
+                        : null,
                     onTap: () {
                       ref.read(currentPresetProvider.notifier).state = preset;
                       Navigator.pop(ctx);
@@ -1249,10 +1528,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FullTextReviewPage(
-          novelId: novel.id,
-          novelTitle: novel.title,
-        ),
+        builder: (_) =>
+            FullTextReviewPage(novelId: novel.id, novelTitle: novel.title),
       ),
     );
   }
@@ -1271,27 +1548,32 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     }
     // 读取章节内容
     final chapterRepo = ref.read(chapterRepoProvider);
-    chapterRepo.getChapter(chapter.id).then((ch) {
-      if (ch != null && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PolishEnginePage(
-              chapterContent: ch.content ?? '',
-              novelTitle: novel.title,
-              onApply: (modifiedContent) {
-                // 更新章节内容
-                chapterRepo.updateChapter(ch.copyWith(content: modifiedContent));
-              },
-            ),
-          ),
-        );
-      } else if (mounted) {
-        TopNotification.show(context, '无法读取章节内容');
-      }
-    }).catchError((e) {
-      if (mounted) TopNotification.show(context, '读取章节失败: $e');
-    });
+    chapterRepo
+        .getChapter(chapter.id)
+        .then((ch) {
+          if (ch != null && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PolishEnginePage(
+                  chapterContent: ch.content,
+                  novelTitle: novel.title,
+                  onApply: (modifiedContent) {
+                    // 更新章节内容
+                    chapterRepo.updateChapter(
+                      ch.copyWith(content: modifiedContent),
+                    );
+                  },
+                ),
+              ),
+            );
+          } else if (mounted) {
+            TopNotification.show(context, '无法读取章节内容');
+          }
+        })
+        .catchError((e) {
+          if (mounted) TopNotification.show(context, '读取章节失败: $e');
+        });
   }
 
   /// 导航到校对页面
@@ -1303,9 +1585,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     }
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProofreadPage(novelId: novel.id),
-      ),
+      MaterialPageRoute(builder: (_) => ProofreadPage(novelId: novel.id)),
     );
   }
 
@@ -1344,19 +1624,31 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
       try {
         final novel = ref.read(selectedNovelProvider);
         if (novel != null) {
-          memoryContext = await NovelMemory.getForAiContext(novel.id, novel.title);
+          memoryContext = await NovelMemory.getForAiContext(
+            novel.id,
+            novel.title,
+          );
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load materials error: $e');
+      }
       String userMemoryContext = '';
       try {
         userMemoryContext = await UserMemory.getForAiContext();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Load materials error: $e');
+      }
 
       final aiService = ref.read(aiServiceProvider);
 
       final messages = <Map<String, String>>[
-        {'role': 'system', 'content': '${agent.systemPrompt}\n$memoryContext$userMemoryContext'},
-        ...contextMsgs.map((m) => {'role': m['role']!, 'content': m['content']!}),
+        {
+          'role': 'system',
+          'content': '${agent.systemPrompt}\n$memoryContext$userMemoryContext',
+        },
+        ...contextMsgs.map(
+          (m) => {'role': m['role']!, 'content': m['content']!},
+        ),
         {'role': 'user', 'content': userMessage},
       ];
 
@@ -1402,12 +1694,18 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
             if (_currentSession == null) _newSession();
             if (transcript.isNotEmpty) {
               setState(() {
-                _currentSession!.messages.add({'role': 'user', 'content': '🎤 语音通话记录：\n$transcript'});
+                _currentSession!.messages.add({
+                  'role': 'user',
+                  'content': '🎤 语音通话记录：\n$transcript',
+                });
               });
             }
             if (aiResponse.isNotEmpty) {
               setState(() {
-                _currentSession!.messages.add({'role': 'assistant', 'content': '🤖 AI回复：\n$aiResponse'});
+                _currentSession!.messages.add({
+                  'role': 'assistant',
+                  'content': '🤖 AI回复：\n$aiResponse',
+                });
               });
             }
           },
@@ -1437,7 +1735,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                 height: 4,
                 margin: const EdgeInsets.only(top: 12, bottom: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF444444),
+                  color: _cardBg2,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1468,8 +1766,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
 
   /// 删除单条消息
   void _deleteMessage(int index) {
-    if (_currentSession == null || index < 0 || index >= _currentSession!.messages.length) return;
-    
+    if (_currentSession == null ||
+        index < 0 ||
+        index >= _currentSession!.messages.length)
+      return;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1538,31 +1839,85 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
           child: Column(
             children: [
               Container(
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(color: const Color(0xFF444444), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: _cardBg2,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Icon(Icons.library_books, size: 20, color: _primaryColor),
                     SizedBox(width: 8),
-                    Text('选择资料', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textPrimary)),
+                    Text(
+                      '选择资料',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: _textPrimary,
+                      ),
+                    ),
                     Spacer(),
-                    Text('${selectedIds.length} 项已选', style: TextStyle(fontSize: 13, color: _textSecondary)),
+                    Text(
+                      '${selectedIds.length} 项已选',
+                      style: TextStyle(fontSize: 13, color: _textSecondary),
+                    ),
                   ],
                 ),
               ),
               Divider(height: 1, color: _cardBg2),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   children: [
-                    _buildPickerSection('角色', characters.map((c) => (c.id, c.name, '${c.role ?? ""} ${c.description ?? ""}'.trim())).toList(), selectedIds, setPickerState),
-                    _buildPickerSection('设定', settings.map((s) => (s.id, s.name, s.description ?? '')).toList(), selectedIds, setPickerState),
-                    _buildPickerSection('伏笔', hooks.map((h) => (h.id, h.title, h.description ?? '')).toList(), selectedIds, setPickerState),
-                    _buildPickerSection('参考', references.map((r) => (r.id, r.title, r.content ?? '')).toList(), selectedIds, setPickerState),
+                    _buildPickerSection(
+                      '角色',
+                      characters
+                          .map(
+                            (c) => (
+                              c.id,
+                              c.name,
+                              '${c.role ?? ""} ${c.description ?? ""}'.trim(),
+                            ),
+                          )
+                          .toList(),
+                      selectedIds,
+                      setPickerState,
+                    ),
+                    _buildPickerSection(
+                      '设定',
+                      settings
+                          .map((s) => (s.id, s.name, s.description ?? ''))
+                          .toList(),
+                      selectedIds,
+                      setPickerState,
+                    ),
+                    _buildPickerSection(
+                      '伏笔',
+                      hooks
+                          .map((h) => (h.id, h.title, h.description ?? ''))
+                          .toList(),
+                      selectedIds,
+                      setPickerState,
+                    ),
+                    _buildPickerSection(
+                      '参考',
+                      references
+                          .map((r) => (r.id, r.title, r.content ?? ''))
+                          .toList(),
+                      selectedIds,
+                      setPickerState,
+                    ),
                   ],
                 ),
               ),
@@ -1572,25 +1927,37 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-                      onPressed: selectedIds.isEmpty ? null : () {
-                        final buffer = StringBuffer();
-                        buffer.writeln('[选择的资料上下文]');
-                        for (final c in characters.where((c) => selectedIds.contains(c.id))) {
-                          buffer.writeln('## 角色：${c.name}');
-                          if (c.role != null) buffer.writeln('定位: ${c.role}');
-                          if (c.description != null) buffer.writeln(c.description);
-                          buffer.writeln();
-                        }
-                        for (final s in settings.where((s) => selectedIds.contains(s.id))) {
-                          buffer.writeln('## 设定：${s.name}');
-                          if (s.description != null) buffer.writeln(s.description);
-                          buffer.writeln();
-                        }
-                        buffer.writeln('---请基于以上资料回答用户的问题---');
-                        _inputCtrl.text = '${buffer.toString()}\n${_inputCtrl.text}';
-                        Navigator.pop(ctx);
-                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _primaryColor,
+                      ),
+                      onPressed: selectedIds.isEmpty
+                          ? null
+                          : () {
+                              final buffer = StringBuffer();
+                              buffer.writeln('[选择的资料上下文]');
+                              for (final c in characters.where(
+                                (c) => selectedIds.contains(c.id),
+                              )) {
+                                buffer.writeln('## 角色：${c.name}');
+                                if (c.role != null)
+                                  buffer.writeln('定位: ${c.role}');
+                                if (c.description != null)
+                                  buffer.writeln(c.description);
+                                buffer.writeln();
+                              }
+                              for (final s in settings.where(
+                                (s) => selectedIds.contains(s.id),
+                              )) {
+                                buffer.writeln('## 设定：${s.name}');
+                                if (s.description != null)
+                                  buffer.writeln(s.description);
+                                buffer.writeln();
+                              }
+                              buffer.writeln('---请基于以上资料回答用户的问题---');
+                              _inputCtrl.text =
+                                  '${buffer.toString()}\n${_inputCtrl.text}';
+                              Navigator.pop(ctx);
+                            },
                       child: Text('确定 (${selectedIds.length}项)'),
                     ),
                   ),
@@ -1603,14 +1970,26 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
     );
   }
 
-  Widget _buildPickerSection(String title, List<(String, String, String)> items, Set<String> selectedIds, StateSetter setPickerState) {
+  Widget _buildPickerSection(
+    String title,
+    List<(String, String, String)> items,
+    Set<String> selectedIds,
+    StateSetter setPickerState,
+  ) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _textSecondary)),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _textSecondary,
+            ),
+          ),
         ),
         for (final (id, name, desc) in items)
           CheckboxListTile(
@@ -1618,8 +1997,19 @@ class _AiChatPageState extends ConsumerState<AiChatPage> with WidgetsBindingObse
             onChanged: (v) => setPickerState(() {
               v == true ? selectedIds.add(id) : selectedIds.remove(id);
             }),
-            title: Text(name, style: TextStyle(fontWeight: FontWeight.w500, color: _textPrimary)),
-            subtitle: Text(desc, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: _textTertiary)),
+            title: Text(
+              name,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: _textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              desc,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: _textTertiary),
+            ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: _primaryColor,

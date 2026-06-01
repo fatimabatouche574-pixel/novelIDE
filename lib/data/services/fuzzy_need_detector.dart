@@ -21,10 +21,21 @@ class FuzzyNeedDetector {
 
   /// 用户明确表达"创建/新建"意图的关键词，直接放行不拦截
   static const List<String> _directCreatePatterns = [
-    '创建作品', '创建小说', '创建书籍', '创建一本书',
-    '新建作品', '新建小说', '新建书籍', '新建一本书',
-    '帮我建', '帮我创', '新书',
-    '直接创建', '直接建', '开始写一本', '写一本新',
+    '创建作品',
+    '创建小说',
+    '创建书籍',
+    '创建一本书',
+    '新建作品',
+    '新建小说',
+    '新建书籍',
+    '新建一本书',
+    '帮我建',
+    '帮我创',
+    '新书',
+    '直接创建',
+    '直接建',
+    '开始写一本',
+    '写一本新',
   ];
 
   /// 快速预检测：是否可能需要主动提问
@@ -120,7 +131,18 @@ class FuzzyNeedDetector {
     final quickMatch = _quickDetect(userInput);
     switch (quickMatch) {
       case 'novel_genre':
-        const genres = ['玄幻', '都市', '言情', '历史', '科幻', '武侠', '灵异', '军事', '仙侠', '奇幻'];
+        const genres = [
+          '玄幻',
+          '都市',
+          '言情',
+          '历史',
+          '科幻',
+          '武侠',
+          '灵异',
+          '军事',
+          '仙侠',
+          '奇幻',
+        ];
         if (genres.any((g) => userInput.contains(g))) return null;
         return ProactiveQuestionType.novelGenre;
       case 'agent_select':
@@ -178,7 +200,9 @@ class FuzzyNeedDetector {
     if (availableSkills != null && availableSkills.isNotEmpty) {
       final enabledSkills = availableSkills.where((s) => s.isEnabled).toList();
       if (enabledSkills.isNotEmpty) {
-        contextBuffer.writeln('可用技能：${enabledSkills.map((s) => '${s.name}(${s.category})').join('、')}');
+        contextBuffer.writeln(
+          '可用技能：${enabledSkills.map((s) => '${s.name}(${s.category})').join('、')}',
+        );
       }
     }
 
@@ -210,11 +234,16 @@ class FuzzyNeedDetector {
     return _parseAiQuestion(response, type);
   }
 
-  ProactiveQuestion? _parseAiQuestion(String response, ProactiveQuestionType type) {
+  ProactiveQuestion? _parseAiQuestion(
+    String response,
+    ProactiveQuestionType type,
+  ) {
     try {
       String jsonStr = response.trim();
       if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replaceAll(RegExp(r'^```\w*\n?'), '').replaceAll(RegExp(r'\n?```$'), '');
+        jsonStr = jsonStr
+            .replaceAll(RegExp(r'^```\w*\n?'), '')
+            .replaceAll(RegExp(r'\n?```$'), '');
       }
 
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
@@ -301,7 +330,9 @@ class FuzzyNeedDetector {
       }
     }
 
-    final options = List<ProactiveOption>.from(ProactiveQuestion.novelGenreQuestion.options);
+    final options = List<ProactiveOption>.from(
+      ProactiveQuestion.novelGenreQuestion.options,
+    );
     if (preferredGenres.isNotEmpty) {
       options.sort((a, b) {
         final aP = preferredGenres.contains(a.label);
@@ -354,15 +385,23 @@ class FuzzyNeedDetector {
 
   Map<String, dynamic> extractIntent(String userInput) {
     final intent = <String, dynamic>{};
-    if (userInput.contains('大纲')) intent['task'] = 'generate_outline';
-    else if (userInput.contains('角色')) intent['task'] = 'generate_character';
-    else if (userInput.contains('标题')) intent['task'] = 'generate_title';
-    else if (userInput.contains('检查') || userInput.contains('分析')) intent['task'] = 'analyze';
-    else if (userInput.contains('优化') || userInput.contains('改进')) intent['task'] = 'optimize';
+    if (userInput.contains('大纲'))
+      intent['task'] = 'generate_outline';
+    else if (userInput.contains('角色'))
+      intent['task'] = 'generate_character';
+    else if (userInput.contains('标题'))
+      intent['task'] = 'generate_title';
+    else if (userInput.contains('检查') || userInput.contains('分析'))
+      intent['task'] = 'analyze';
+    else if (userInput.contains('优化') || userInput.contains('改进'))
+      intent['task'] = 'optimize';
 
-    if (userInput.contains('章节')) intent['target'] = 'chapter';
-    else if (userInput.contains('小说') || userInput.contains('作品')) intent['target'] = 'novel';
-    else if (userInput.contains('角色') || userInput.contains('人物')) intent['target'] = 'character';
+    if (userInput.contains('章节'))
+      intent['target'] = 'chapter';
+    else if (userInput.contains('小说') || userInput.contains('作品'))
+      intent['target'] = 'novel';
+    else if (userInput.contains('角色') || userInput.contains('人物'))
+      intent['target'] = 'character';
 
     return intent;
   }

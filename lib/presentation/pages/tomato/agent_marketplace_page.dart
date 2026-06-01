@@ -14,7 +14,8 @@ class AgentMarketplacePage extends ConsumerStatefulWidget {
   const AgentMarketplacePage({super.key});
 
   @override
-  ConsumerState<AgentMarketplacePage> createState() => _AgentMarketplacePageState();
+  ConsumerState<AgentMarketplacePage> createState() =>
+      _AgentMarketplacePageState();
 }
 
 class _AgentMarketplacePageState extends ConsumerState<AgentMarketplacePage>
@@ -48,10 +49,7 @@ class _AgentMarketplacePageState extends ConsumerState<AgentMarketplacePage>
       ),
       body: TabBarView(
         controller: _tabCtrl,
-        children: [
-          _TomatoZoneView(),
-          _CustomAgentsView(),
-        ],
+        children: [_TomatoZoneView(), _CustomAgentsView()],
       ),
     );
   }
@@ -107,24 +105,48 @@ class _CustomAgentsViewState extends ConsumerState<_CustomAgentsView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Agent 名称', hintText: '例如：我的大纲助手')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Agent 名称',
+                  hintText: '例如：我的大纲助手',
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '描述'), maxLines: 2),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: '描述'),
+                maxLines: 2,
+              ),
               const SizedBox(height: 12),
-              TextField(controller: promptCtrl, decoration: const InputDecoration(labelText: 'System Prompt', hintText: '定义 Agent 的角色和行为'), maxLines: 5),
+              TextField(
+                controller: promptCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'System Prompt',
+                  hintText: '定义 Agent 的角色和行为',
+                ),
+                maxLines: 5,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
-              if (nameCtrl.text.trim().isEmpty || promptCtrl.text.trim().isEmpty) return;
+              if (nameCtrl.text.trim().isEmpty ||
+                  promptCtrl.text.trim().isEmpty)
+                return;
               final agent = TomatoAgent(
                 id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
                 name: nameCtrl.text.trim(),
                 icon: '🤖',
-                description: descCtrl.text.trim().isEmpty ? '自定义Agent' : descCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? '自定义Agent'
+                    : descCtrl.text.trim(),
                 systemPrompt: promptCtrl.text.trim(),
                 isBuiltin: false,
               );
@@ -166,22 +188,23 @@ class _CustomAgentsViewState extends ConsumerState<_CustomAgentsView> {
         name: agentData['name'] ?? agentData['title'] ?? fileName,
         icon: agentData['icon'] ?? '📥',
         description: agentData['description'] ?? '导入的 Agent',
-        systemPrompt: agentData['systemPrompt'] ?? agentData['prompt'] ?? content.trim(),
+        systemPrompt:
+            agentData['systemPrompt'] ?? agentData['prompt'] ?? content.trim(),
         isBuiltin: false,
       );
 
       setState(() => _customAgents.add(agent));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已导入 Agent: ${agent.name}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已导入 Agent: ${agent.name}')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导入失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
       }
     }
   }
@@ -199,7 +222,9 @@ class _CustomAgentsViewState extends ConsumerState<_CustomAgentsView> {
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.add),
                   label: const Text('创建'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
                   onPressed: _showCreateDialog,
                 ),
               ),
@@ -223,9 +248,15 @@ class _CustomAgentsViewState extends ConsumerState<_CustomAgentsView> {
                     children: [
                       Icon(Icons.code, size: 64, color: Colors.grey[300]),
                       const SizedBox(height: 16),
-                      Text('还没有自定义 Agent', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+                      Text(
+                        '还没有自定义 Agent',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                      ),
                       const SizedBox(height: 8),
-                      Text('点击上方按钮创建', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+                      Text(
+                        '点击上方按钮创建',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                      ),
                     ],
                   ),
                 )
@@ -252,9 +283,12 @@ class _CustomAgentsViewState extends ConsumerState<_CustomAgentsView> {
       TopNotification.success(context, '请先配置AI模型');
       return;
     }
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => AgentRunPage(agent: agent, config: config),
-    ));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AgentRunPage(agent: agent, config: config),
+      ),
+    );
   }
 }
 
@@ -263,7 +297,11 @@ class _AgentCard extends StatelessWidget {
   final bool isBuiltin;
   final VoidCallback onRun;
 
-  const _AgentCard({required this.agent, this.isBuiltin = true, required this.onRun});
+  const _AgentCard({
+    required this.agent,
+    this.isBuiltin = true,
+    required this.onRun,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +322,10 @@ class _AgentCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: Text(agent.icon, style: const TextStyle(fontSize: 24)),
+                    child: Text(
+                      agent.icon,
+                      style: const TextStyle(fontSize: 24),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -292,9 +333,18 @@ class _AgentCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(agent.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(
+                        agent.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(agent.description, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                      Text(
+                        agent.description,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      ),
                     ],
                   ),
                 ),
@@ -310,7 +360,9 @@ class _AgentCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                     ),
                     onPressed: onRun,
                   ),
@@ -327,9 +379,9 @@ class _AgentCard extends StatelessWidget {
 void _runAgent(BuildContext context, WidgetRef ref, TomatoAgent agent) {
   final config = ref.read(selectedAiConfigProvider);
   if (config == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('请先在"我的"页面配置AI模型')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('请先在"我的"页面配置AI模型')));
     return;
   }
 
@@ -384,7 +436,10 @@ class _AgentRunPageState extends ConsumerState<AgentRunPage> {
     final fullInput = '$paramText\n${input.isNotEmpty ? '输入内容：$input' : ''}';
 
     setState(() {
-      _messages.add({'role': 'user', 'content': fullInput.isNotEmpty ? fullInput : '开始分析'});
+      _messages.add({
+        'role': 'user',
+        'content': fullInput.isNotEmpty ? fullInput : '开始分析',
+      });
       _isLoading = true;
     });
 
@@ -401,7 +456,10 @@ class _AgentRunPageState extends ConsumerState<AgentRunPage> {
       });
     } catch (e) {
       setState(() {
-        _messages.add({'role': 'assistant', 'content': '请求失败: $e\n请检查网络或API配置'});
+        _messages.add({
+          'role': 'assistant',
+          'content': '请求失败: $e\n请检查网络或API配置',
+        });
         _isLoading = false;
       });
     }
@@ -425,15 +483,30 @@ class _AgentRunPageState extends ConsumerState<AgentRunPage> {
                       children: [
                         Row(
                           children: [
-                            Text(widget.agent.icon, style: const TextStyle(fontSize: 32)),
+                            Text(
+                              widget.agent.icon,
+                              style: const TextStyle(fontSize: 32),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(widget.agent.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    widget.agent.name,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text(widget.agent.description, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                                  Text(
+                                    widget.agent.description,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -445,7 +518,10 @@ class _AgentRunPageState extends ConsumerState<AgentRunPage> {
                 ),
                 if (widget.agent.parameterPrompts.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  const Text('参数设置', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    '参数设置',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   ...List.generate(widget.agent.parameterPrompts.length, (i) {
                     return Padding(
@@ -491,12 +567,18 @@ class _AgentRunPageState extends ConsumerState<AgentRunPage> {
                   final isUser = msg['role'] == 'user';
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: isUser
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Container(
-                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.85,
+                      ),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isUser ? AppColors.primary.withOpacity(0.1) : Colors.grey[100],
+                        color: isUser
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -504,16 +586,26 @@ class _AgentRunPageState extends ConsumerState<AgentRunPage> {
                         children: [
                           Text(
                             msg['content'],
-                            style: TextStyle(fontSize: 14, color: isUser ? AppColors.primary : Colors.black87),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isUser
+                                  ? AppColors.primary
+                                  : Colors.black87,
+                            ),
                           ),
                           if (!isUser)
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: TextButton.icon(
                                 icon: const Icon(Icons.content_copy, size: 16),
-                                label: const Text('复制', style: TextStyle(fontSize: 12)),
+                                label: const Text(
+                                  '复制',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                                 onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: msg['content']));
+                                  Clipboard.setData(
+                                    ClipboardData(text: msg['content']),
+                                  );
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('已复制')),
                                   );
