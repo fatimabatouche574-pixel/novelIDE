@@ -239,7 +239,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     try {
       final d = Directory('/storage/emulated/0/NovelIDE/temp/');
       if (!d.existsSync()) d.createSync(recursive: true);
-      File('/storage/emulated/0/NovelIDE/temp/' + cid + '.bak').writeAsStringSync(
+      File(
+        '/storage/emulated/0/NovelIDE/temp/' + cid + '.bak',
+      ).writeAsStringSync(
         content.length > 100000 ? content.substring(0, 100000) : content,
       );
     } catch (_) {}
@@ -247,10 +249,15 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
   Future<void> _checkTempRecovery() async {
     try {
-      final f = File('/storage/emulated/0/NovelIDE/temp/' + widget.chapterId + '.bak');
+      final f = File(
+        '/storage/emulated/0/NovelIDE/temp/' + widget.chapterId + '.bak',
+      );
       if (!await f.exists()) return;
       final t = await f.readAsString();
-      if (t.isEmpty || t == _controller.text) { await f.delete(); return; }
+      if (t.isEmpty || t == _controller.text) {
+        await f.delete();
+        return;
+      }
       if (!mounted) return;
       final r = await showDialog<bool>(
         context: context,
@@ -258,8 +265,14 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           title: const Text('检测到未保存的内容'),
           content: Text('上次编辑未保存（' + t.length.toString() + '字），恢复？'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('放弃')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('恢复')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('放弃'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('恢复'),
+            ),
           ],
         ),
       );
@@ -1163,10 +1176,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   const Spacer(),
                   Text(
                     '$todayWords / $goal 字',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   ),
                   const SizedBox(width: 4),
                   Icon(
@@ -1192,9 +1202,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                       minHeight: 6,
                       backgroundColor: Colors.grey[200],
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        todayWords >= goal
-                            ? Colors.green
-                            : colorScheme.primary,
+                        todayWords >= goal ? Colors.green : colorScheme.primary,
                       ),
                     ),
                   ),
@@ -1257,10 +1265,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                       const SizedBox(width: 4),
                       Text(
                         '本月 $_monthWords 字',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),

@@ -25,7 +25,9 @@ TomatoAgent? fuzzyMatchAgent(String taskType, List<TomatoAgent> agents) {
   match = agents.where((a) => a.name == taskType).firstOrNull;
   if (match != null) return match;
   // 3. 中文名包含匹配
-  match = agents.where((a) => a.name.contains(taskType) || taskType.contains(a.name)).firstOrNull;
+  match = agents
+      .where((a) => a.name.contains(taskType) || taskType.contains(a.name))
+      .firstOrNull;
   if (match != null) return match;
   // 4. 关键词映射
   final keywords = {
@@ -39,7 +41,8 @@ TomatoAgent? fuzzyMatchAgent(String taskType, List<TomatoAgent> agents) {
   final lower = taskType.toLowerCase();
   for (final entry in keywords.entries) {
     for (final kw in entry.value) {
-      if (lower.contains(kw)) return agents.where((a) => a.id == entry.key).firstOrNull;
+      if (lower.contains(kw))
+        return agents.where((a) => a.id == entry.key).firstOrNull;
     }
   }
   // 5. 描述包含匹配
@@ -282,11 +285,14 @@ void registerGeneralToolExecutors({
 
     final subAgent = fuzzyMatchAgent(taskType, presetAgents);
     if (subAgent == null) {
-      final available = presetAgents.map((a) => '  • ${a.id}（${a.name}）').join('\n');
+      final available = presetAgents
+          .map((a) => '  • ${a.id}（${a.name}）')
+          .join('\n');
       return ToolResult(
         toolName: 'delegate_to_sub_agent',
         success: false,
-        message: '未找到匹配的子代理: "$taskType"\n\n可用的子代理：\n$available\n\n请用中文名或ID重新指定，例如："大纲生成器"或"outline_generator"',
+        message:
+            '未找到匹配的子代理: "$taskType"\n\n可用的子代理：\n$available\n\n请用中文名或ID重新指定，例如："大纲生成器"或"outline_generator"',
       );
     }
 
@@ -303,7 +309,8 @@ void registerGeneralToolExecutors({
 
         final result = await aiService.send(
           config: aiConfig,
-          systemPrompt: '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
+          systemPrompt:
+              '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
           userMessage: prompt,
           taskType: 'sub_agent:$taskType',
         );
@@ -313,7 +320,8 @@ void registerGeneralToolExecutors({
         } else {
           // 如果变化小于5%，认为已收敛，不再迭代
           if (result.length > 0 && lastResult != null) {
-            final diff = (result.length - lastResult!.length).abs() / lastResult!.length;
+            final diff =
+                (result.length - lastResult!.length).abs() / lastResult!.length;
             if (diff < 0.05) {
               lastResult = result;
               break;
@@ -1364,7 +1372,9 @@ void registerAllToolExecutors({
 
     final subAgent = fuzzyMatchAgent(taskType, presetAgents);
     if (subAgent == null) {
-      final available = presetAgents.map((a) => '  • ${a.id}（${a.name}）').join('\n');
+      final available = presetAgents
+          .map((a) => '  • ${a.id}（${a.name}）')
+          .join('\n');
       return ToolResult(
         toolName: 'delegate_to_sub_agent',
         success: false,
@@ -1383,7 +1393,8 @@ void registerAllToolExecutors({
             : '请检查并优化你之前的结果。如有问题请修正，然后输出最终版本。\n\n之前的结果：\n$lastResult\n\n优化后的结果：';
         final result = await aiService.send(
           config: aiConfig,
-          systemPrompt: '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
+          systemPrompt:
+              '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
           userMessage: prompt,
           taskType: 'sub_agent:${subAgent.id}',
         );
@@ -1391,8 +1402,12 @@ void registerAllToolExecutors({
           lastResult = result;
         } else {
           if (result.isNotEmpty && lastResult != null) {
-            final diff = (result.length - lastResult!.length).abs() / lastResult!.length;
-            if (diff < 0.05) { lastResult = result; break; }
+            final diff =
+                (result.length - lastResult!.length).abs() / lastResult!.length;
+            if (diff < 0.05) {
+              lastResult = result;
+              break;
+            }
           }
           lastResult = result;
         }

@@ -576,15 +576,14 @@ class WritingTodo {
     String? description,
     bool? isDone,
     DateTime? createdAt,
-  }) =>
-      WritingTodo(
-        id: id ?? this.id,
-        novelId: novelId ?? this.novelId,
-        title: title ?? this.title,
-        description: description ?? this.description,
-        isDone: isDone ?? this.isDone,
-        createdAt: createdAt ?? this.createdAt,
-      );
+  }) => WritingTodo(
+    id: id ?? this.id,
+    novelId: novelId ?? this.novelId,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    isDone: isDone ?? this.isDone,
+    createdAt: createdAt ?? this.createdAt,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,

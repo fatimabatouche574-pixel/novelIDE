@@ -653,6 +653,11 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
       // 展开/折叠由 FileTreeView 的 onToggleExpand 处理
       return;
     }
+    // 待办项：打开编辑/切换完成
+    if (node.parentType == 'todo') {
+      _showTodoEditDialog(node, novelId);
+      return;
+    }
     // 打开全页编辑器
     final type = node.parentType ?? 'reference';
     final cleanName = node.name.replaceAll(RegExp(r'\.[^.]+$'), '');
@@ -737,6 +742,12 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     // 自定义文件夹内条目的长按
     if (type.startsWith('custom_')) {
       _showCustomItemMenu(node, type, novelId);
+      return;
+    }
+
+    // 待办项的长按
+    if (type == 'todo') {
+      _showTodoOptions(node, novelId);
       return;
     }
 
@@ -1485,6 +1496,18 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
                 _showReferenceDialog(novelId);
               },
             ),
+            ListTile(
+              leading: Icon(
+                Icons.checklist,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('写作清单'),
+              subtitle: const Text('添加待办项'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showAddTodoDialog(novelId);
+              },
+            ),
           ],
         ),
       ),
@@ -1786,6 +1809,228 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
             child: const Text('添加'),
           ),
         ],
+      ),
+    );
+  }
+
+  // ==================== 写作清单 ====================
+
+  Future<void> _persistTodos() async {
+    final novelId = ref.read(selectedNovelProvider)?.id;
+    if (novelId == null) return;
+    await MaterialRepository().saveTodos(novelId, ref.read(todosProvider));
+  }
+
+  /// 添加待办对话框
+  void _showAddTodoDialog(String novelId) {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('添加待办'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: '标题'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: '描述（可选）'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (titleCtrl.text.trim().isEmpty) return;
+              final todo = WritingTodo(
+                id: const Uuid().v4(),
+                novelId: novelId,
+                title: titleCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
+              );
+              final list = List<WritingTodo>.from(ref.read(todosProvider));
+              ref.read(todosProvider.notifier).state = [...list, todo];
+              await _persistTodos();
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 编辑/切换待办完成状态
+  void _showTodoEditDialog(FileTreeNode node, String novelId) {
+    final todoId = node.id.replaceFirst('todo_', '');
+    final todos = ref.read(todosProvider);
+    final todo = todos.where((t) => t.id == todoId).firstOrNull;
+    if (todo == null) return;
+
+    final titleCtrl = TextEditingController(text: todo.title);
+    final descCtrl = TextEditingController(text: todo.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(todo.isDone ? '已完成：${todo.title}' : '编辑待办'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: '标题'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: '描述（可选）'),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Checkbox(
+                    value: todo.isDone,
+                    onChanged: (_) => _toggleTodoStatus(node, novelId, ctx),
+                  ),
+                  const Text('标记为已完成'),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final list = List<WritingTodo>.from(ref.read(todosProvider));
+              final idx = list.indexWhere((t) => t.id == todoId);
+              if (idx < 0) return;
+              list[idx] = list[idx].copyWith(
+                title: titleCtrl.text.trim().isEmpty
+                    ? list[idx].title
+                    : titleCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
+              );
+              ref.read(todosProvider.notifier).state = list;
+              await _persistTodos();
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 切换待办完成状态
+  void _toggleTodoStatus(
+    FileTreeNode node,
+    String novelId, [
+    BuildContext? dialogCtx,
+  ]) async {
+    final todoId = node.id.replaceFirst('todo_', '');
+    final list = List<WritingTodo>.from(ref.read(todosProvider));
+    final idx = list.indexWhere((t) => t.id == todoId);
+    if (idx < 0) return;
+    list[idx] = list[idx].copyWith(isDone: !list[idx].isDone);
+    ref.read(todosProvider.notifier).state = list;
+    await _persistTodos();
+    setState(() {});
+    if (dialogCtx != null && dialogCtx.mounted) Navigator.pop(dialogCtx);
+  }
+
+  /// 待办长按菜单
+  void _showTodoOptions(FileTreeNode node, String novelId) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('编辑'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showTodoEditDialog(node, novelId);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.check_circle, color: Colors.green[400]),
+              title: Text(
+                node.icon == Icons.check_circle ? '标记为未完成' : '标记为已完成',
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _toggleTodoStatus(node, novelId);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Colors.red[400]),
+              title: Text('删除', style: TextStyle(color: Colors.red[400])),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: const Text('删除待办？'),
+                    content: Text(
+                      '确定删除「${node.name.replaceAll(RegExp(r'^✓\s*'), '')}」？',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(c, false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(c, true),
+                        child: const Text('删除'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  final todoId = node.id.replaceFirst('todo_', '');
+                  final list = List<WritingTodo>.from(ref.read(todosProvider))
+                    ..removeWhere((t) => t.id == todoId);
+                  ref.read(todosProvider.notifier).state = list;
+                  await _persistTodos();
+                  setState(() {});
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

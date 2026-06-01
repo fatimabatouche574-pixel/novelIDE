@@ -99,6 +99,83 @@ class _MainShellState extends ConsumerState<MainShell> {
     setState(() => _sidebarOpen = false);
   }
 
+  /// 显示会话操作菜单
+  void _showSessionMenu(AiChatSessionModel session, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: _cardBg2,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  session.title,
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.chat, color: _textSecondary),
+                title: Text('切换到此会话', style: TextStyle(color: _textPrimary)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _switchToSession(session.id);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.red),
+                title: Text('删除会话', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _deleteSession(session.id, ref);
+                },
+              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 删除会话
+  Future<void> _deleteSession(String sessionId, WidgetRef ref) async {
+    try {
+      await _historyRepo.deleteSession(sessionId);
+      setState(() {
+        _chatSessions.removeWhere((s) => s.id == sessionId);
+      });
+      // 如果删除的是当前会话，清空当前会话ID
+      final currentId = ref.read(currentSessionIdProvider);
+      if (currentId == sessionId) {
+        ref.read(currentSessionIdProvider.notifier).state = null;
+      }
+    } catch (e) {
+      debugPrint('Delete session error: $e');
+    }
+  }
+
   /// 处理导入文件
   Future<void> _handleImport() async {
     setState(() => _sidebarOpen = false);
@@ -210,82 +287,84 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       backgroundColor: _bgColor,
-      body: _focusMode
-          // 专注模式：隐藏所有面板，全屏聊天
-          ? GestureDetector(
-              onLongPress: () => setState(() => _focusMode = false),
-              child: AiChatPage(),
-            )
-          : Stack(
-        children: [
-          // 主内容区
-          Column(
-            children: [
-              // 顶部栏
-              _buildTopBar(
-                context: context,
-                bgColor: _bgColor,
-                textPrimary: _textPrimary,
-                textSecondary: _textSecondary,
-                primaryColor: _primaryColor,
-                cardBg: _cardBg,
-              ),
-              // 聊天内容区
-              Expanded(child: AiChatPage()),
-            ],
-          ),
+      body: SafeArea(
+        child: _focusMode
+            // 专注模式：隐藏所有面板，全屏聊天
+            ? GestureDetector(
+                onLongPress: () => setState(() => _focusMode = false),
+                child: AiChatPage(),
+              )
+            : Stack(
+                children: [
+                  // 主内容区
+                  Column(
+                    children: [
+                      // 顶部栏
+                      _buildTopBar(
+                        context: context,
+                        bgColor: _bgColor,
+                        textPrimary: _textPrimary,
+                        textSecondary: _textSecondary,
+                        primaryColor: _primaryColor,
+                        cardBg: _cardBg,
+                      ),
+                      // 聊天内容区
+                      Expanded(child: AiChatPage()),
+                    ],
+                  ),
 
-          // 侧边栏遮罩
-          if (_sidebarOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => setState(() => _sidebarOpen = false),
-                child: Container(color: Colors.black54),
-              ),
-            ),
+                  // 侧边栏遮罩
+                  if (_sidebarOpen)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _sidebarOpen = false),
+                        child: Container(color: Colors.black54),
+                      ),
+                    ),
 
-          // 左侧侧边栏
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-            left: _sidebarOpen ? 0 : -300,
-            top: 0,
-            bottom: 0,
-            width: 280,
-            child: _buildSidebar(
-              context: context,
-              sidebarBg: _sidebarBg,
-              cardBg: _cardBg,
-              cardBg2: _cardBg2,
-              textPrimary: _textPrimary,
-              textSecondary: _textSecondary,
-              textTertiary: _textTertiary,
-              primaryColor: _primaryColor,
-              dividerColor: _dividerColor,
-              novels: novels,
-              selectedNovel: selectedNovel,
-            ),
-          ),
+                  // 左侧侧边栏
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                    left: _sidebarOpen ? 0 : -300,
+                    top: 0,
+                    bottom: 0,
+                    width: 280,
+                    child: _buildSidebar(
+                      context: context,
+                      sidebarBg: _sidebarBg,
+                      cardBg: _cardBg,
+                      cardBg2: _cardBg2,
+                      textPrimary: _textPrimary,
+                      textSecondary: _textSecondary,
+                      textTertiary: _textTertiary,
+                      primaryColor: _primaryColor,
+                      dividerColor: _dividerColor,
+                      novels: novels,
+                      selectedNovel: selectedNovel,
+                    ),
+                  ),
 
-          // 模型选择下拉菜单
-          if (_modelDropdownOpen)
-            Positioned(
-              top: 52,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _buildModelDropdown(
-                  context: context,
-                  cardBg: _cardBg,
-                  cardBg2: _cardBg2,
-                  textPrimary: _textPrimary,
-                  textSecondary: _textSecondary,
-                  primaryColor: _primaryColor,
-                  dividerColor: _dividerColor,
-                ),
+                  // 模型选择下拉菜单
+                  if (_modelDropdownOpen)
+                    Positioned(
+                      top: 52,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: _buildModelDropdown(
+                          context: context,
+                          cardBg: _cardBg,
+                          cardBg2: _cardBg2,
+                          textPrimary: _textPrimary,
+                          textSecondary: _textSecondary,
+                          primaryColor: _primaryColor,
+                          dividerColor: _dividerColor,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-        ],
       ),
     );
   }
@@ -378,7 +457,8 @@ class _MainShellState extends ConsumerState<MainShell> {
             IconButton(
               icon: Icon(
                 _focusMode ? Icons.fullscreen_exit : Icons.fullscreen,
-                color: textPrimary, size: 22,
+                color: textPrimary,
+                size: 22,
               ),
               onPressed: () => setState(() => _focusMode = !_focusMode),
             ),
@@ -642,6 +722,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return GestureDetector(
       onTap: () => _switchToSession(session.id),
+      onLongPress: () => _showSessionMenu(session, ref),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

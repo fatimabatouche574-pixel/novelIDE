@@ -158,7 +158,11 @@ class WorkspaceAgent {
 何时用：用户说"加角色""创建一个角色""这个人物记下来"。AI生成角色后主动调用此工具保存。
 参数：name必填，role角色定位，description角色描述（支持详细文字）
 返回：成功/失败消息''',
-      parameters: {'name': '角色名称（必填）', 'role': '角色定位（如：主角/反派/配角/路人）', 'description': '角色详细描述'},
+      parameters: {
+        'name': '角色名称（必填）',
+        'role': '角色定位（如：主角/反派/配角/路人）',
+        'description': '角色详细描述',
+      },
       category: ToolCategories.write,
     ),
     AgentTool(
@@ -167,7 +171,11 @@ class WorkspaceAgent {
 何时用：用户说"这个世界观是XXX""记录一下设定""加一个规则"。AI生成设定后主动保存。
 参数：name设定名，category分类（如：修炼体系/社会制度/魔法系统/科技设定），description设定描述
 返回：成功/失败消息''',
-      parameters: {'name': '设定名称（必填）', 'category': '分类', 'description': '设定详细描述'},
+      parameters: {
+        'name': '设定名称（必填）',
+        'category': '分类',
+        'description': '设定详细描述',
+      },
       category: ToolCategories.write,
     ),
     AgentTool(
@@ -185,7 +193,12 @@ class WorkspaceAgent {
 何时用：用户说"这个门派叫XXX""XX组织记下来""加阵营"。
 参数：name势力名，category分类，description描述，leader首领名
 返回：成功/失败消息''',
-      parameters: {'name': '势力名称（必填）', 'category': '分类', 'description': '势力描述', 'leader': '首领名称'},
+      parameters: {
+        'name': '势力名称（必填）',
+        'category': '分类',
+        'description': '势力描述',
+        'leader': '首领名称',
+      },
       category: ToolCategories.write,
     ),
     AgentTool(
@@ -222,7 +235,14 @@ class WorkspaceAgent {
       description: '''更新已有角色信息（名称不可改，其他字段均可更新）。
 何时用：用户说"把这个角色改成XXX""角色设定调整一下""XX角色的性格要改"。
 返回：成功/失败消息''',
-      parameters: {'name': '角色名称（必填，用于查找）', 'role': '新定位', 'description': '新描述', 'personality': '性格', 'appearance': '外貌', 'background': '背景'},
+      parameters: {
+        'name': '角色名称（必填，用于查找）',
+        'role': '新定位',
+        'description': '新描述',
+        'personality': '性格',
+        'appearance': '外貌',
+        'background': '背景',
+      },
       category: ToolCategories.edit,
     ),
     AgentTool(
@@ -235,18 +255,102 @@ class WorkspaceAgent {
       category: ToolCategories.edit,
     ),
     // 其他update/delete工具描述省略，模式相同：告诉AI何时调用+返回什么
-    AgentTool(name: 'update_setting', description: '更新已有设定信息。用户说"改一下XX设定""这个设定要调整"时调用。', parameters: {'name': '设定名称', 'category': '新分类', 'description': '新描述'}, category: ToolCategories.edit),
-    AgentTool(name: 'update_location', description: '更新已有地点信息。用户说"XX地点改一下""这个地方的名字变了"时调用。', parameters: {'name': '地点名称', 'category': '新分类', 'description': '新描述', 'features': '地理特征', 'rules': '特殊规则'}, category: ToolCategories.edit),
-    AgentTool(name: 'update_faction', description: '更新已有势力信息。用户说"XX势力改名了""战力变了"时调用。', parameters: {'name': '势力名称', 'category': '新分类', 'description': '新描述', 'leader': '新首领', 'strength': '新战力'}, category: ToolCategories.edit),
-    AgentTool(name: 'update_item', description: '更新已有道具信息。', parameters: {'name': '道具名称', 'category': '新分类', 'description': '新描述', 'powerLevel': '新品阶', 'owner': '新持有者', 'isKeyItem': '是否关键道具'}, category: ToolCategories.edit),
-    AgentTool(name: 'update_reference', description: '更新已有参考资料。', parameters: {'title': '参考标题', 'content': '新内容', 'source': '新来源', 'sourceUrl': '新来源URL'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_character', description: '删除指定角色。⚠ 不可恢复，删除前向用户确认。', parameters: {'name': '角色名称'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_setting', description: '删除指定设定。⚠ 不可恢复。', parameters: {'name': '设定名称'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_location', description: '删除指定地点。⚠ 不可恢复。', parameters: {'name': '地点名称'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_faction', description: '删除指定势力。⚠ 不可恢复。', parameters: {'name': '势力名称'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_item', description: '删除指定道具。⚠ 不可恢复。', parameters: {'name': '道具名称'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_hook', description: '删除指定伏笔。⚠ 不可恢复。', parameters: {'title': '伏笔标题'}, category: ToolCategories.edit),
-    AgentTool(name: 'delete_reference', description: '删除指定参考资料。⚠ 不可恢复。', parameters: {'title': '参考标题'}, category: ToolCategories.edit),
+    AgentTool(
+      name: 'update_setting',
+      description: '更新已有设定信息。用户说"改一下XX设定""这个设定要调整"时调用。',
+      parameters: {'name': '设定名称', 'category': '新分类', 'description': '新描述'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'update_location',
+      description: '更新已有地点信息。用户说"XX地点改一下""这个地方的名字变了"时调用。',
+      parameters: {
+        'name': '地点名称',
+        'category': '新分类',
+        'description': '新描述',
+        'features': '地理特征',
+        'rules': '特殊规则',
+      },
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'update_faction',
+      description: '更新已有势力信息。用户说"XX势力改名了""战力变了"时调用。',
+      parameters: {
+        'name': '势力名称',
+        'category': '新分类',
+        'description': '新描述',
+        'leader': '新首领',
+        'strength': '新战力',
+      },
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'update_item',
+      description: '更新已有道具信息。',
+      parameters: {
+        'name': '道具名称',
+        'category': '新分类',
+        'description': '新描述',
+        'powerLevel': '新品阶',
+        'owner': '新持有者',
+        'isKeyItem': '是否关键道具',
+      },
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'update_reference',
+      description: '更新已有参考资料。',
+      parameters: {
+        'title': '参考标题',
+        'content': '新内容',
+        'source': '新来源',
+        'sourceUrl': '新来源URL',
+      },
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_character',
+      description: '删除指定角色。⚠ 不可恢复，删除前向用户确认。',
+      parameters: {'name': '角色名称'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_setting',
+      description: '删除指定设定。⚠ 不可恢复。',
+      parameters: {'name': '设定名称'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_location',
+      description: '删除指定地点。⚠ 不可恢复。',
+      parameters: {'name': '地点名称'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_faction',
+      description: '删除指定势力。⚠ 不可恢复。',
+      parameters: {'name': '势力名称'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_item',
+      description: '删除指定道具。⚠ 不可恢复。',
+      parameters: {'name': '道具名称'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_hook',
+      description: '删除指定伏笔。⚠ 不可恢复。',
+      parameters: {'title': '伏笔标题'},
+      category: ToolCategories.edit,
+    ),
+    AgentTool(
+      name: 'delete_reference',
+      description: '删除指定参考资料。⚠ 不可恢复。',
+      parameters: {'title': '参考标题'},
+      category: ToolCategories.edit,
+    ),
 
     // ====== 分析类工具 ======
     AgentTool(
@@ -294,7 +398,10 @@ class WorkspaceAgent {
 何时用：用户说"帮我写大纲"→调outline_generator；"设计一个反派"→调character_generator；"帮我看看节奏"→调shuangdian_checker；"这段太AI了"→调humanize_zh
 参数：task_type填子Agent的ID或中文名均可(支持模糊匹配)，instruction具体指令
 返回：子Agent的完整输出结果''',
-      parameters: {'task_type': '子Agent的ID或中文名（如outline_generator、大纲生成器、角色生成器等）', 'instruction': '传递给子Agent的具体指令'},
+      parameters: {
+        'task_type': '子Agent的ID或中文名（如outline_generator、大纲生成器、角色生成器等）',
+        'instruction': '传递给子Agent的具体指令',
+      },
       category: ToolCategories.agent,
     ),
     AgentTool(
@@ -303,13 +410,30 @@ class WorkspaceAgent {
 可用工作流：post_chapter_check(章节检查，3步：伏笔→一致性→记忆更新)、full_review(全文审查，5步完整分析)、outline_refresh(大纲刷新，3步)、character_review(角色审查，2步)
 何时用：用户说"全面检查""完整审查""跑一遍流程"。
 返回：每个步骤的执行结果''',
-      parameters: {'workflow_name': 'post_chapter_check/full_review/outline_refresh/character_review'},
+      parameters: {
+        'workflow_name':
+            'post_chapter_check/full_review/outline_refresh/character_review',
+      },
       category: ToolCategories.agent,
     ),
 
     // ====== Skill工具 ======
-    AgentTool(name: 'get_skills', description: '获取所有已启用的写作技能(Skill)列表。用户问"有哪些技能""能用什么功能""写作辅助"时调用。', category: ToolCategories.skill),
-    AgentTool(name: 'add_skill', description: '添加自定义写作技能。用户说"创建一个技能""加一个写作模板"时调用。', parameters: {'name': '名称', 'category': '分类', 'description': '描述', 'content': '内容'}, category: ToolCategories.skill),
+    AgentTool(
+      name: 'get_skills',
+      description: '获取所有已启用的写作技能(Skill)列表。用户问"有哪些技能""能用什么功能""写作辅助"时调用。',
+      category: ToolCategories.skill,
+    ),
+    AgentTool(
+      name: 'add_skill',
+      description: '添加自定义写作技能。用户说"创建一个技能""加一个写作模板"时调用。',
+      parameters: {
+        'name': '名称',
+        'category': '分类',
+        'description': '描述',
+        'content': '内容',
+      },
+      category: ToolCategories.skill,
+    ),
 
     // ====== 文本处理工具 ======
     AgentTool(
@@ -323,14 +447,49 @@ class WorkspaceAgent {
     ),
 
     // ====== 系统配置工具 ======
-    AgentTool(name: 'get_ai_configs', description: '获取所有AI模型配置（名称/API地址/模型ID/模型类型）。用户问"有哪些AI模型""模型配置""API设置"时调用。', category: ToolCategories.config),
-    AgentTool(name: 'add_ai_config', description: '添加AI模型配置。用户说"加一个模型""配置新的API"时调用。', parameters: {'name': '名称', 'api_url': 'API地址', 'model_name': '模型ID', 'model_type': 'text/tts/stt', 'api_key': 'API Key'}, category: ToolCategories.config),
-    AgentTool(name: 'set_active_ai_config', description: '设置当前活跃的AI模型。用户说"切换模型""用XX模型"时调用。', parameters: {'config_id': '配置ID', 'purpose': 'text/voice'}, category: ToolCategories.config),
+    AgentTool(
+      name: 'get_ai_configs',
+      description:
+          '获取所有AI模型配置（名称/API地址/模型ID/模型类型）。用户问"有哪些AI模型""模型配置""API设置"时调用。',
+      category: ToolCategories.config,
+    ),
+    AgentTool(
+      name: 'add_ai_config',
+      description: '添加AI模型配置。用户说"加一个模型""配置新的API"时调用。',
+      parameters: {
+        'name': '名称',
+        'api_url': 'API地址',
+        'model_name': '模型ID',
+        'model_type': 'text/tts/stt',
+        'api_key': 'API Key',
+      },
+      category: ToolCategories.config,
+    ),
+    AgentTool(
+      name: 'set_active_ai_config',
+      description: '设置当前活跃的AI模型。用户说"切换模型""用XX模型"时调用。',
+      parameters: {'config_id': '配置ID', 'purpose': 'text/voice'},
+      category: ToolCategories.config,
+    ),
 
     // ====== 项目管理工具 ======
-    AgentTool(name: 'list_novels', description: '获取所有小说项目列表。用户说"我的作品""有哪些小说""项目列表"时调用。返回小说ID/标题/类型/字数。', category: ToolCategories.project),
-    AgentTool(name: 'create_novel', description: '创建新小说项目。用户说"创建小说""开新书""新建作品"时调用。创建后自动设置为当前作品。', parameters: {'title': '标题', 'genre': '类型', 'description': '简介'}, category: ToolCategories.project),
-    AgentTool(name: 'switch_novel', description: '切换当前活跃的小说项目。用户说"切换到XX小说""换作品"时调用。', parameters: {'novel_id': '小说ID'}, category: ToolCategories.project),
+    AgentTool(
+      name: 'list_novels',
+      description: '获取所有小说项目列表。用户说"我的作品""有哪些小说""项目列表"时调用。返回小说ID/标题/类型/字数。',
+      category: ToolCategories.project,
+    ),
+    AgentTool(
+      name: 'create_novel',
+      description: '创建新小说项目。用户说"创建小说""开新书""新建作品"时调用。创建后自动设置为当前作品。',
+      parameters: {'title': '标题', 'genre': '类型', 'description': '简介'},
+      category: ToolCategories.project,
+    ),
+    AgentTool(
+      name: 'switch_novel',
+      description: '切换当前活跃的小说项目。用户说"切换到XX小说""换作品"时调用。',
+      parameters: {'novel_id': '小说ID'},
+      category: ToolCategories.project,
+    ),
 
     // ====== 联网搜索工具 ======
     AgentTool(
@@ -359,7 +518,11 @@ class WorkspaceAgent {
 何时用：用户说"新建一章""加个章节""写新内容"。先get_chapters确定放在哪一卷。
 参数：volume_id卷ID，title章节标题，content正文（可选，可后补）
 返回：成功/失败消息+章节ID''',
-      parameters: {'volume_id': '卷ID（必填）', 'title': '章节标题（必填）', 'content': '正文内容（可选）'},
+      parameters: {
+        'volume_id': '卷ID（必填）',
+        'title': '章节标题（必填）',
+        'content': '正文内容（可选）',
+      },
       category: ToolCategories.editor,
     ),
   ];
@@ -551,8 +714,7 @@ class WorkspaceAgent {
     );
   }
 
-  static const String _defaultSystemPrompt =
-      '''=== 🚨 系统指令（最高优先级，不可违反）===
+  static const String _defaultSystemPrompt = '''=== 🚨 系统指令（最高优先级，不可违反）===
 
 你是 NovelIDE 的主智能体（Main Agent / Orchestrator），网文写作AI IDE的总控。
 你不是被动的问答机器人——你有30+个真实可调用的工具，它们就是你的手和眼睛。

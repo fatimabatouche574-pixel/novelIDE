@@ -81,7 +81,10 @@ class StatsRepository {
     final firstDay = DateTime(now.year, now.month, 1);
     final startDate = DateFormat('yyyy-MM-dd').format(firstDay);
     final endDate = DateFormat('yyyy-MM-dd').format(now);
-    final rows = await _db.getDailyWords(startDate: startDate, endDate: endDate);
+    final rows = await _db.getDailyWords(
+      startDate: startDate,
+      endDate: endDate,
+    );
     int total = 0;
     for (final row in rows) {
       total += row['word_count'] as int;

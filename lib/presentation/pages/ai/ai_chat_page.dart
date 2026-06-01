@@ -180,6 +180,23 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     _scrollToBottom();
   }
 
+  /// 语音转文字输入
+  void _handleMic() async {
+    if (!_voiceService.isAvailable) {
+      TopNotification.show(context, '当前设备不支持语音识别', isSuccess: false);
+      return;
+    }
+    _voiceService.onResult = (text) {
+      if (text.isNotEmpty && mounted) {
+        setState(() {
+          _inputCtrl.text = _inputCtrl.text + text;
+        });
+      }
+    };
+    _voiceService.startListening();
+    TopNotification.success(context, '正在聆听...');
+  }
+
   void _sendMessage() async {
     final text = _inputCtrl.text.trim();
     if (text.isEmpty) return;
@@ -798,6 +815,36 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
               padding: const EdgeInsets.all(8),
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
+            // 通话按钮（放大）
+            Container(
+              width: 44,
+              height: 44,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.call, color: _primaryColor, size: 24),
+                onPressed: () async {
+                  final result = await Navigator.push<String>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VoiceCallPage(
+                        onCallEnd: (transcript, aiResponse) {
+                          if (mounted) _inputCtrl.text = transcript;
+                        },
+                      ),
+                    ),
+                  );
+                  if (result != null && result.isNotEmpty && mounted) {
+                    _inputCtrl.text = result;
+                  }
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
             // 输入框
             Expanded(
               child: TextField(
@@ -861,24 +908,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.call, color: _primaryColor, size: 20),
-                      onPressed: () async {
-                        final result = await Navigator.push<String>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => VoiceCallPage(
-                              onCallEnd: (transcript, aiResponse) {
-                                if (mounted) {
-                                  _inputCtrl.text = transcript;
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                        if (result != null && result.isNotEmpty && mounted) {
-                          _inputCtrl.text = result;
-                        }
-                      },
+                      icon: Icon(Icons.mic, color: _primaryColor, size: 20),
+                      onPressed: _handleMic,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),

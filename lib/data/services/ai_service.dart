@@ -153,9 +153,9 @@ class AiService {
   Map<String, String> _buildHeaders(AiConfig config) {
     // 获取API Key
     String apiKey = config.apiKey ?? '';
-    if (apiKey.isEmpty && config.id.startsWith('guest_')) {
-      // 游客模式：无内置Key，提示用户配置
-      apiKey = '';
+    if (apiKey.isEmpty) {
+      // API Key 为空，后续请求会返回 401
+      print('警告: API Key 为空，请在设置中配置');
     }
 
     final headers = <String, String>{'Content-Type': 'application/json'};
@@ -337,8 +337,14 @@ class AiService {
           (e.response?.statusCode == 400 || e.response?.statusCode == 422)) {
         try {
           return await doRequest(withTools: false);
-        } catch (_) {
-          // 重试也失败，抛出原始错误
+        } on DioException catch (fallbackError) {
+          // 降级也失败，返回清晰错误而不是原始 Dio 错误
+          final code = fallbackError.response?.statusCode ?? 0;
+          if (code == 401) throw Exception('API Key 无效或认证失败 (401)，请检查配置');
+          if (code == 403) throw Exception('API Key 无权限访问该资源 (403)');
+          if (code == 404) throw Exception('API地址错误 (404)，请检查URL配置');
+          if (code == 429) throw Exception('请求频率超限 (429)，请稍后再试');
+          throw Exception('API请求失败 ($code)，请检查模型配置或网络');
         }
       }
 
