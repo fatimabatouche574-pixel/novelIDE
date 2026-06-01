@@ -7,6 +7,8 @@ import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/data/datasources/secure_storage_datasource.dart';
 import 'package:novel_ide/data/services/config_service.dart';
 import 'package:novel_ide/data/services/default_config_service.dart';
+import 'package:novel_ide/data/services/ai_service.dart';
+
 
 class AiConfigListPage extends ConsumerWidget {
   const AiConfigListPage({super.key});
