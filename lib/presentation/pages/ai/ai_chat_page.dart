@@ -901,15 +901,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                     ),
                   )
                 : Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: _cardBg2,
+                      color: Colors.pink.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.mic, color: _primaryColor, size: 20),
-                      onPressed: _handleMic,
+                      icon: Icon(Icons.favorite, color: Colors.pink, size: 20),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VoiceCallPage(
+                              onCallEnd: (t, a) {
+                                if (mounted) _inputCtrl.text = t;
+                              },
+                            ),
+                          ),
+                        );
+                        if (result != null && result.isNotEmpty && mounted)
+                          _inputCtrl.text = result;
+                      },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
