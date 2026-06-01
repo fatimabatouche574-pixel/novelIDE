@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:novel_ide/data/models/ai_config_model.dart';
-import 'package:novel_ide/data/services/ai_service.dart' show AiService;
+import 'package:novel_ide/data/services/ai_service.dart'
+    show AiService, ToolChatResponse;
 
 /// Agent工具定义
 class AgentTool {
@@ -17,6 +18,16 @@ class AgentTool {
   });
 
   Map<String, dynamic> toOpenAiFormat() {
+    // 将 Map<String, String> 转为标准 JSON Schema properties
+    // OpenAI API 要求每个属性是 {type: "string", description: "..."} 对象
+    final schemaProperties = <String, dynamic>{};
+    for (final entry in parameters.entries) {
+      schemaProperties[entry.key] = {
+        'type': 'string',
+        'description': entry.value,
+      };
+    }
+
     return {
       'type': 'function',
       'function': {
@@ -24,8 +35,8 @@ class AgentTool {
         'description': description,
         'parameters': {
           'type': 'object',
-          'properties': parameters,
-          'required': parameters.keys.toList(),
+          'properties': schemaProperties,
+          if (parameters.isNotEmpty) 'required': parameters.keys.toList(),
         },
       },
     };
@@ -584,11 +595,32 @@ class WorkspaceAgent {
       // 只传已注册工具的定义（按需，不是全部）
       final availableTools = _getRegisteredTools();
 
-      final response = await _aiService.chatWithTools(
-        config: config,
-        messages: apiMessages,
-        tools: availableTools.isNotEmpty ? availableTools : null,
-      );
+      ToolChatResponse response;
+      try {
+        response = await _aiService.chatWithTools(
+          config: config,
+          messages: apiMessages,
+          tools: availableTools.isNotEmpty ? availableTools : null,
+        );
+      } catch (e) {
+        // chatWithTools 内部已尝试降级（去掉tools重试），仍然失败时走纯文本回复
+        final errorMsg = e is Exception ? e.toString() : '未知错误';
+        // 第一轮就失败，直接降级为纯文本模式返回
+        if (round == 0) {
+          return AgentResponse(
+            content: '工具调用暂时不可用，已切换为纯文本模式。\n$errorMsg',
+            toolCalls: toolCalls,
+            toolResults: toolResults,
+          );
+        }
+        // 后续轮次失败，返回已有的工具调用结果
+        return AgentResponse(
+          content:
+              '工具调用中断，已完成 ${toolResults.where((r) => r.success).length} 个工具调用。\n$errorMsg',
+          toolCalls: toolCalls,
+          toolResults: toolResults,
+        );
+      }
 
       // 检查是否有工具调用
       if (response.toolCalls != null && response.toolCalls!.isNotEmpty) {

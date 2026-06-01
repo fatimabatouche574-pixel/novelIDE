@@ -250,7 +250,7 @@ class AiService {
 
   /// Send chat with function calling (OpenAI compatible).
   /// Returns parsed response with optional tool_calls.
-  Future<_ToolChatResponse> chatWithTools({
+  Future<ToolChatResponse> chatWithTools({
     required AiConfig config,
     required List<Map<String, dynamic>> messages,
     List<dynamic>? tools,
@@ -263,7 +263,7 @@ class AiService {
         tools != null &&
         tools.isNotEmpty;
 
-    Future<_ToolChatResponse> doRequest({required bool withTools}) async {
+    Future<ToolChatResponse> doRequest({required bool withTools}) async {
       final payload = <String, dynamic>{
         'model': config.modelName,
         'messages': messages,
@@ -322,7 +322,7 @@ class AiService {
         }
       }
 
-      return _ToolChatResponse(
+      return ToolChatResponse(
         content: content,
         toolCalls: toolCalls,
         thinkingContent: thinkingContent,
@@ -512,12 +512,12 @@ class AiService {
 }
 
 /// Tool calling response
-class _ToolChatResponse {
+class ToolChatResponse {
   final String? content;
   final List<ToolCallInfo>? toolCalls;
   final String? thinkingContent;
 
-  const _ToolChatResponse({this.content, this.toolCalls, this.thinkingContent});
+  const ToolChatResponse({this.content, this.toolCalls, this.thinkingContent});
 }
 
 /// Tool call info parsed from API response

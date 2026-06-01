@@ -354,18 +354,20 @@ class AiConfigListPage extends ConsumerWidget {
           ], ApiProtocol.openaiCompatible),
         ];
 
+        // State variables declared outside StatefulBuilder so they persist
+        // across rebuilds triggered by setDialogState.
+        int step = isEdit ? 1 : 0;
+        ApiProtocol selectedProtocol =
+            existingConfig?.protocol ?? ApiProtocol.openaiCompatible;
+        bool testing = false;
+        bool fetchingModels = false;
+        List<String> availableModels = [];
+        String? testResult;
+        bool? testSuccess;
+        int? testLatency;
+
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            int step = isEdit ? 1 : 0;
-            ApiProtocol selectedProtocol =
-                existingConfig?.protocol ?? ApiProtocol.openaiCompatible;
-            bool testing = false;
-            bool fetchingModels = false;
-            List<String> availableModels = [];
-            String? testResult;
-            bool? testSuccess;
-            int? testLatency;
-
             void selectVendor(_VendorInfo v) {
               setDialogState(() {
                 step = 1;
