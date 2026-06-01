@@ -16,6 +16,36 @@ import 'package:novel_ide/data/services/config_service.dart';
 import 'package:novel_ide/data/services/workflow_engine.dart';
 import 'package:uuid/uuid.dart';
 
+/// 模糊匹配子Agent（精确ID → 中文名 → 关键词 → 描述）
+TomatoAgent? fuzzyMatchAgent(String taskType, List<TomatoAgent> agents) {
+  // 1. 精确ID匹配
+  var match = agents.where((a) => a.id == taskType).firstOrNull;
+  if (match != null) return match;
+  // 2. 中文名匹配
+  match = agents.where((a) => a.name == taskType).firstOrNull;
+  if (match != null) return match;
+  // 3. 中文名包含匹配
+  match = agents.where((a) => a.name.contains(taskType) || taskType.contains(a.name)).firstOrNull;
+  if (match != null) return match;
+  // 4. 关键词映射
+  final keywords = {
+    'outline_generator': ['大纲', '剧情规划', '构思', '纲要', '概略'],
+    'character_generator': ['角色', '人物', '设计', '反派', '主角', '配角'],
+    'shuangdian_checker': ['爽点', '节奏', '高潮', '密度', '刺激'],
+    'water_detector': ['水文', '质量', '废话', '拖', '注水'],
+    'title_generator': ['标题', '书名', '起名', '爆款', '章名'],
+    'humanize_zh': ['AI味', '润色', '自然', '人性化', '去机器', '去ai'],
+  };
+  final lower = taskType.toLowerCase();
+  for (final entry in keywords.entries) {
+    for (final kw in entry.value) {
+      if (lower.contains(kw)) return agents.where((a) => a.id == entry.key).firstOrNull;
+    }
+  }
+  // 5. 描述包含匹配
+  return agents.where((a) => a.description.contains(taskType)).firstOrNull;
+}
+
 /// 注册通用工具执行器（不需要小说上下文）
 void registerGeneralToolExecutors({
   required WorkspaceAgent agent,
@@ -242,18 +272,6 @@ void registerGeneralToolExecutors({
     final taskType = args['task_type'] as String? ?? '';
     final instruction = args['instruction'] as String? ?? '';
 
-    final subAgent = presetAgents.where((a) => a.id == taskType).firstOrNull;
-    if (subAgent == null) {
-      final available = presetAgents
-          .map((a) => '${a.id}(${a.name})')
-          .join(', ');
-      return ToolResult(
-        toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '未找到子代理类型: $taskType\n可用的子代理: $available',
-      );
-    }
-
     if (instruction.isEmpty) {
       return ToolResult(
         toolName: 'delegate_to_sub_agent',
@@ -262,19 +280,53 @@ void registerGeneralToolExecutors({
       );
     }
 
+    final subAgent = fuzzyMatchAgent(taskType, presetAgents);
+    if (subAgent == null) {
+      final available = presetAgents.map((a) => '  • ${a.id}（${a.name}）').join('\n');
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '未找到匹配的子代理: "$taskType"\n\n可用的子代理：\n$available\n\n请用中文名或ID重新指定，例如："大纲生成器"或"outline_generator"',
+      );
+    }
+
+    // 子Agent多轮推敲（最多3轮）
     try {
       final aiService = AiService();
-      final result = await aiService.send(
-        config: aiConfig,
-        systemPrompt: subAgent.systemPrompt,
-        userMessage: instruction,
-        taskType: 'sub_agent:$taskType',
-      );
+      String currentInstruction = instruction;
+      String? lastResult;
+
+      for (int round = 0; round < 3; round++) {
+        final prompt = round == 0
+            ? currentInstruction
+            : '请检查并优化你之前的结果。如有问题请修正，然后输出最终版本。\n\n之前的结果：\n$lastResult\n\n优化后的结果：';
+
+        final result = await aiService.send(
+          config: aiConfig,
+          systemPrompt: '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
+          userMessage: prompt,
+          taskType: 'sub_agent:$taskType',
+        );
+
+        if (round == 0) {
+          lastResult = result;
+        } else {
+          // 如果变化小于5%，认为已收敛，不再迭代
+          if (result.length > 0 && lastResult != null) {
+            final diff = (result.length - lastResult!.length).abs() / lastResult!.length;
+            if (diff < 0.05) {
+              lastResult = result;
+              break;
+            }
+          }
+          lastResult = result;
+        }
+      }
 
       return ToolResult(
         toolName: 'delegate_to_sub_agent',
         success: true,
-        message: '【${subAgent.name}】返回结果：\n\n$result',
+        message: '【${subAgent.name}】返回结果：\n\n${lastResult ?? "（无输出）"}',
         data: {'agent_name': subAgent.name, 'agent_id': subAgent.id},
       );
     } catch (e) {
@@ -1302,19 +1354,6 @@ void registerAllToolExecutors({
     final taskType = args['task_type'] as String? ?? '';
     final instruction = args['instruction'] as String? ?? '';
 
-    // 根据 task_type 匹配预设 Agent
-    final subAgent = presetAgents.where((a) => a.id == taskType).firstOrNull;
-    if (subAgent == null) {
-      final available = presetAgents
-          .map((a) => '${a.id}(${a.name})')
-          .join(', ');
-      return ToolResult(
-        toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '未找到子代理类型: $taskType\n可用的子代理: $available',
-      );
-    }
-
     if (instruction.isEmpty) {
       return ToolResult(
         toolName: 'delegate_to_sub_agent',
@@ -1323,21 +1362,46 @@ void registerAllToolExecutors({
       );
     }
 
-    try {
-      // 使用子Agent的systemPrompt，直接发送指令
-      // 子Agent只做文本处理，没有工具
-      final aiService = AiService();
-      final result = await aiService.send(
-        config: aiConfig,
-        systemPrompt: subAgent.systemPrompt,
-        userMessage: instruction,
-        taskType: 'sub_agent:$taskType',
+    final subAgent = fuzzyMatchAgent(taskType, presetAgents);
+    if (subAgent == null) {
+      final available = presetAgents.map((a) => '  • ${a.id}（${a.name}）').join('\n');
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '未找到匹配的子代理: "$taskType"\n\n可用的子代理：\n$available',
       );
+    }
+
+    try {
+      final aiService = AiService();
+      String currentInstruction = instruction;
+      String? lastResult;
+
+      for (int round = 0; round < 3; round++) {
+        final prompt = round == 0
+            ? currentInstruction
+            : '请检查并优化你之前的结果。如有问题请修正，然后输出最终版本。\n\n之前的结果：\n$lastResult\n\n优化后的结果：';
+        final result = await aiService.send(
+          config: aiConfig,
+          systemPrompt: '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
+          userMessage: prompt,
+          taskType: 'sub_agent:${subAgent.id}',
+        );
+        if (round == 0) {
+          lastResult = result;
+        } else {
+          if (result.isNotEmpty && lastResult != null) {
+            final diff = (result.length - lastResult!.length).abs() / lastResult!.length;
+            if (diff < 0.05) { lastResult = result; break; }
+          }
+          lastResult = result;
+        }
+      }
 
       return ToolResult(
         toolName: 'delegate_to_sub_agent',
         success: true,
-        message: '【${subAgent.name}】返回结果：\n\n$result',
+        message: '【${subAgent.name}】返回结果：\n\n${lastResult ?? "（无输出）"}',
         data: {'agent_name': subAgent.name, 'agent_id': subAgent.id},
       );
     } catch (e) {
