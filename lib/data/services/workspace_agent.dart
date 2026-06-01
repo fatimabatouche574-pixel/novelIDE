@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:novel_ide/data/models/ai_config_model.dart';
+import 'package:novel_ide/data/models/tool_parameter_schema.dart';
 import 'package:novel_ide/data/services/ai_service.dart'
     show AiService, ToolChatResponse;
+import 'package:novel_ide/data/services/chat/xml_tool_call_parser.dart';
 
 /// Agent工具定义
 class AgentTool {
@@ -9,17 +11,47 @@ class AgentTool {
   final String description;
   final Map<String, String> parameters;
   final String category; // 工具分类，用于按需加载
+  final List<ToolParameterSchema> parametersStructured;
+  final String details;
+  final String notes;
 
   const AgentTool({
     required this.name,
     required this.description,
     this.parameters = const {},
     this.category = 'general',
+    this.parametersStructured = const [],
+    this.details = '',
+    this.notes = '',
   });
 
   Map<String, dynamic> toOpenAiFormat() {
-    // 将 Map<String, String> 转为标准 JSON Schema properties
-    // OpenAI API 要求每个属性是 {type: "string", description: "..."} 对象
+    // 优先使用结构化参数，回退到旧格式
+    if (parametersStructured.isNotEmpty) {
+      final properties = <String, dynamic>{};
+      final requiredParams = <String>[];
+      for (final param in parametersStructured) {
+        properties[param.name] = {
+          'type': param.type,
+          'description': param.description,
+          if (param.defaultValue != null) 'default': param.defaultValue,
+        };
+        if (param.required) requiredParams.add(param.name);
+      }
+      return {
+        'type': 'function',
+        'function': {
+          'name': name,
+          'description': description,
+          'parameters': {
+            'type': 'object',
+            'properties': properties,
+            if (requiredParams.isNotEmpty) 'required': requiredParams,
+          },
+        },
+      };
+    }
+    // 向后兼容：旧 Map<String, String> 格式
     final schemaProperties = <String, dynamic>{};
     for (final entry in parameters.entries) {
       schemaProperties[entry.key] = {
@@ -27,7 +59,6 @@ class AgentTool {
         'description': entry.value,
       };
     }
-
     return {
       'type': 'function',
       'function': {
@@ -41,6 +72,33 @@ class AgentTool {
       },
     };
   }
+
+  /// 校验工具参数
+  ToolValidationResult validateArgs(Map<String, dynamic> args) {
+    if (parametersStructured.isEmpty) return ToolValidationResult.ok();
+    for (final param in parametersStructured) {
+      if (param.required && !args.containsKey(param.name)) {
+        return ToolValidationResult.invalid('缺少必填参数: ${param.name}');
+      }
+      final value = args[param.name];
+      if (value == null) continue;
+      switch (param.type) {
+        case 'boolean':
+          if (value is! bool) {
+            return ToolValidationResult.invalid(
+              '参数 ${param.name} 类型错误: 期望bool，实际${value.runtimeType}',
+            );
+          }
+        case 'integer':
+          if (value is! int) {
+            return ToolValidationResult.invalid(
+              '参数 ${param.name} 类型错误: 期望int，实际${value.runtimeType}',
+            );
+          }
+      }
+    }
+    return ToolValidationResult.ok();
+  }
 }
 
 /// Agent工具执行结果
@@ -48,14 +106,43 @@ class ToolResult {
   final String toolName;
   final bool success;
   final String message;
+  final String? error;
   final Map<String, dynamic>? data;
 
   const ToolResult({
     required this.toolName,
     required this.success,
     required this.message,
+    this.error,
     this.data,
   });
+
+  /// 创建成功结果
+  factory ToolResult.success({
+    required String toolName,
+    required String message,
+    Map<String, dynamic>? data,
+  }) {
+    return ToolResult(
+      toolName: toolName,
+      success: true,
+      message: message,
+      data: data,
+    );
+  }
+
+  /// 创建失败结果
+  factory ToolResult.failure({
+    required String toolName,
+    required String error,
+  }) {
+    return ToolResult(
+      toolName: toolName,
+      success: false,
+      message: error,
+      error: error,
+    );
+  }
 }
 
 /// Agent工具执行器接口
@@ -78,6 +165,15 @@ class ToolCategories {
 /// 架构：主对话轻量 → 按需加载工具 → 独立执行 → 结果回传
 class WorkspaceAgent {
   final AiService _aiService = AiService();
+
+  /// 工具调用钩子列表
+  final List<ToolHook> _hooks = [];
+
+  /// 添加工具调用钩子
+  void addHook(ToolHook hook) => _hooks.add(hook);
+
+  /// 移除工具调用钩子
+  void removeHook(ToolHook hook) => _hooks.remove(hook);
 
   /// 所有可用工具（按分类组织，每个描述包含：何时用 + 返回什么 + 触发词）
   static final List<AgentTool> tools = [
@@ -666,10 +762,9 @@ class WorkspaceAgent {
               });
             } catch (e) {
               toolResults.add(
-                ToolResult(
+                ToolResult.failure(
                   toolName: tc.functionName,
-                  success: false,
-                  message: '执行失败: $e',
+                  error: '执行失败: $e',
                 ),
               );
               apiMessages.add({
@@ -688,9 +783,55 @@ class WorkspaceAgent {
           }
         }
       } else {
-        // 没有工具调用，返回最终回复
+        // 没有原生工具调用 → 尝试 XML 降级解析
+        final content = response.content ?? '';
+        final xmlCalls = XmlToolCallParser.parse(content);
+
+        if (xmlCalls.isNotEmpty) {
+          // 找到 XML 格式工具调用，执行它们
+          // 将 AI 回复（含 XML）添加到消息历史
+          apiMessages.add({
+            'role': 'assistant',
+            'content': content,
+          });
+
+          for (final xc in xmlCalls) {
+            toolCalls[xc.name] = jsonEncode(xc.arguments);
+            final executor = _executors[xc.name];
+            if (executor != null) {
+              try {
+                final result = await executor(xc.arguments);
+                toolResults.add(result);
+                apiMessages.add({
+                  'role': 'user',
+                  'content': '[工具结果] ${xc.name}: ${_summarizeToolResult(result)}',
+                });
+              } catch (e) {
+                toolResults.add(
+                  ToolResult.failure(
+                    toolName: xc.name,
+                    error: '执行失败: $e',
+                  ),
+                );
+                apiMessages.add({
+                  'role': 'user',
+                  'content': '[工具结果] ${xc.name}: 执行失败: $e',
+                });
+              }
+            } else {
+              apiMessages.add({
+                'role': 'user',
+                'content': '[工具结果] ${xc.name}: 工具不存在',
+              });
+            }
+          }
+          // XML 工具执行完毕，继续下一轮让 AI 总结结果
+          continue;
+        }
+
+        // 没有 XML 工具调用，返回最终回复
         return AgentResponse(
-          content: response.content ?? '',
+          content: content,
           thinkingContent: response.thinkingContent,
           toolCalls: toolCalls,
           toolResults: toolResults,
@@ -717,9 +858,12 @@ class WorkspaceAgent {
   /// 工具结果摘要（截断过长内容，避免payload膨胀）
   String _summarizeToolResult(ToolResult result) {
     final content = result.message;
-    if (content.length <= 500) return content;
-    // 超过500字时截断，保留开头和结尾
-    return '${content.substring(0, 300)}\n...（省略${content.length - 500}字）...\n${content.substring(content.length - 200)}';
+    if (content.length <= 300) return content;
+    // 超过300字时截断，保留前200 + 后100
+    final prefix = content.substring(0, 200);
+    final suffix = content.substring(content.length - 100);
+    final omitted = content.length - 300;
+    return '$prefix\n...（省略$omitted字）...\n$suffix';
   }
 
   /// 轻量模式：只发对话，不传工具定义
@@ -770,7 +914,30 @@ class WorkspaceAgent {
 5. 结果保存：生成的内容用户满意了→主动用write_chapter_content或add_xxx保存
 6. 不强行推销：用户没说要写大纲就别问写不写大纲，纯净对话
 7. 坦诚说明：遇到不确定的，直接调工具查，查不到再告诉用户
-8. 子Agent名可模糊：用户说"帮我生成大纲"，你调delegate_to_sub_agent(task_type="大纲生成器")即可（支持中文名匹配）''';
+8. 子Agent名可模糊：用户说"帮我生成大纲"，你调delegate_to_sub_agent(task_type="大纲生成器")即可（支持中文名匹配）
+
+=== 🔧 XML 工具调用格式（当 function calling 不可用时使用） ===
+
+如果你无法通过标准方式调用工具，请使用以下 XML 格式在回复中嵌入工具调用：
+
+<tool name="工具名称">
+  <param name="参数名">参数值</param>
+</tool>
+
+示例：
+<tool name="get_characters"></tool>
+<tool name="add_character">
+  <param name="name">张三</param>
+  <param name="role">主角</param>
+  <param name="description">一个勇敢的少年</param>
+</tool>
+
+规则：
+1. 每个工具调用用 <tool name="...">...</tool> 包裹
+2. 参数用 <param name="...">值</param> 包裹
+3. 可以在一次回复中嵌入多个工具调用
+4. 工具执行结果会以 [工具结果] 形式返回
+5. 只在标准工具调用不可用时使用此格式''';
 }
 
 /// Agent响应结果
@@ -786,11 +953,4 @@ class AgentResponse {
     this.toolResults = const [],
     this.thinkingContent,
   });
-}
-
-/// 文本模式工具调用（弱模型降级用）
-class TextToolCall {
-  final String name;
-  final Map<String, String> args;
-  const TextToolCall({required this.name, required this.args});
 }

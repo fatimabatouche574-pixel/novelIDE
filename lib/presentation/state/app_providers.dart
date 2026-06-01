@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/data/models/novel_model.dart';
 import 'package:novel_ide/data/models/chapter_model.dart';
@@ -275,38 +276,78 @@ Future<void> loadAiConfigs(WidgetRef ref) async {
 /// Load materials for a novel from filesystem into providers
 Future<void> loadNovelMaterials(WidgetRef ref, String novelId) async {
   final repo = MaterialRepository();
-  ref.read(charactersProvider(novelId).notifier).state = await repo
-      .getCharacters(novelId);
-  ref.read(settingCardsProvider(novelId).notifier).state = await repo
-      .getSettingCards(novelId);
-  ref.read(plotHooksProvider(novelId).notifier).state = await repo.getPlotHooks(
-    novelId,
-  );
-  ref.read(referencesProvider(novelId).notifier).state = await repo
-      .getReferences(novelId);
-  ref.read(settingRemindersProvider(novelId).notifier).state = await repo
-      .getSettingReminders(novelId);
-  // V2
-  ref.read(locationsProvider(novelId).notifier).state = await repo.getLocations(
-    novelId,
-  );
-  ref.read(factionsProvider(novelId).notifier).state = await repo.getFactions(
-    novelId,
-  );
-  ref.read(itemsProvider(novelId).notifier).state = await repo.getItems(
-    novelId,
-  );
-  // V4: Relationships
-  final graphData = await repo.getRelationshipGraphData(novelId);
-  ref.read(relationshipsProvider(novelId).notifier).state =
-      graphData.relationships;
-  final posMap = <String, Offset>{};
-  for (final p in graphData.positions) {
-    posMap[p.characterId] = Offset(p.x, p.y);
+  try {
+    ref.read(charactersProvider(novelId).notifier).state = await repo
+        .getCharacters(novelId);
+  } catch (e) {
+    debugPrint('加载角色失败: $e');
   }
-  ref.read(relationshipPositionsProvider(novelId).notifier).state = posMap;
+  try {
+    ref.read(settingCardsProvider(novelId).notifier).state = await repo
+        .getSettingCards(novelId);
+  } catch (e) {
+    debugPrint('加载设定卡失败: $e');
+  }
+  try {
+    ref.read(plotHooksProvider(novelId).notifier).state = await repo.getPlotHooks(
+      novelId,
+    );
+  } catch (e) {
+    debugPrint('加载剧情钩子失败: $e');
+  }
+  try {
+    ref.read(referencesProvider(novelId).notifier).state = await repo
+        .getReferences(novelId);
+  } catch (e) {
+    debugPrint('加载参考资料失败: $e');
+  }
+  try {
+    ref.read(settingRemindersProvider(novelId).notifier).state = await repo
+        .getSettingReminders(novelId);
+  } catch (e) {
+    debugPrint('加载设定提醒失败: $e');
+  }
+  // V2
+  try {
+    ref.read(locationsProvider(novelId).notifier).state = await repo.getLocations(
+      novelId,
+    );
+  } catch (e) {
+    debugPrint('加载地点失败: $e');
+  }
+  try {
+    ref.read(factionsProvider(novelId).notifier).state = await repo.getFactions(
+      novelId,
+    );
+  } catch (e) {
+    debugPrint('加载势力失败: $e');
+  }
+  try {
+    ref.read(itemsProvider(novelId).notifier).state = await repo.getItems(
+      novelId,
+    );
+  } catch (e) {
+    debugPrint('加载物品失败: $e');
+  }
+  // V4: Relationships
+  try {
+    final graphData = await repo.getRelationshipGraphData(novelId);
+    ref.read(relationshipsProvider(novelId).notifier).state =
+        graphData.relationships;
+    final posMap = <String, Offset>{};
+    for (final p in graphData.positions) {
+      posMap[p.characterId] = Offset(p.x, p.y);
+    }
+    ref.read(relationshipPositionsProvider(novelId).notifier).state = posMap;
+  } catch (e) {
+    debugPrint('加载关系图失败: $e');
+  }
   // V5: Todos
-  ref.read(todosProvider.notifier).state = await repo.getTodos(novelId);
+  try {
+    ref.read(todosProvider.notifier).state = await repo.getTodos(novelId);
+  } catch (e) {
+    debugPrint('加载待办失败: $e');
+  }
 }
 
 /// Load all data on app startup

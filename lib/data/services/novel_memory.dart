@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/data/datasources/public_storage_helper.dart';
+import 'package:novel_ide/data/models/memory/memory_entity.dart';
+import 'package:novel_ide/data/models/memory/memory_repository.dart';
 import 'package:novel_ide/data/repositories/material_repository.dart';
 
 /// NovelMemory: The persistent "brain" of a novel project.
@@ -304,5 +306,100 @@ class NovelMemory {
     _cachedContent = null;
     _cachedNovelId = null;
     _cachedAt = null;
+  }
+
+  // ===== 新增：结构化记忆操作 =====
+
+  /// 获取当前小说的记忆仓库
+  Future<MemoryRepository> _getRepository() async {
+    final db = await DatabaseHelper().database;
+    return MemoryRepository(
+        db: db, profileId: novelId);
+  }
+
+  /// 创建一条结构化记忆
+  /// （同时写入 memories 表 + 刷新文本缓存）
+  Future<Memory?> createMemory({
+    required String title,
+    required String content,
+    String source = 'auto_generated',
+    String folderPath = '',
+    double importance = 0.5,
+    List<String>? tags,
+  }) async {
+    final repo = await _getRepository();
+    final memory = await repo.createMemory(
+      title: title,
+      content: content,
+      source: source,
+      folderPath: folderPath,
+      tags: tags,
+    );
+    // 创建后刷新缓存
+    invalidateCache();
+    return memory;
+  }
+
+  /// 搜索记忆
+  Future<List<Memory>> searchMemory({
+    required String query,
+    String? folderPath,
+    int limit = 20,
+  }) async {
+    final repo = await _getRepository();
+    return await repo.searchMemories(
+      query: query,
+      novelId: novelId,
+      folderPath: folderPath,
+    );
+  }
+
+  /// 建立章节间的记忆关联
+  Future<void> linkChapters(
+    Memory from,
+    Memory to, {
+    String type = 'related',
+    double weight = 0.7,
+  }) async {
+    final repo = await _getRepository();
+    await repo.linkMemories(
+      source: from,
+      target: to,
+      type: type,
+      weight: weight,
+    );
+  }
+
+  /// 获取记忆图谱
+  Future<List<MemoryLink>> getGraph() async {
+    final repo = await _getRepository();
+    return await repo.getMemoryGraph();
+  }
+
+  /// 从结构化表生成 AI 上下文
+  Future<String>
+      getStructuredForAiContext() async {
+    final repo = await _getRepository();
+    final allMemories = await repo.searchMemories(
+      query: '*',
+      novelId: novelId,
+    );
+    // 按 importance 降序，取 top 20
+    final sorted = List<Memory>.from(allMemories)
+      ..sort((a, b) =>
+          b.importance.compareTo(a.importance));
+    final selected = sorted.take(20).toList();
+
+    final buf = StringBuffer();
+    buf.writeln('═══ 结构化记忆 ═══');
+    for (final m in selected) {
+      final tagStr = m.tags.isNotEmpty
+          ? ' [${m.tags.map((t) => t.name).join(", ")}]'
+          : '';
+      buf.writeln(
+          '· ${m.title}$tagStr (重要性:${m.importance.toStringAsFixed(1)})');
+      buf.writeln('  ${m.content}');
+    }
+    return buf.toString();
   }
 }

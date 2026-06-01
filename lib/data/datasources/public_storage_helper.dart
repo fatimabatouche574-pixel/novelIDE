@@ -69,4 +69,7 @@ class PublicStorageHelper {
 
   /// 备份目录
   static Future<Directory> get backupDir => _ensureDir('备份');
+
+  /// 临时文件目录（崩溃恢复 .bak 等）
+  static Future<Directory> get tempDir => _ensureDir('temp');
 }

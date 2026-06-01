@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/data/services/cost_tracker.dart';
@@ -155,7 +157,7 @@ class AiService {
     String apiKey = config.apiKey ?? '';
     if (apiKey.isEmpty) {
       // API Key 为空，后续请求会返回 401
-      print('警告: API Key 为空，请在设置中配置');
+      debugPrint('警告: API Key 为空，请在设置中配置');
     }
 
     final headers = <String, String>{'Content-Type': 'application/json'};
@@ -167,6 +169,18 @@ class AiService {
       // OpenAI 兼容协议：同时发送 Bearer 和 api-key，兼容所有厂商
       headers['Authorization'] = 'Bearer $apiKey';
       headers['api-key'] = apiKey;
+    }
+
+    // 合并自定义请求头
+    if (config.customHeaders != '{}') {
+      try {
+        final custom = jsonDecode(config.customHeaders) as Map<String, dynamic>;
+        for (final entry in custom.entries) {
+          headers[entry.key] = entry.value.toString();
+        }
+      } catch (_) {
+        // 自定义请求头JSON解析失败时忽略
+      }
     }
 
     return headers;
@@ -195,6 +209,16 @@ class AiService {
       'temperature': config.temperature,
       'max_tokens': config.maxTokens,
     };
+
+    // 条件添加采样参数
+    if (config.topPEnabled) payload['top_p'] = config.topP;
+    if (config.topKEnabled) payload['top_k'] = config.topK;
+    if (config.presencePenaltyEnabled) {
+      payload['presence_penalty'] = config.presencePenalty;
+    }
+    if (config.frequencyPenaltyEnabled) {
+      payload['frequency_penalty'] = config.frequencyPenalty;
+    }
 
     if (systemContent != null && systemContent.isNotEmpty) {
       if (config.protocol == ApiProtocol.anthropic) {
@@ -270,6 +294,15 @@ class AiService {
         'temperature': config.temperature,
         'max_tokens': config.maxTokens,
       };
+      // 条件添加采样参数
+      if (config.topPEnabled) payload['top_p'] = config.topP;
+      if (config.topKEnabled) payload['top_k'] = config.topK;
+      if (config.presencePenaltyEnabled) {
+        payload['presence_penalty'] = config.presencePenalty;
+      }
+      if (config.frequencyPenaltyEnabled) {
+        payload['frequency_penalty'] = config.frequencyPenalty;
+      }
       if (withTools) {
         payload['tools'] = tools;
       }
@@ -279,6 +312,7 @@ class AiService {
         options: Options(
           headers: _buildHeaders(config),
           receiveTimeout: const Duration(seconds: 120),
+          connectTimeout: const Duration(seconds: 15),
         ),
         data: payload,
       );
@@ -304,7 +338,7 @@ class AiService {
           message?['thinking'] as String?;
 
       // Parse tool_calls
-      List<ToolCallInfo>? toolCalls;
+      List<AiToolCallInfo>? toolCalls;
       if (withTools) {
         final rawToolCalls = message?['tool_calls'];
         if (rawToolCalls != null &&
@@ -312,7 +346,7 @@ class AiService {
             rawToolCalls.isNotEmpty) {
           toolCalls = rawToolCalls
               .map(
-                (tc) => ToolCallInfo(
+                (tc) => AiToolCallInfo(
                   id: tc['id'] as String? ?? '',
                   functionName: tc['function']?['name'] as String? ?? '',
                   arguments: tc['function']?['arguments'] ?? '{}',
@@ -514,19 +548,19 @@ class AiService {
 /// Tool calling response
 class ToolChatResponse {
   final String? content;
-  final List<ToolCallInfo>? toolCalls;
+  final List<AiToolCallInfo>? toolCalls;
   final String? thinkingContent;
 
   const ToolChatResponse({this.content, this.toolCalls, this.thinkingContent});
 }
 
 /// Tool call info parsed from API response
-class ToolCallInfo {
+class AiToolCallInfo {
   final String id;
   final String functionName;
   final dynamic arguments;
 
-  const ToolCallInfo({
+  const AiToolCallInfo({
     required this.id,
     required this.functionName,
     required this.arguments,

@@ -366,6 +366,27 @@ class AiConfigListPage extends ConsumerWidget {
         bool? testSuccess;
         int? testLatency;
 
+        // 高级参数状态变量
+        double tempValue = existingConfig?.temperature ?? 1.0;
+        double topPValue = existingConfig?.topP ?? 1.0;
+        int topKValue = existingConfig?.topK ?? 0;
+        double presencePenaltyValue = existingConfig?.presencePenalty ?? 0.0;
+        double frequencyPenaltyValue = existingConfig?.frequencyPenalty ?? 0.0;
+        bool topPEnabled = existingConfig?.topPEnabled ?? false;
+        bool topKEnabled = existingConfig?.topKEnabled ?? false;
+        bool presencePenaltyEnabled = existingConfig?.presencePenaltyEnabled ?? false;
+        bool frequencyPenaltyEnabled = existingConfig?.frequencyPenaltyEnabled ?? false;
+        bool enableToolCall = existingConfig?.enableToolCall ?? false;
+        bool enableSummary = existingConfig?.enableSummary ?? true;
+        bool enableClaudeCache = existingConfig?.enableClaude1hPromptCache ?? false;
+        bool enableGoogleSearch = existingConfig?.enableGoogleSearch ?? false;
+        final maxTokensCtrl = TextEditingController(
+          text: (existingConfig?.maxTokens ?? 4096).toString(),
+        );
+        final contextLengthCtrl = TextEditingController(
+          text: (existingConfig?.contextLength ?? 64.0).toStringAsFixed(1),
+        );
+
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             void selectVendor(_VendorInfo v) {
@@ -573,6 +594,113 @@ class AiConfigListPage extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
+const SizedBox(height: 8),
+Theme(
+  data: Theme.of(ctx).copyWith(dividerColor: Colors.transparent),
+  child: ExpansionTile(
+    title: Text(
+      "高级参数",
+      style: const TextStyle(fontWeight: FontWeight.bold),
+    ),
+    leading: const Icon(Icons.tune),
+    children: [
+      // Temperature
+      _buildParamTile(ctx,
+        title: "Temperature",
+        value: tempValue,
+        min: 0.0,
+        max: 2.0,
+        onChanged: (v) => setDialogState(() => tempValue = v),
+      ),
+      // Top-P
+      _buildParamTileWithSwitch(ctx,
+        title: "Top-P",
+        value: topPValue,
+        enabled: topPEnabled,
+        min: 0.0,
+        max: 1.0,
+        onToggle: (v) => setDialogState(() => topPEnabled = v),
+        onChanged: (v) => setDialogState(() => topPValue = v),
+      ),
+      // Top-K
+      _buildIntParamTileWithSwitch(ctx,
+        title: "Top-K",
+        value: topKValue,
+        enabled: topKEnabled,
+        min: 0,
+        max: 100,
+        onToggle: (v) => setDialogState(() => topKEnabled = v),
+        onChanged: (v) => setDialogState(() => topKValue = v),
+      ),
+      // Presence Penalty
+      _buildParamTileWithSwitch(ctx,
+        title: "Presence Penalty",
+        value: presencePenaltyValue,
+        enabled: presencePenaltyEnabled,
+        min: -2.0,
+        max: 2.0,
+        onToggle: (v) => setDialogState(() => presencePenaltyEnabled = v),
+        onChanged: (v) => setDialogState(() => presencePenaltyValue = v),
+      ),
+      // Frequency Penalty
+      _buildParamTileWithSwitch(ctx,
+        title: "Frequency Penalty",
+        value: frequencyPenaltyValue,
+        enabled: frequencyPenaltyEnabled,
+        min: -2.0,
+        max: 2.0,
+        onToggle: (v) => setDialogState(() => frequencyPenaltyEnabled = v),
+        onChanged: (v) => setDialogState(() => frequencyPenaltyValue = v),
+      ),
+      // Max Tokens
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: TextField(
+          controller: maxTokensCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: "Max Tokens",
+            prefixIcon: Icon(Icons.token),
+          ),
+        ),
+      ),
+      // Context Length
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: TextField(
+          controller: contextLengthCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: "Context Length (K tokens)",
+            prefixIcon: Icon(Icons.memory),
+          ),
+        ),
+      ),
+      // Tool Call toggle
+      SwitchListTile(
+        title: const Text("Tool Call"),
+        subtitle: const Text("启用原生工具调用"),
+        value: enableToolCall,
+        onChanged: (v) => setDialogState(() => enableToolCall = v),
+      ),
+      // Claude Cache toggle
+      SwitchListTile(
+        title: const Text("Claude 1h Cache"),
+        subtitle: const Text("启用1小时提示缓存"),
+        value: enableClaudeCache,
+        onChanged: (v) => setDialogState(() => enableClaudeCache = v),
+      ),
+      // Google Search toggle
+      SwitchListTile(
+        title: const Text("Google Search"),
+        subtitle: const Text("启用Google搜索地面"),
+        value: enableGoogleSearch,
+        onChanged: (v) => setDialogState(() => enableGoogleSearch = v),
+      ),
+    ],
+  ),
+),
+
                         Row(
                           children: [
                             Expanded(
@@ -756,6 +884,21 @@ class AiConfigListPage extends ConsumerWidget {
                           apiUrl: url,
                           modelName: model,
                           protocol: selectedProtocol,
+                          temperature: tempValue,
+                          maxTokens: int.tryParse(maxTokensCtrl.text.trim()) ?? 4096,
+                          topP: topPValue,
+                          topK: topKValue,
+                          presencePenalty: presencePenaltyValue,
+                          frequencyPenalty: frequencyPenaltyValue,
+                          topPEnabled: topPEnabled,
+                          topKEnabled: topKEnabled,
+                          presencePenaltyEnabled: presencePenaltyEnabled,
+                          frequencyPenaltyEnabled: frequencyPenaltyEnabled,
+                          contextLength: double.tryParse(contextLengthCtrl.text.trim()) ?? 64.0,
+                          enableSummary: enableSummary,
+                          enableToolCall: enableToolCall,
+                          enableClaude1hPromptCache: enableClaudeCache,
+                          enableGoogleSearch: enableGoogleSearch,
                         );
                         await db.insertAiConfig(db.toDbMap(updated));
                         if (key.isNotEmpty) {
@@ -773,6 +916,21 @@ class AiConfigListPage extends ConsumerWidget {
                           apiUrl: url,
                           modelName: model,
                           protocol: selectedProtocol,
+                          temperature: tempValue,
+                          maxTokens: int.tryParse(maxTokensCtrl.text.trim()) ?? 4096,
+                          topP: topPValue,
+                          topK: topKValue,
+                          presencePenalty: presencePenaltyValue,
+                          frequencyPenalty: frequencyPenaltyValue,
+                          topPEnabled: topPEnabled,
+                          topKEnabled: topKEnabled,
+                          presencePenaltyEnabled: presencePenaltyEnabled,
+                          frequencyPenaltyEnabled: frequencyPenaltyEnabled,
+                          contextLength: double.tryParse(contextLengthCtrl.text.trim()) ?? 64.0,
+                          enableSummary: enableSummary,
+                          enableToolCall: enableToolCall,
+                          enableClaude1hPromptCache: enableClaudeCache,
+                          enableGoogleSearch: enableGoogleSearch,
                         );
                         await db.insertAiConfig(db.toDbMap(config));
                         if (key.isNotEmpty) {
@@ -800,6 +958,146 @@ class AiConfigListPage extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildParamTile(BuildContext context, {
+    required String title,
+    required double value,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 13)),
+              Text(
+                value.toStringAsFixed(2),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParamTileWithSwitch(BuildContext context, {
+    required String title,
+    required double value,
+    required bool enabled,
+    required double min,
+    required double max,
+    required ValueChanged<bool> onToggle,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Switch(
+                    value: enabled,
+                    onChanged: onToggle,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(title, style: const TextStyle(fontSize: 13)),
+                ],
+              ),
+              Text(
+                value.toStringAsFixed(2),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: enabled
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).textTheme.bodySmall?.color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            onChanged: enabled ? onChanged : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntParamTileWithSwitch(BuildContext context, {
+    required String title,
+    required int value,
+    required bool enabled,
+    required int min,
+    required int max,
+    required ValueChanged<bool> onToggle,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Switch(
+                    value: enabled,
+                    onChanged: onToggle,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(title, style: const TextStyle(fontSize: 13)),
+                ],
+              ),
+              Text(
+                value.toString(),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: enabled
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).textTheme.bodySmall?.color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value.toDouble().clamp(min.toDouble(), max.toDouble()),
+            min: min.toDouble(),
+            max: max.toDouble(),
+            divisions: max - min,
+            onChanged: enabled ? (v) => onChanged(v.round()) : null,
+          ),
+        ],
+      ),
     );
   }
 

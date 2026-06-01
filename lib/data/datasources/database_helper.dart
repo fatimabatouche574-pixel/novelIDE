@@ -19,7 +19,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'novel_ide.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -91,7 +91,24 @@ class DatabaseHelper {
         max_tokens INTEGER DEFAULT 4096,
         is_local INTEGER DEFAULT 0,
         protocol TEXT DEFAULT 'openaiCompatible',
-        model_type TEXT DEFAULT 'text'
+        model_type TEXT DEFAULT 'text',
+        top_p REAL DEFAULT 1.0,
+        top_k INTEGER DEFAULT 0,
+        presence_penalty REAL DEFAULT 0.0,
+        frequency_penalty REAL DEFAULT 0.0,
+        top_p_enabled INTEGER DEFAULT 0,
+        top_k_enabled INTEGER DEFAULT 0,
+        presence_penalty_enabled INTEGER DEFAULT 0,
+        frequency_penalty_enabled INTEGER DEFAULT 0,
+        context_length REAL DEFAULT 64.0,
+        summary_token_threshold REAL DEFAULT 0.7,
+        enable_summary INTEGER DEFAULT 1,
+        enable_tool_call INTEGER DEFAULT 0,
+        enable_claude_1h_prompt_cache INTEGER DEFAULT 0,
+        enable_google_search INTEGER DEFAULT 0,
+        request_limit_per_minute INTEGER DEFAULT 0,
+        max_concurrent_requests INTEGER DEFAULT 0,
+        custom_headers TEXT DEFAULT '{}'
       )
     ''');
 
@@ -130,6 +147,30 @@ class DatabaseHelper {
         'ALTER TABLE ai_configs ADD COLUMN model_type TEXT DEFAULT "text"',
       );
     }
+    if (oldVersion < 6) {
+      // V6: 添加高级模型配置字段
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN top_p REAL DEFAULT 1.0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN top_k INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN presence_penalty REAL DEFAULT 0.0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN frequency_penalty REAL DEFAULT 0.0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN top_p_enabled INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN top_k_enabled INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN presence_penalty_enabled INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN frequency_penalty_enabled INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN context_length REAL DEFAULT 64.0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN summary_token_threshold REAL DEFAULT 0.7');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN enable_summary INTEGER DEFAULT 1');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN enable_tool_call INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN enable_claude_1h_prompt_cache INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN enable_google_search INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN request_limit_per_minute INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN max_concurrent_requests INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ai_configs ADD COLUMN custom_headers TEXT DEFAULT "{}"');
+    }
+    if (oldVersion < 7) {
+      // V7: 记忆系统表
+      await _createMemoryTables(db);
+    }
   }
 
   Future<void> _createDailyWordsTable(Database db) async {
@@ -161,6 +202,85 @@ class DatabaseHelper {
     await db.execute('''
       CREATE INDEX idx_billing_created ON billing_records(created_at);
     ''');
+  }
+
+  /// V7: 创建记忆系统表
+  Future<void> _createMemoryTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS memories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        uuid TEXT NOT NULL UNIQUE,
+        novel_id TEXT,
+        title TEXT NOT NULL DEFAULT '',
+        content TEXT NOT NULL DEFAULT '',
+        content_type TEXT NOT NULL DEFAULT 'text/plain',
+        source TEXT NOT NULL DEFAULT 'unknown',
+        credibility REAL NOT NULL DEFAULT 0.5,
+        importance REAL NOT NULL DEFAULT 0.5,
+        document_path TEXT,
+        is_document_node INTEGER NOT NULL DEFAULT 0,
+        chunk_index_file_path TEXT,
+        folder_path TEXT,
+        embedding BLOB,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_accessed_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS memory_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        parent_id INTEGER,
+        FOREIGN KEY (parent_id) REFERENCES memory_tags(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS memory_tag_relations (
+        memory_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        PRIMARY KEY (memory_id, tag_id),
+        FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE,
+        FOREIGN KEY (tag_id) REFERENCES memory_tags(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS memory_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_id INTEGER NOT NULL,
+        target_id INTEGER NOT NULL,
+        type TEXT NOT NULL DEFAULT 'related',
+        weight REAL NOT NULL DEFAULT 1.0,
+        description TEXT NOT NULL DEFAULT '',
+        FOREIGN KEY (source_id) REFERENCES memories(id) ON DELETE CASCADE,
+        FOREIGN KEY (target_id) REFERENCES memories(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS memory_properties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory_id INTEGER NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL DEFAULT '',
+        FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // 索引
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_memories_novel_id ON memories(novel_id)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_memories_folder_path ON memories(folder_path)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_memories_uuid ON memories(uuid)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_memory_links_source ON memory_links(source_id)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_memory_links_target ON memory_links(target_id)');
   }
 
   /// Close the database connection.
@@ -198,6 +318,23 @@ class DatabaseHelper {
       'is_local': config.isLocal ? 1 : 0,
       'protocol': config.protocol.name,
       'model_type': config.modelType.name,
+      'top_p': config.topP,
+      'top_k': config.topK,
+      'presence_penalty': config.presencePenalty,
+      'frequency_penalty': config.frequencyPenalty,
+      'top_p_enabled': config.topPEnabled ? 1 : 0,
+      'top_k_enabled': config.topKEnabled ? 1 : 0,
+      'presence_penalty_enabled': config.presencePenaltyEnabled ? 1 : 0,
+      'frequency_penalty_enabled': config.frequencyPenaltyEnabled ? 1 : 0,
+      'context_length': config.contextLength,
+      'summary_token_threshold': config.summaryTokenThreshold,
+      'enable_summary': config.enableSummary ? 1 : 0,
+      'enable_tool_call': config.enableToolCall ? 1 : 0,
+      'enable_claude_1h_prompt_cache': config.enableClaude1hPromptCache ? 1 : 0,
+      'enable_google_search': config.enableGoogleSearch ? 1 : 0,
+      'request_limit_per_minute': config.requestLimitPerMinute,
+      'max_concurrent_requests': config.maxConcurrentRequests,
+      'custom_headers': config.customHeaders,
     };
   }
 
@@ -236,6 +373,23 @@ class DatabaseHelper {
       isLocal: (map['is_local'] as int) == 1,
       protocol: protocol,
       modelType: modelType,
+      topP: (map['top_p'] as num?)?.toDouble() ?? 1.0,
+      topK: (map['top_k'] as int?) ?? 0,
+      presencePenalty: (map['presence_penalty'] as num?)?.toDouble() ?? 0.0,
+      frequencyPenalty: (map['frequency_penalty'] as num?)?.toDouble() ?? 0.0,
+      topPEnabled: (map['top_p_enabled'] as int?) == 1,
+      topKEnabled: (map['top_k_enabled'] as int?) == 1,
+      presencePenaltyEnabled: (map['presence_penalty_enabled'] as int?) == 1,
+      frequencyPenaltyEnabled: (map['frequency_penalty_enabled'] as int?) == 1,
+      contextLength: (map['context_length'] as num?)?.toDouble() ?? 64.0,
+      summaryTokenThreshold: (map['summary_token_threshold'] as num?)?.toDouble() ?? 0.7,
+      enableSummary: (map['enable_summary'] as int?) != 0,
+      enableToolCall: (map['enable_tool_call'] as int?) == 1,
+      enableClaude1hPromptCache: (map['enable_claude_1h_prompt_cache'] as int?) == 1,
+      enableGoogleSearch: (map['enable_google_search'] as int?) == 1,
+      requestLimitPerMinute: (map['request_limit_per_minute'] as int?) ?? 0,
+      maxConcurrentRequests: (map['max_concurrent_requests'] as int?) ?? 0,
+      customHeaders: (map['custom_headers'] as String?) ?? '{}',
     );
   }
 

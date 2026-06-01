@@ -49,237 +49,20 @@ TomatoAgent? fuzzyMatchAgent(String taskType, List<TomatoAgent> agents) {
   return agents.where((a) => a.description.contains(taskType)).firstOrNull;
 }
 
-/// 注册通用工具执行器（不需要小说上下文）
-void registerGeneralToolExecutors({
+/// 注册 delegate_to_sub_agent 执行器（共享逻辑，避免重复注册）
+void _registerDelegateToSubAgent({
   required WorkspaceAgent agent,
   required List<TomatoAgent> presetAgents,
   required AiConfig aiConfig,
-  Function(String)? onSwitchNovel,
-  Function(String novelId, String novelTitle)? onNovelCreated,
 }) {
-  // 配置管理
-  agent.registerExecutor('get_ai_configs', (args) async {
-    try {
-      final db = DatabaseHelper();
-      final maps = await db.getAllAiConfigs();
-      if (maps.isEmpty)
-        return ToolResult(
-          toolName: 'get_ai_configs',
-          success: true,
-          message: '当前没有配置任何AI模型',
-        );
-      final storage = SecureStorageDataSource();
-      final buffer = StringBuffer('已配置的AI模型：\n');
-      for (final m in maps) {
-        final apiKey = await storage.readApiKey(m['id'] as String);
-        final config = db.fromDbMap(m, apiKey);
-        final type = config.modelType.name;
-        buffer.writeln(
-          '- [${config.id}] ${config.name}（$type）: ${config.modelName}',
-        );
-      }
-      return ToolResult(
-        toolName: 'get_ai_configs',
-        success: true,
-        message: buffer.toString(),
-      );
-    } catch (e) {
-      return ToolResult(
-        toolName: 'get_ai_configs',
-        success: false,
-        message: '获取失败: $e',
-      );
-    }
-  });
-
-  agent.registerExecutor('add_ai_config', (args) async {
-    try {
-      final name = args['name'] as String? ?? '';
-      final apiUrl = args['api_url'] as String? ?? '';
-      final modelName = args['model_name'] as String? ?? '';
-      final modelType = args['model_type'] as String? ?? 'text';
-      final apiKey = args['api_key'] as String? ?? '';
-      if (name.isEmpty || apiUrl.isEmpty || modelName.isEmpty) {
-        return ToolResult(
-          toolName: 'add_ai_config',
-          success: false,
-          message: '名称、API地址、模型ID不能为空',
-        );
-      }
-      final db = DatabaseHelper();
-      final id = 'cfg_${DateTime.now().millisecondsSinceEpoch}';
-      final config = AiConfig(
-        id: id,
-        name: name,
-        apiUrl: apiUrl,
-        modelName: modelName,
-        modelType: modelType == 'tts'
-            ? ModelType.tts
-            : modelType == 'stt'
-            ? ModelType.stt
-            : ModelType.text,
-      );
-      await db.insertAiConfig(db.toDbMap(config));
-      if (apiKey.isNotEmpty) {
-        await SecureStorageDataSource().writeApiKey(id, apiKey);
-      }
-      return ToolResult(
-        toolName: 'add_ai_config',
-        success: true,
-        message: '已添加AI模型「$name」($modelType)',
-      );
-    } catch (e) {
-      return ToolResult(
-        toolName: 'add_ai_config',
-        success: false,
-        message: '添加失败: $e',
-      );
-    }
-  });
-
-  agent.registerExecutor('set_active_ai_config', (args) async {
-    try {
-      final configId = args['config_id'] as String? ?? '';
-      final purpose = args['purpose'] as String? ?? 'text';
-      if (configId.isEmpty)
-        return ToolResult(
-          toolName: 'set_active_ai_config',
-          success: false,
-          message: '请提供配置ID',
-        );
-      if (purpose == 'voice') {
-        ConfigService.voiceConfigId = configId;
-        return ToolResult(
-          toolName: 'set_active_ai_config',
-          success: true,
-          message: '已设置语音模型',
-        );
-      } else {
-        ConfigService.aiConfigId = configId;
-        return ToolResult(
-          toolName: 'set_active_ai_config',
-          success: true,
-          message: '已设置文本对话模型',
-        );
-      }
-    } catch (e) {
-      return ToolResult(
-        toolName: 'set_active_ai_config',
-        success: false,
-        message: '设置失败: $e',
-      );
-    }
-  });
-
-  // 项目管理
-  agent.registerExecutor('list_novels', (args) async {
-    try {
-      final repo = NovelRepository();
-      final novels = await repo.getAllNovels();
-      if (novels.isEmpty)
-        return ToolResult(
-          toolName: 'list_novels',
-          success: true,
-          message: '当前没有小说项目',
-        );
-      final buffer = StringBuffer('小说项目列表：\n');
-      for (final n in novels) {
-        buffer.writeln('- [${n.id}] ${n.title}（${n.category ?? '未分类'}）');
-      }
-      return ToolResult(
-        toolName: 'list_novels',
-        success: true,
-        message: buffer.toString(),
-      );
-    } catch (e) {
-      return ToolResult(
-        toolName: 'list_novels',
-        success: false,
-        message: '获取失败: $e',
-      );
-    }
-  });
-
-  agent.registerExecutor('create_novel', (args) async {
-    try {
-      final title = args['title'] as String? ?? '';
-      final genre = args['genre'] as String? ?? '';
-      final description = args['description'] as String? ?? '';
-      if (title.isEmpty)
-        return ToolResult(
-          toolName: 'create_novel',
-          success: false,
-          message: '标题不能为空',
-        );
-      final repo = NovelRepository();
-      final novel = await repo.createNovel(
-        title: title,
-        category: genre,
-        description: description,
-      );
-      // 调用回调，通知UI刷新并选中新创建的小说
-      onNovelCreated?.call(novel.id, novel.title);
-      return ToolResult(
-        toolName: 'create_novel',
-        success: true,
-        message: '已创建小说「$title」(ID: ${novel.id})',
-        data: {'novel_id': novel.id},
-      );
-    } catch (e) {
-      return ToolResult(
-        toolName: 'create_novel',
-        success: false,
-        message: '创建失败: $e',
-      );
-    }
-  });
-
-  agent.registerExecutor('switch_novel', (args) async {
-    try {
-      final novelId = args['novel_id'] as String? ?? '';
-      if (novelId.isEmpty)
-        return ToolResult(
-          toolName: 'switch_novel',
-          success: false,
-          message: '请提供小说ID',
-        );
-      // 查找小说标题
-      final repo = NovelRepository();
-      final novels = await repo.getAllNovels();
-      final novel = novels.where((n) => n.id == novelId).firstOrNull;
-      if (novel == null)
-        return ToolResult(
-          toolName: 'switch_novel',
-          success: false,
-          message: '未找到ID为 $novelId 的小说',
-        );
-      // 通过回调切换选中的小说
-      onSwitchNovel?.call(novelId);
-      return ToolResult(
-        toolName: 'switch_novel',
-        success: true,
-        message: '已切换到小说「${novel.title}」(ID: $novelId)',
-      );
-    } catch (e) {
-      return ToolResult(
-        toolName: 'switch_novel',
-        success: false,
-        message: '切换失败: $e',
-      );
-    }
-  });
-
-  // ====== 子代理调度 ======
-
   agent.registerExecutor('delegate_to_sub_agent', (args) async {
     final taskType = args['task_type'] as String? ?? '';
     final instruction = args['instruction'] as String? ?? '';
 
     if (instruction.isEmpty) {
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '子代理指令不能为空',
+        error: '子代理指令不能为空',
       );
     }
 
@@ -288,10 +71,9 @@ void registerGeneralToolExecutors({
       final available = presetAgents
           .map((a) => '  • ${a.id}（${a.name}）')
           .join('\n');
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delegate_to_sub_agent',
-        success: false,
-        message:
+        error:
             '未找到匹配的子代理: "$taskType"\n\n可用的子代理：\n$available\n\n请用中文名或ID重新指定，例如："大纲生成器"或"outline_generator"',
       );
     }
@@ -312,16 +94,16 @@ void registerGeneralToolExecutors({
           systemPrompt:
               '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
           userMessage: prompt,
-          taskType: 'sub_agent:$taskType',
+          taskType: 'sub_agent:${subAgent.id}',
         );
 
         if (round == 0) {
           lastResult = result;
         } else {
           // 如果变化小于5%，认为已收敛，不再迭代
-          if (result.length > 0 && lastResult != null) {
+          if (result.isNotEmpty && lastResult != null) {
             final diff =
-                (result.length - lastResult!.length).abs() / lastResult!.length;
+                (result.length - lastResult.length).abs() / lastResult.length;
             if (diff < 0.05) {
               lastResult = result;
               break;
@@ -331,36 +113,217 @@ void registerGeneralToolExecutors({
         }
       }
 
-      return ToolResult(
+      return ToolResult.success(
         toolName: 'delegate_to_sub_agent',
-        success: true,
         message: '【${subAgent.name}】返回结果：\n\n${lastResult ?? "（无输出）"}',
         data: {'agent_name': subAgent.name, 'agent_id': subAgent.id},
       );
     } catch (e) {
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '子代理「${subAgent.name}」执行失败: $e',
+        error: '子代理「${subAgent.name}」执行失败: $e',
       );
     }
   });
+}
+
+/// 注册通用工具执行器（不需要小说上下文）
+void registerGeneralToolExecutors({
+  required WorkspaceAgent agent,
+  required List<TomatoAgent> presetAgents,
+  required AiConfig aiConfig,
+  Function(String)? onSwitchNovel,
+  Function(String novelId, String novelTitle)? onNovelCreated,
+}) {
+  // 配置管理
+  agent.registerExecutor('get_ai_configs', (args) async {
+    try {
+      final db = DatabaseHelper();
+      final maps = await db.getAllAiConfigs();
+      if (maps.isEmpty)
+        return ToolResult.success(
+          toolName: 'get_ai_configs',
+          message: '当前没有配置任何AI模型',
+        );
+      final storage = SecureStorageDataSource();
+      final buffer = StringBuffer('已配置的AI模型：\n');
+      for (final m in maps) {
+        final apiKey = await storage.readApiKey(m['id'] as String);
+        final config = db.fromDbMap(m, apiKey);
+        final type = config.modelType.name;
+        buffer.writeln(
+          '- [${config.id}] ${config.name}（$type）: ${config.modelName}',
+        );
+      }
+      return ToolResult.success(
+        toolName: 'get_ai_configs',
+        message: buffer.toString(),
+      );
+    } catch (e) {
+      return ToolResult.failure(toolName: 'get_ai_configs', error: '获取失败: $e');
+    }
+  });
+
+  agent.registerExecutor('add_ai_config', (args) async {
+    try {
+      final name = args['name'] as String? ?? '';
+      final apiUrl = args['api_url'] as String? ?? '';
+      final modelName = args['model_name'] as String? ?? '';
+      final modelType = args['model_type'] as String? ?? 'text';
+      final apiKey = args['api_key'] as String? ?? '';
+      if (name.isEmpty || apiUrl.isEmpty || modelName.isEmpty) {
+        return ToolResult.failure(
+          toolName: 'add_ai_config',
+          error: '名称、API地址、模型ID不能为空',
+        );
+      }
+      final db = DatabaseHelper();
+      final id = 'cfg_${DateTime.now().millisecondsSinceEpoch}';
+      final config = AiConfig(
+        id: id,
+        name: name,
+        apiUrl: apiUrl,
+        modelName: modelName,
+        modelType: modelType == 'tts'
+            ? ModelType.tts
+            : modelType == 'stt'
+            ? ModelType.stt
+            : ModelType.text,
+      );
+      await db.insertAiConfig(db.toDbMap(config));
+      if (apiKey.isNotEmpty) {
+        await SecureStorageDataSource().writeApiKey(id, apiKey);
+      }
+      return ToolResult.success(
+        toolName: 'add_ai_config',
+        message: '已添加AI模型「$name」($modelType)',
+      );
+    } catch (e) {
+      return ToolResult.failure(toolName: 'add_ai_config', error: '添加失败: $e');
+    }
+  });
+
+  agent.registerExecutor('set_active_ai_config', (args) async {
+    try {
+      final configId = args['config_id'] as String? ?? '';
+      final purpose = args['purpose'] as String? ?? 'text';
+      if (configId.isEmpty)
+        return ToolResult.failure(
+          toolName: 'set_active_ai_config',
+          error: '请提供配置ID',
+        );
+      if (purpose == 'voice') {
+        ConfigService.voiceConfigId = configId;
+        return ToolResult.success(
+          toolName: 'set_active_ai_config',
+          message: '已设置语音模型',
+        );
+      } else {
+        ConfigService.aiConfigId = configId;
+        return ToolResult.success(
+          toolName: 'set_active_ai_config',
+          message: '已设置文本对话模型',
+        );
+      }
+    } catch (e) {
+      return ToolResult.failure(
+        toolName: 'set_active_ai_config',
+        error: '设置失败: $e',
+      );
+    }
+  });
+
+  // 项目管理
+  agent.registerExecutor('list_novels', (args) async {
+    try {
+      final repo = NovelRepository();
+      final novels = await repo.getAllNovels();
+      if (novels.isEmpty)
+        return ToolResult.success(toolName: 'list_novels', message: '当前没有小说项目');
+      final buffer = StringBuffer('小说项目列表：\n');
+      for (final n in novels) {
+        buffer.writeln('- [${n.id}] ${n.title}（${n.category ?? '未分类'}）');
+      }
+      return ToolResult.success(
+        toolName: 'list_novels',
+        message: buffer.toString(),
+      );
+    } catch (e) {
+      return ToolResult.failure(toolName: 'list_novels', error: '获取失败: $e');
+    }
+  });
+
+  agent.registerExecutor('create_novel', (args) async {
+    try {
+      final title = args['title'] as String? ?? '';
+      final genre = args['genre'] as String? ?? '';
+      final description = args['description'] as String? ?? '';
+      if (title.isEmpty)
+        return ToolResult.failure(toolName: 'create_novel', error: '标题不能为空');
+      final repo = NovelRepository();
+      final novel = await repo.createNovel(
+        title: title,
+        category: genre,
+        description: description,
+      );
+      // 调用回调，通知UI刷新并选中新创建的小说
+      onNovelCreated?.call(novel.id, novel.title);
+      return ToolResult.success(
+        toolName: 'create_novel',
+        message: '已创建小说「$title」(ID: ${novel.id})',
+        data: {'novel_id': novel.id},
+      );
+    } catch (e) {
+      return ToolResult.failure(toolName: 'create_novel', error: '创建失败: $e');
+    }
+  });
+
+  agent.registerExecutor('switch_novel', (args) async {
+    try {
+      final novelId = args['novel_id'] as String? ?? '';
+      if (novelId.isEmpty)
+        return ToolResult.failure(toolName: 'switch_novel', error: '请提供小说ID');
+      // 查找小说标题
+      final repo = NovelRepository();
+      final novels = await repo.getAllNovels();
+      final novel = novels.where((n) => n.id == novelId).firstOrNull;
+      if (novel == null)
+        return ToolResult.failure(
+          toolName: 'switch_novel',
+          error: '未找到ID为 $novelId 的小说',
+        );
+      // 通过回调切换选中的小说
+      onSwitchNovel?.call(novelId);
+      return ToolResult.success(
+        toolName: 'switch_novel',
+        message: '已切换到小说「${novel.title}」(ID: $novelId)',
+      );
+    } catch (e) {
+      return ToolResult.failure(toolName: 'switch_novel', error: '切换失败: $e');
+    }
+  });
+
+  // ====== 子代理调度 ======
+
+  _registerDelegateToSubAgent(
+    agent: agent,
+    presetAgents: presetAgents,
+    aiConfig: aiConfig,
+  );
 
   // ====== 文本处理工具 ======
 
   agent.registerExecutor('humanize_text', (args) async {
     final text = args['text'] as String? ?? '';
     if (text.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'humanize_text',
-        success: false,
-        message: '请提供需要去AI味的文本',
+        error: '请提供需要去AI味的文本',
       );
     // 此工具由AI直接处理：AI读取工具描述中的Humanizer规则，对文本进行改写
     // 执行器仅做输入校验，实际改写由AI对话层完成
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'humanize_text',
-      success: true,
       message: '请根据工具描述中的Humanizer规则，对以下文本进行去AI味改写：\n\n$text',
     );
   });
@@ -371,17 +334,12 @@ void registerGeneralToolExecutors({
     try {
       final query = args['query'] as String? ?? '';
       if (query.isEmpty) {
-        return ToolResult(
-          toolName: 'web_search',
-          success: false,
-          message: '请提供搜索关键词',
-        );
+        return ToolResult.failure(toolName: 'web_search', error: '请提供搜索关键词');
       }
       final results = await WebSearchService.search(query);
       if (results.isEmpty) {
-        return ToolResult(
+        return ToolResult.success(
           toolName: 'web_search',
-          success: true,
           message: '未找到与「$query」相关的搜索结果。',
         );
       }
@@ -395,17 +353,12 @@ void registerGeneralToolExecutors({
         }
         buffer.writeln();
       }
-      return ToolResult(
+      return ToolResult.success(
         toolName: 'web_search',
-        success: true,
         message: buffer.toString(),
       );
     } catch (e) {
-      return ToolResult(
-        toolName: 'web_search',
-        success: false,
-        message: '搜索失败: $e',
-      );
+      return ToolResult.failure(toolName: 'web_search', error: '搜索失败: $e');
     }
   });
 }
@@ -430,9 +383,8 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_novel_info', (args) async {
     final chapters = await chapterRepo.getChaptersByNovel(novelId);
     final totalWords = chapters.fold<int>(0, (sum, c) => sum + c.wordCount);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_novel_info',
-      success: true,
       message:
           '小说信息：\n标题：$novelTitle\nID：$novelId\n章节数：${chapters.length}\n总字数：$totalWords',
     );
@@ -441,20 +393,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_characters', (args) async {
     final characters = await materialRepo.getCharacters(novelId);
     if (characters.isEmpty)
-      return ToolResult(
-        toolName: 'get_characters',
-        success: true,
-        message: '暂无角色',
-      );
+      return ToolResult.success(toolName: 'get_characters', message: '暂无角色');
     final info = characters
         .map(
           (c) =>
               '- ${c.name}${c.role != null ? " (${c.role})" : ""}：${c.description ?? "无描述"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_characters',
-      success: true,
       message: '角色列表（${characters.length}个）：\n$info',
     );
   });
@@ -462,20 +409,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_settings', (args) async {
     final settings = await materialRepo.getSettingCards(novelId);
     if (settings.isEmpty)
-      return ToolResult(
-        toolName: 'get_settings',
-        success: true,
-        message: '暂无设定',
-      );
+      return ToolResult.success(toolName: 'get_settings', message: '暂无设定');
     final info = settings
         .map(
           (s) =>
               '- ${s.name}${s.category != null ? " [${s.category}]" : ""}：${s.description ?? "无内容"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_settings',
-      success: true,
       message: '设定列表（${settings.length}个）：\n$info',
     );
   });
@@ -483,20 +425,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_locations', (args) async {
     final locations = await materialRepo.getLocations(novelId);
     if (locations.isEmpty)
-      return ToolResult(
-        toolName: 'get_locations',
-        success: true,
-        message: '暂无地点',
-      );
+      return ToolResult.success(toolName: 'get_locations', message: '暂无地点');
     final info = locations
         .map(
           (l) =>
               '- ${l.name}${l.category != null ? " [${l.category}]" : ""}：${l.description ?? "无描述"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_locations',
-      success: true,
       message: '地点列表（${locations.length}个）：\n$info',
     );
   });
@@ -504,20 +441,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_factions', (args) async {
     final factions = await materialRepo.getFactions(novelId);
     if (factions.isEmpty)
-      return ToolResult(
-        toolName: 'get_factions',
-        success: true,
-        message: '暂无势力',
-      );
+      return ToolResult.success(toolName: 'get_factions', message: '暂无势力');
     final info = factions
         .map(
           (f) =>
               '- ${f.name}${f.category != null ? " [${f.category}]" : ""}：${f.description ?? "无描述"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_factions',
-      success: true,
       message: '势力列表（${factions.length}个）：\n$info',
     );
   });
@@ -525,16 +457,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_items', (args) async {
     final items = await materialRepo.getItems(novelId);
     if (items.isEmpty)
-      return ToolResult(toolName: 'get_items', success: true, message: '暂无道具');
+      return ToolResult.success(toolName: 'get_items', message: '暂无道具');
     final info = items
         .map(
           (i) =>
               '- ${i.name}${i.category != null ? " [${i.category}]" : ""}：${i.description ?? "无描述"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_items',
-      success: true,
       message: '道具列表（${items.length}个）：\n$info',
     );
   });
@@ -542,16 +473,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_hooks', (args) async {
     final hooks = await materialRepo.getPlotHooks(novelId);
     if (hooks.isEmpty)
-      return ToolResult(toolName: 'get_hooks', success: true, message: '暂无伏笔');
+      return ToolResult.success(toolName: 'get_hooks', message: '暂无伏笔');
     final info = hooks
         .map(
           (h) =>
               '- ${h.title} [${h.isRevealed ? "已回收" : "待回收"}]：${h.description ?? "无描述"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_hooks',
-      success: true,
       message: '伏笔列表（${hooks.length}个）：\n$info',
     );
   });
@@ -559,17 +489,12 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_references', (args) async {
     final refs = await materialRepo.getReferences(novelId);
     if (refs.isEmpty)
-      return ToolResult(
-        toolName: 'get_references',
-        success: true,
-        message: '暂无参考',
-      );
+      return ToolResult.success(toolName: 'get_references', message: '暂无参考');
     final info = refs
         .map((r) => '- ${r.title}：${r.content ?? "无内容"}')
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_references',
-      success: true,
       message: '参考列表（${refs.length}个）：\n$info',
     );
   });
@@ -577,17 +502,12 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_chapters', (args) async {
     final chapters = await chapterRepo.getChaptersByNovel(novelId);
     if (chapters.isEmpty)
-      return ToolResult(
-        toolName: 'get_chapters',
-        success: true,
-        message: '暂无章节',
-      );
+      return ToolResult.success(toolName: 'get_chapters', message: '暂无章节');
     final info = chapters
         .map((c) => '- ${c.title}（${c.wordCount}字）')
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_chapters',
-      success: true,
       message: '章节列表（${chapters.length}章）：\n$info',
     );
   });
@@ -595,25 +515,22 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_chapter_content', (args) async {
     final title = args['chapter_title'] as String? ?? '';
     if (title.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'get_chapter_content',
-        success: false,
-        message: '章节标题不能为空',
+        error: '章节标题不能为空',
       );
     final chapters = await chapterRepo.getChaptersByNovel(novelId);
     final match = chapters.where((c) => c.title.contains(title));
     if (match.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'get_chapter_content',
-        success: false,
-        message: '未找到匹配的章节',
+        error: '未找到匹配的章节',
       );
     final chapter = match.first;
     final projectPath = await fs.getProjectDir(novelId, novelTitle);
     final content = await fs.readChapterContent(projectPath, chapter.id);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_chapter_content',
-      success: true,
       message: '【${chapter.title}】\n$content',
     );
   });
@@ -621,9 +538,8 @@ void registerAllToolExecutors({
   agent.registerExecutor('get_memory', (args) async {
     final memory = NovelMemory(novelId: novelId, novelTitle: novelTitle);
     final content = await memory.autoUpdate();
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_memory',
-      success: true,
       message: content.isEmpty ? '记忆包为空' : content,
     );
   });
@@ -635,11 +551,7 @@ void registerAllToolExecutors({
     final role = args['role'] as String?;
     final description = args['description'] as String?;
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'add_character',
-        success: false,
-        message: '角色名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_character', error: '角色名称不能为空');
     final characters = await materialRepo.getCharacters(novelId);
     characters.add(
       Character(
@@ -651,9 +563,8 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.saveCharacters(novelId, characters);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'add_character',
-      success: true,
       message: '已添加角色：$name',
     );
   });
@@ -663,11 +574,7 @@ void registerAllToolExecutors({
     final category = args['category'] as String?;
     final description = args['description'] as String?;
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'add_setting',
-        success: false,
-        message: '设定名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_setting', error: '设定名称不能为空');
     final settings = await materialRepo.getSettingCards(novelId);
     settings.add(
       SettingCard(
@@ -679,11 +586,7 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.saveSettingCards(novelId, settings);
-    return ToolResult(
-      toolName: 'add_setting',
-      success: true,
-      message: '已添加设定：$name',
-    );
+    return ToolResult.success(toolName: 'add_setting', message: '已添加设定：$name');
   });
 
   agent.registerExecutor('add_location', (args) async {
@@ -691,11 +594,7 @@ void registerAllToolExecutors({
     final category = args['category'] as String?;
     final description = args['description'] as String?;
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'add_location',
-        success: false,
-        message: '地点名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_location', error: '地点名称不能为空');
     final locations = await materialRepo.getLocations(novelId);
     locations.add(
       Location(
@@ -707,11 +606,7 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.saveLocations(novelId, locations);
-    return ToolResult(
-      toolName: 'add_location',
-      success: true,
-      message: '已添加地点：$name',
-    );
+    return ToolResult.success(toolName: 'add_location', message: '已添加地点：$name');
   });
 
   agent.registerExecutor('add_faction', (args) async {
@@ -720,11 +615,7 @@ void registerAllToolExecutors({
     final description = args['description'] as String?;
     final leader = args['leader'] as String?;
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'add_faction',
-        success: false,
-        message: '势力名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_faction', error: '势力名称不能为空');
     final factions = await materialRepo.getFactions(novelId);
     factions.add(
       Faction(
@@ -737,11 +628,7 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.saveFactions(novelId, factions);
-    return ToolResult(
-      toolName: 'add_faction',
-      success: true,
-      message: '已添加势力：$name',
-    );
+    return ToolResult.success(toolName: 'add_faction', message: '已添加势力：$name');
   });
 
   agent.registerExecutor('add_item', (args) async {
@@ -749,11 +636,7 @@ void registerAllToolExecutors({
     final category = args['category'] as String?;
     final description = args['description'] as String?;
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'add_item',
-        success: false,
-        message: '道具名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_item', error: '道具名称不能为空');
     final items = await materialRepo.getItems(novelId);
     items.add(
       Item(
@@ -765,22 +648,14 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.saveItems(novelId, items);
-    return ToolResult(
-      toolName: 'add_item',
-      success: true,
-      message: '已添加道具：$name',
-    );
+    return ToolResult.success(toolName: 'add_item', message: '已添加道具：$name');
   });
 
   agent.registerExecutor('add_hook', (args) async {
     final title = args['title'] as String? ?? '';
     final description = args['description'] as String?;
     if (title.isEmpty)
-      return ToolResult(
-        toolName: 'add_hook',
-        success: false,
-        message: '伏笔标题不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_hook', error: '伏笔标题不能为空');
     final hooks = await materialRepo.getPlotHooks(novelId);
     hooks.add(
       PlotHook(
@@ -791,22 +666,14 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.savePlotHooks(novelId, hooks);
-    return ToolResult(
-      toolName: 'add_hook',
-      success: true,
-      message: '已添加伏笔：$title',
-    );
+    return ToolResult.success(toolName: 'add_hook', message: '已添加伏笔：$title');
   });
 
   agent.registerExecutor('add_reference', (args) async {
     final title = args['title'] as String? ?? '';
     final content = args['content'] as String?;
     if (title.isEmpty)
-      return ToolResult(
-        toolName: 'add_reference',
-        success: false,
-        message: '参考标题不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_reference', error: '参考标题不能为空');
     final refs = await materialRepo.getReferences(novelId);
     refs.add(
       ReferenceMaterial(
@@ -817,9 +684,8 @@ void registerAllToolExecutors({
       ),
     );
     await materialRepo.saveReferences(novelId, refs);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'add_reference',
-      success: true,
       message: '已添加参考：$title',
     );
   });
@@ -829,18 +695,16 @@ void registerAllToolExecutors({
   agent.registerExecutor('update_character', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_character',
-        success: false,
-        message: '角色名称不能为空',
+        error: '角色名称不能为空',
       );
     final characters = await materialRepo.getCharacters(novelId);
     final idx = characters.indexWhere((c) => c.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_character',
-        success: false,
-        message: '未找到角色：$name',
+        error: '未找到角色：$name',
       );
     final old = characters[idx];
     if (args['role'] != null ||
@@ -861,9 +725,8 @@ void registerAllToolExecutors({
       );
     }
     await materialRepo.saveCharacters(novelId, characters);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'update_character',
-      success: true,
       message: '已更新角色：$name',
     );
   });
@@ -872,18 +735,16 @@ void registerAllToolExecutors({
     final title = args['title'] as String? ?? '';
     final status = args['status'] as String? ?? 'planted';
     if (title.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_hook_status',
-        success: false,
-        message: '伏笔标题不能为空',
+        error: '伏笔标题不能为空',
       );
     final hooks = await materialRepo.getPlotHooks(novelId);
     final idx = hooks.indexWhere((h) => h.title == title);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_hook_status',
-        success: false,
-        message: '未找到伏笔：$title',
+        error: '未找到伏笔：$title',
       );
     final isRevealed = status == 'resolved';
     hooks[idx] = PlotHook(
@@ -894,9 +755,8 @@ void registerAllToolExecutors({
       isRevealed: isRevealed,
     );
     await materialRepo.savePlotHooks(novelId, hooks);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'update_hook_status',
-      success: true,
       message: '已更新伏笔「$title」状态为：${isRevealed ? "已回收" : "待回收"}',
     );
   });
@@ -904,18 +764,13 @@ void registerAllToolExecutors({
   agent.registerExecutor('update_setting', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'update_setting',
-        success: false,
-        message: '设定名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'update_setting', error: '设定名称不能为空');
     final settings = await materialRepo.getSettingCards(novelId);
     final idx = settings.indexWhere((s) => s.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_setting',
-        success: false,
-        message: '未找到设定：$name',
+        error: '未找到设定：$name',
       );
     final old = settings[idx];
     settings[idx] = SettingCard(
@@ -927,9 +782,8 @@ void registerAllToolExecutors({
       tags: old.tags,
     );
     await materialRepo.saveSettingCards(novelId, settings);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'update_setting',
-      success: true,
       message: '已更新设定：$name',
     );
   });
@@ -937,18 +791,13 @@ void registerAllToolExecutors({
   agent.registerExecutor('update_location', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'update_location',
-        success: false,
-        message: '地点名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'update_location', error: '地点名称不能为空');
     final locations = await materialRepo.getLocations(novelId);
     final idx = locations.indexWhere((l) => l.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_location',
-        success: false,
-        message: '未找到地点：$name',
+        error: '未找到地点：$name',
       );
     final old = locations[idx];
     locations[idx] = Location(
@@ -962,9 +811,8 @@ void registerAllToolExecutors({
       tags: old.tags,
     );
     await materialRepo.saveLocations(novelId, locations);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'update_location',
-      success: true,
       message: '已更新地点：$name',
     );
   });
@@ -972,18 +820,13 @@ void registerAllToolExecutors({
   agent.registerExecutor('update_faction', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'update_faction',
-        success: false,
-        message: '势力名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'update_faction', error: '势力名称不能为空');
     final factions = await materialRepo.getFactions(novelId);
     final idx = factions.indexWhere((f) => f.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_faction',
-        success: false,
-        message: '未找到势力：$name',
+        error: '未找到势力：$name',
       );
     final old = factions[idx];
     factions[idx] = Faction(
@@ -998,9 +841,8 @@ void registerAllToolExecutors({
       tags: old.tags,
     );
     await materialRepo.saveFactions(novelId, factions);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'update_faction',
-      success: true,
       message: '已更新势力：$name',
     );
   });
@@ -1008,19 +850,11 @@ void registerAllToolExecutors({
   agent.registerExecutor('update_item', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'update_item',
-        success: false,
-        message: '道具名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'update_item', error: '道具名称不能为空');
     final items = await materialRepo.getItems(novelId);
     final idx = items.indexWhere((i) => i.name == name);
     if (idx < 0)
-      return ToolResult(
-        toolName: 'update_item',
-        success: false,
-        message: '未找到道具：$name',
-      );
+      return ToolResult.failure(toolName: 'update_item', error: '未找到道具：$name');
     final old = items[idx];
     final isKey = args['isKeyItem'] as bool?;
     items[idx] = Item(
@@ -1035,28 +869,22 @@ void registerAllToolExecutors({
       tags: old.tags,
     );
     await materialRepo.saveItems(novelId, items);
-    return ToolResult(
-      toolName: 'update_item',
-      success: true,
-      message: '已更新道具：$name',
-    );
+    return ToolResult.success(toolName: 'update_item', message: '已更新道具：$name');
   });
 
   agent.registerExecutor('update_reference', (args) async {
     final title = args['title'] as String? ?? '';
     if (title.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_reference',
-        success: false,
-        message: '参考标题不能为空',
+        error: '参考标题不能为空',
       );
     final refs = await materialRepo.getReferences(novelId);
     final idx = refs.indexWhere((r) => r.title == title);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'update_reference',
-        success: false,
-        message: '未找到参考：$title',
+        error: '未找到参考：$title',
       );
     final old = refs[idx];
     refs[idx] = ReferenceMaterial(
@@ -1068,9 +896,8 @@ void registerAllToolExecutors({
       sourceUrl: args['sourceUrl'] as String? ?? old.sourceUrl,
     );
     await materialRepo.saveReferences(novelId, refs);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'update_reference',
-      success: true,
       message: '已更新参考：$title',
     );
   });
@@ -1080,24 +907,21 @@ void registerAllToolExecutors({
   agent.registerExecutor('delete_character', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_character',
-        success: false,
-        message: '角色名称不能为空',
+        error: '角色名称不能为空',
       );
     final characters = await materialRepo.getCharacters(novelId);
     final idx = characters.indexWhere((c) => c.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_character',
-        success: false,
-        message: '未找到角色：$name',
+        error: '未找到角色：$name',
       );
     characters.removeAt(idx);
     await materialRepo.saveCharacters(novelId, characters);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'delete_character',
-      success: true,
       message: '已删除角色：$name',
     );
   });
@@ -1105,24 +929,18 @@ void registerAllToolExecutors({
   agent.registerExecutor('delete_setting', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'delete_setting',
-        success: false,
-        message: '设定名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'delete_setting', error: '设定名称不能为空');
     final settings = await materialRepo.getSettingCards(novelId);
     final idx = settings.indexWhere((s) => s.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_setting',
-        success: false,
-        message: '未找到设定：$name',
+        error: '未找到设定：$name',
       );
     settings.removeAt(idx);
     await materialRepo.saveSettingCards(novelId, settings);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'delete_setting',
-      success: true,
       message: '已删除设定：$name',
     );
   });
@@ -1130,24 +948,18 @@ void registerAllToolExecutors({
   agent.registerExecutor('delete_location', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'delete_location',
-        success: false,
-        message: '地点名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'delete_location', error: '地点名称不能为空');
     final locations = await materialRepo.getLocations(novelId);
     final idx = locations.indexWhere((l) => l.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_location',
-        success: false,
-        message: '未找到地点：$name',
+        error: '未找到地点：$name',
       );
     locations.removeAt(idx);
     await materialRepo.saveLocations(novelId, locations);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'delete_location',
-      success: true,
       message: '已删除地点：$name',
     );
   });
@@ -1155,24 +967,18 @@ void registerAllToolExecutors({
   agent.registerExecutor('delete_faction', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'delete_faction',
-        success: false,
-        message: '势力名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'delete_faction', error: '势力名称不能为空');
     final factions = await materialRepo.getFactions(novelId);
     final idx = factions.indexWhere((f) => f.name == name);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_faction',
-        success: false,
-        message: '未找到势力：$name',
+        error: '未找到势力：$name',
       );
     factions.removeAt(idx);
     await materialRepo.saveFactions(novelId, factions);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'delete_faction',
-      success: true,
       message: '已删除势力：$name',
     );
   });
@@ -1180,74 +986,47 @@ void registerAllToolExecutors({
   agent.registerExecutor('delete_item', (args) async {
     final name = args['name'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'delete_item',
-        success: false,
-        message: '道具名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'delete_item', error: '道具名称不能为空');
     final items = await materialRepo.getItems(novelId);
     final idx = items.indexWhere((i) => i.name == name);
     if (idx < 0)
-      return ToolResult(
-        toolName: 'delete_item',
-        success: false,
-        message: '未找到道具：$name',
-      );
+      return ToolResult.failure(toolName: 'delete_item', error: '未找到道具：$name');
     items.removeAt(idx);
     await materialRepo.saveItems(novelId, items);
-    return ToolResult(
-      toolName: 'delete_item',
-      success: true,
-      message: '已删除道具：$name',
-    );
+    return ToolResult.success(toolName: 'delete_item', message: '已删除道具：$name');
   });
 
   agent.registerExecutor('delete_hook', (args) async {
     final title = args['title'] as String? ?? '';
     if (title.isEmpty)
-      return ToolResult(
-        toolName: 'delete_hook',
-        success: false,
-        message: '伏笔标题不能为空',
-      );
+      return ToolResult.failure(toolName: 'delete_hook', error: '伏笔标题不能为空');
     final hooks = await materialRepo.getPlotHooks(novelId);
     final idx = hooks.indexWhere((h) => h.title == title);
     if (idx < 0)
-      return ToolResult(
-        toolName: 'delete_hook',
-        success: false,
-        message: '未找到伏笔：$title',
-      );
+      return ToolResult.failure(toolName: 'delete_hook', error: '未找到伏笔：$title');
     hooks.removeAt(idx);
     await materialRepo.savePlotHooks(novelId, hooks);
-    return ToolResult(
-      toolName: 'delete_hook',
-      success: true,
-      message: '已删除伏笔：$title',
-    );
+    return ToolResult.success(toolName: 'delete_hook', message: '已删除伏笔：$title');
   });
 
   agent.registerExecutor('delete_reference', (args) async {
     final title = args['title'] as String? ?? '';
     if (title.isEmpty)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_reference',
-        success: false,
-        message: '参考标题不能为空',
+        error: '参考标题不能为空',
       );
     final refs = await materialRepo.getReferences(novelId);
     final idx = refs.indexWhere((r) => r.title == title);
     if (idx < 0)
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'delete_reference',
-        success: false,
-        message: '未找到参考：$title',
+        error: '未找到参考：$title',
       );
     refs.removeAt(idx);
     await materialRepo.saveReferences(novelId, refs);
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'delete_reference',
-      success: true,
       message: '已删除参考：$title',
     );
   });
@@ -1259,9 +1038,8 @@ void registerAllToolExecutors({
     final hooks = await materialRepo.getPlotHooks(novelId);
     final characters = await materialRepo.getCharacters(novelId);
     final idleHooks = hooks.where((h) => !h.isRevealed).length;
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'analyze_plot_consistency',
-      success: true,
       message:
           '剧情一致性分析：\n- 章节数：${chapters.length}\n- 角色数：${characters.length}\n- 未回收伏笔：$idleHooks\n\n请根据以上数据和小说内容进行详细分析。',
     );
@@ -1271,9 +1049,8 @@ void registerAllToolExecutors({
     final hooks = await materialRepo.getPlotHooks(novelId);
     final planted = hooks.where((h) => !h.isRevealed).toList();
     if (planted.isEmpty)
-      return ToolResult(
+      return ToolResult.success(
         toolName: 'check_idle_hooks',
-        success: true,
         message: '没有未回收的伏笔',
       );
     final info = planted
@@ -1281,9 +1058,8 @@ void registerAllToolExecutors({
           (h) => '- ${h.title}（闲置${h.idleChapters}章）：${h.description ?? "无描述"}',
         )
         .join('\n');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'check_idle_hooks',
-      success: true,
       message: '闲置伏笔（${planted.length}个）：\n$info',
     );
   });
@@ -1294,9 +1070,8 @@ void registerAllToolExecutors({
     final recentTitles = chapters.length > 3
         ? chapters.sublist(chapters.length - 3).map((c) => c.title).join('、')
         : '无';
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'generate_chapter_outline',
-      success: true,
       message:
           '请根据以下信息生成下一章大纲：\n- 当前共${chapters.length}章\n- 最近章节：$recentTitles\n- 写作方向：${direction.isEmpty ? "无特殊要求" : direction}',
     );
@@ -1305,17 +1080,15 @@ void registerAllToolExecutors({
   agent.registerExecutor('character_relationship_map', (args) async {
     final characters = await materialRepo.getCharacters(novelId);
     if (characters.isEmpty)
-      return ToolResult(
+      return ToolResult.success(
         toolName: 'character_relationship_map',
-        success: true,
         message: '暂无角色',
       );
     final info = characters
         .map((c) => '${c.name}${c.role != null ? "(${c.role})" : ""}')
         .join('、');
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'character_relationship_map',
-      success: true,
       message: '角色列表：$info\n请根据小说内容分析角色之间的关系。',
     );
   });
@@ -1324,9 +1097,8 @@ void registerAllToolExecutors({
 
   agent.registerExecutor('get_skills', (args) async {
     final context = await skillRepo.getEnabledSkillsContext();
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'get_skills',
-      success: true,
       message: context.isEmpty ? '没有启用的Skill' : context,
     );
   });
@@ -1337,11 +1109,7 @@ void registerAllToolExecutors({
     final description = args['description'] as String? ?? '';
     final content = args['content'] as String? ?? '';
     if (name.isEmpty)
-      return ToolResult(
-        toolName: 'add_skill',
-        success: false,
-        message: 'Skill名称不能为空',
-      );
+      return ToolResult.failure(toolName: 'add_skill', error: 'Skill名称不能为空');
     final skill = skillRepo.createSkill(
       name: name,
       category: category,
@@ -1349,84 +1117,16 @@ void registerAllToolExecutors({
       content: content,
     );
     await skillRepo.addSkill(skill);
-    return ToolResult(
-      toolName: 'add_skill',
-      success: true,
-      message: '已添加Skill：$name',
-    );
+    return ToolResult.success(toolName: 'add_skill', message: '已添加Skill：$name');
   });
 
   // ====== 子代理和工作流 ======
 
-  agent.registerExecutor('delegate_to_sub_agent', (args) async {
-    final taskType = args['task_type'] as String? ?? '';
-    final instruction = args['instruction'] as String? ?? '';
-
-    if (instruction.isEmpty) {
-      return ToolResult(
-        toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '子代理指令不能为空',
-      );
-    }
-
-    final subAgent = fuzzyMatchAgent(taskType, presetAgents);
-    if (subAgent == null) {
-      final available = presetAgents
-          .map((a) => '  • ${a.id}（${a.name}）')
-          .join('\n');
-      return ToolResult(
-        toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '未找到匹配的子代理: "$taskType"\n\n可用的子代理：\n$available',
-      );
-    }
-
-    try {
-      final aiService = AiService();
-      String currentInstruction = instruction;
-      String? lastResult;
-
-      for (int round = 0; round < 3; round++) {
-        final prompt = round == 0
-            ? currentInstruction
-            : '请检查并优化你之前的结果。如有问题请修正，然后输出最终版本。\n\n之前的结果：\n$lastResult\n\n优化后的结果：';
-        final result = await aiService.send(
-          config: aiConfig,
-          systemPrompt:
-              '${subAgent.systemPrompt}\n\n你可以迭代优化你的输出。如果结果已经足够好，就直接确认。',
-          userMessage: prompt,
-          taskType: 'sub_agent:${subAgent.id}',
-        );
-        if (round == 0) {
-          lastResult = result;
-        } else {
-          if (result.isNotEmpty && lastResult != null) {
-            final diff =
-                (result.length - lastResult!.length).abs() / lastResult!.length;
-            if (diff < 0.05) {
-              lastResult = result;
-              break;
-            }
-          }
-          lastResult = result;
-        }
-      }
-
-      return ToolResult(
-        toolName: 'delegate_to_sub_agent',
-        success: true,
-        message: '【${subAgent.name}】返回结果：\n\n${lastResult ?? "（无输出）"}',
-        data: {'agent_name': subAgent.name, 'agent_id': subAgent.id},
-      );
-    } catch (e) {
-      return ToolResult(
-        toolName: 'delegate_to_sub_agent',
-        success: false,
-        message: '子代理「${subAgent.name}」执行失败: $e',
-      );
-    }
-  });
+  _registerDelegateToSubAgent(
+    agent: agent,
+    presetAgents: presetAgents,
+    aiConfig: aiConfig,
+  );
 
   agent.registerExecutor('run_workflow', (args) async {
     final workflowName = args['workflow_name'] as String? ?? '';
@@ -1434,10 +1134,9 @@ void registerAllToolExecutors({
         .where((w) => w.id == workflowName)
         .firstOrNull;
     if (workflow == null) {
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'run_workflow',
-        success: false,
-        message:
+        error:
             '未找到工作流：$workflowName\n可用工作流：${WorkflowPresets.all.map((w) => w.id).join(', ')}',
       );
     }
@@ -1458,9 +1157,8 @@ void registerAllToolExecutors({
       }
     }
 
-    return ToolResult(
+    return ToolResult.success(
       toolName: 'run_workflow',
-      success: true,
       message: '工作流「${workflow.name}」执行完成：\n\n${results.join('\n')}',
     );
   });
@@ -1472,33 +1170,29 @@ void registerAllToolExecutors({
       final chapterId = args['chapter_id'] as String? ?? '';
       final content = args['content'] as String? ?? '';
       if (chapterId.isEmpty)
-        return ToolResult(
+        return ToolResult.failure(
           toolName: 'write_chapter_content',
-          success: false,
-          message: '章节ID不能为空',
+          error: '章节ID不能为空',
         );
       final chapter = await chapterRepo.getChapter(chapterId);
       if (chapter == null)
-        return ToolResult(
+        return ToolResult.failure(
           toolName: 'write_chapter_content',
-          success: false,
-          message: '未找到章节：$chapterId',
+          error: '未找到章节：$chapterId',
         );
       final updatedChapter = chapter.copyWith(
         content: content,
         wordCount: content.length,
       );
       await chapterRepo.updateChapter(updatedChapter);
-      return ToolResult(
+      return ToolResult.success(
         toolName: 'write_chapter_content',
-        success: true,
         message: '已写入章节内容（${content.length}字）',
       );
     } catch (e) {
-      return ToolResult(
+      return ToolResult.failure(
         toolName: 'write_chapter_content',
-        success: false,
-        message: '写入失败: $e',
+        error: '写入失败: $e',
       );
     }
   });
@@ -1509,11 +1203,7 @@ void registerAllToolExecutors({
       final title = args['title'] as String? ?? '新章节';
       final content = args['content'] as String? ?? '';
       if (volumeId.isEmpty)
-        return ToolResult(
-          toolName: 'create_chapter',
-          success: false,
-          message: '卷ID不能为空',
-        );
+        return ToolResult.failure(toolName: 'create_chapter', error: '卷ID不能为空');
       final chapter = await chapterRepo.createChapter(
         novelId: novelId,
         volumeId: volumeId,
@@ -1526,18 +1216,13 @@ void registerAllToolExecutors({
         );
         await chapterRepo.updateChapter(updatedChapter);
       }
-      return ToolResult(
+      return ToolResult.success(
         toolName: 'create_chapter',
-        success: true,
         message: '已创建章节「$title」(ID: ${chapter.id})',
         data: {'chapter_id': chapter.id},
       );
     } catch (e) {
-      return ToolResult(
-        toolName: 'create_chapter',
-        success: false,
-        message: '创建失败: $e',
-      );
+      return ToolResult.failure(toolName: 'create_chapter', error: '创建失败: $e');
     }
   });
 }

@@ -52,9 +52,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     with WidgetsBindingObserver {
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
+  final ValueNotifier<bool> _hasTextNotifier = ValueNotifier<bool>(false);
   final List<AiChatSession> _sessions = [];
   AiChatSession? _currentSession;
   bool _isLoading = false;
+  bool _isCancelled = false;
   DateTime _lastProactiveCardTime = DateTime(2000); // 选择卡片冷却
 
   // 语音相关
@@ -66,9 +68,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
   // 深度思考内容：assistant消息索引 → 思考内容
   final Map<int, String> _thinkingContents = {};
 
-  // 展开的思考卡片索引
-  final Set<int> _expandedThinking = {};
-
   // 历史记录仓库
   final ChatHistoryRepository _historyRepo = ChatHistoryRepository();
   bool _isHistoryLoaded = false;
@@ -77,6 +76,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _inputCtrl.addListener(_onInputChanged);
     _initVoice();
     _loadHistory();
 
@@ -160,12 +160,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       _currentSession = session;
       _skillMatches.clear();
       _thinkingContents.clear();
-      _expandedThinking.clear();
     });
   }
 
   /// 停止AI生成
   void _stopGenerate() {
+    _isCancelled = true;
     setState(() {
       _isLoading = false;
     });
@@ -178,23 +178,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       }
     }
     _scrollToBottom();
-  }
-
-  /// 语音转文字输入
-  void _handleMic() async {
-    if (!_voiceService.isAvailable) {
-      TopNotification.show(context, '当前设备不支持语音识别', isSuccess: false);
-      return;
-    }
-    _voiceService.onResult = (text) {
-      if (text.isNotEmpty && mounted) {
-        setState(() {
-          _inputCtrl.text = _inputCtrl.text + text;
-        });
-      }
-    };
-    _voiceService.startListening();
-    TopNotification.success(context, '正在聆听...');
   }
 
   void _sendMessage() async {
@@ -214,23 +197,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     final canShowCard = now.difference(_lastProactiveCardTime).inSeconds > 30;
     if (canShowCard) {
       final detector = FuzzyNeedDetector();
+      final cachedUserMemory = await UserMemory.load().catchError((_) => '');
+      final selectedNovel = ref.read(selectedNovelProvider);
+      final cachedNovelContext = selectedNovel != null
+          ? await NovelMemory.getForAiContext(
+              selectedNovel.id,
+              selectedNovel.title,
+            ).catchError((_) => '')
+          : null;
       final fuzzyType = await detector.detect(
         text,
         config: config,
-        userMemory: await UserMemory.load().catchError((_) => ''),
-        novelContext: ref.read(selectedNovelProvider) != null
-            ? await NovelMemory.getForAiContext(
-                ref.read(selectedNovelProvider)!.id,
-                ref.read(selectedNovelProvider)!.title,
-              ).catchError((_) => '')
-            : null,
+        userMemory: cachedUserMemory,
+        novelContext: cachedNovelContext,
       );
+      if (!mounted) return;
 
       if (fuzzyType != null) {
         List<WritingSkill>? skills;
         try {
           final skillRepo = ref.read(skillRepoProvider);
           skills = await skillRepo.getAllSkills();
+          if (!mounted) return;
         } catch (e) {
           debugPrint('Load materials error: $e');
         }
@@ -239,15 +227,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           text,
           fuzzyType,
           config: config,
-          userMemory: await UserMemory.load().catchError((_) => ''),
-          novelContext: ref.read(selectedNovelProvider) != null
-              ? await NovelMemory.getForAiContext(
-                  ref.read(selectedNovelProvider)!.id,
-                  ref.read(selectedNovelProvider)!.title,
-                ).catchError((_) => '')
-              : null,
+          userMemory: cachedUserMemory,
+          novelContext: cachedNovelContext,
           availableSkills: skills,
         );
+        if (!mounted) return;
 
         if (question != null && mounted) {
           ProactiveSelection? selection;
@@ -277,6 +261,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
             : text;
       }
       _isLoading = true;
+      _isCancelled = false;
     });
     _inputCtrl.clear();
     _scrollToBottom();
@@ -377,6 +362,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         messages: _currentSession!.messages,
         systemPrompt: effectiveSystemPrompt,
       );
+      if (!mounted) return;
+      if (_isCancelled) return;
 
       setState(() {
         _currentSession!.messages.add({
@@ -419,6 +406,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         userMessage: toSummarize,
         taskType: 'chat',
       );
+      if (!mounted) return;
       setState(() {
         _currentSession!.messages = [
           {'role': 'user', 'content': '以下是之前的对话摘要，请据此回复用户后续的问题：\n$summary'},
@@ -440,13 +428,19 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     });
   }
 
+  void _onInputChanged() {
+    _hasTextNotifier.value = _inputCtrl.text.isNotEmpty;
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _inputCtrl.removeListener(_onInputChanged);
     _saveHistory();
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     _voiceService.dispose();
+    _hasTextNotifier.dispose();
     super.dispose();
   }
 
@@ -494,7 +488,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                       final matchedForThis = _skillMatches[index];
                       final thinkingForThis = _thinkingContents[index];
                       return _buildMessage(
-                        msg['content']!,
+                        msg['content'] ?? '',
                         isUser,
                         matchedForThis,
                         index,
@@ -673,71 +667,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     );
   }
 
-  /// 深度思考可折叠卡片
-  Widget _buildThinkingCard(int index, String thinkingContent) {
-    final isExpanded = _expandedThinking.contains(index);
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (isExpanded) {
-            _expandedThinking.remove(index);
-          } else {
-            _expandedThinking.add(index);
-          }
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12, left: 40),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: BorderRadius.circular(8),
-          border: Border(
-            left: BorderSide(color: _primaryColor.withOpacity(0.4), width: 3),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.psychology, size: 16, color: _textSecondary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    isExpanded ? '已深度思考（点击收起）' : '已深度思考（点击展开）',
-                    style: TextStyle(color: _textSecondary, fontSize: 13),
-                  ),
-                ),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  color: _textSecondary,
-                  size: 18,
-                ),
-              ],
-            ),
-            if (isExpanded) ...[
-              const SizedBox(height: 8),
-              Divider(height: 1, color: _cardBg2),
-              const SizedBox(height: 8),
-              SelectableText(
-                thinkingContent,
-                style: TextStyle(
-                  color: _textPrimary.withOpacity(0.75),
-                  fontSize: 14,
-                  height: 1.6,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   /// 加载中指示器
   Widget _buildTypingIndicator() {
     return Padding(
@@ -861,74 +790,82 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                     horizontal: 4,
                   ),
                 ),
-                onChanged: (_) => setState(() {}), // 输入时实时更新发送按钮状态
                 onSubmitted: (_) => _sendMessage(),
               ),
             ),
             // 发送/停止/语音按钮
-            _isLoading
-                ? Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE53935),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.stop_rounded,
-                        color: _textPrimary,
-                        size: 22,
-                      ),
-                      onPressed: _stopGenerate,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  )
-                : _inputCtrl.text.isNotEmpty
-                ? Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _primaryColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.send, color: _bgColor, size: 20),
-                      onPressed: _sendMessage,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  )
-                : Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.pink.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.favorite, color: Colors.pink, size: 20),
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => VoiceCallPage(
-                              onCallEnd: (t, a) {
-                                if (mounted) _inputCtrl.text = t;
-                              },
-                            ),
-                          ),
-                        );
-                        if (result != null && result.isNotEmpty && mounted)
-                          _inputCtrl.text = result;
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _hasTextNotifier,
+              builder: (context, hasText, child) {
+                return _buildActionButtons(hasText);
+              },
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 构建操作按钮（发送/停止/语音）
+  Widget _buildActionButtons(bool hasText) {
+    if (_isLoading) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE53935),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: IconButton(
+          icon: Icon(Icons.stop_rounded, color: _textPrimary, size: 22),
+          onPressed: _stopGenerate,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      );
+    }
+    if (hasText) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: _primaryColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: IconButton(
+          icon: Icon(Icons.send, color: _bgColor, size: 20),
+          onPressed: _sendMessage,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      );
+    }
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.pink.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: IconButton(
+        icon: Icon(Icons.favorite, color: Colors.pink, size: 20),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VoiceCallPage(
+                onCallEnd: (t, a) {
+                  if (mounted) _inputCtrl.text = t;
+                },
+              ),
+            ),
+          );
+          if (result != null && result.isNotEmpty && mounted) {
+            _inputCtrl.text = result;
+          }
+        },
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
       ),
     );
   }
@@ -1018,6 +955,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         type: FileType.custom,
         allowedExtensions: ['txt', 'md', 'docx', 'pdf'],
       );
+      if (!mounted) return;
 
       if (result == null || result.files.isEmpty) return;
 
@@ -1026,6 +964,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
 
       final file = File(filePath);
       if (!await file.exists()) return;
+      if (!mounted) return;
 
       // 读取文件内容
       String content = '';
@@ -1033,6 +972,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
 
       if (ext == 'txt' || ext == 'md') {
         content = await file.readAsString();
+        if (!mounted) return;
       } else {
         // 对于 docx/pdf，暂时只显示文件名
         TopNotification.show(context, '暂不支持该格式，请使用TXT文件');
@@ -1104,7 +1044,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
 
   /// 显示技能选择器
   void _showSkillsPicker() {
-    final skillsAsync = ref.watch(skillRepoProvider);
+    final skillsAsync = ref.read(skillRepoProvider);
 
     showModalBottomSheet(
       context: context,

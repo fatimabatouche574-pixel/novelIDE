@@ -11,6 +11,7 @@ import 'package:novel_ide/presentation/state/app_providers.dart';
 import 'package:novel_ide/data/services/notification_service.dart';
 import 'package:novel_ide/data/services/novel_memory.dart';
 import 'package:novel_ide/data/datasources/local_file_datasource.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/presentation/pages/ai/ai_drawer.dart';
 import 'package:novel_ide/presentation/pages/ai/search_drawer.dart';
@@ -157,10 +158,12 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       _novelTitle = novel.title;
       final fs = LocalFileDataSource();
       _projectPath = await fs.getProjectDir(widget.novelId, _novelTitle);
+      if (!mounted) return;
     }
     final chapter = await ref
         .read(chapterRepoProvider)
         .getChapter(widget.chapterId);
+    if (!mounted) return;
     if (chapter != null) {
       _currentChapter = chapter;
       _controller.text = chapter.content;
@@ -235,13 +238,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     _saveToTemp(_controller.text, widget.chapterId);
   }
 
-  void _saveToTemp(String content, String cid) {
+  Future<void> _saveToTemp(String content, String cid) async {
     try {
-      final d = Directory('/storage/emulated/0/NovelIDE/temp/');
-      if (!d.existsSync()) d.createSync(recursive: true);
-      File(
-        '/storage/emulated/0/NovelIDE/temp/' + cid + '.bak',
-      ).writeAsStringSync(
+      final d = await PublicStorageHelper.tempDir;
+      File('${d.path}/$cid.bak').writeAsStringSync(
         content.length > 100000 ? content.substring(0, 100000) : content,
       );
     } catch (_) {}
@@ -249,9 +249,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
   Future<void> _checkTempRecovery() async {
     try {
-      final f = File(
-        '/storage/emulated/0/NovelIDE/temp/' + widget.chapterId + '.bak',
-      );
+      final d = await PublicStorageHelper.tempDir;
+      final f = File('${d.path}/${widget.chapterId}.bak');
       if (!await f.exists()) return;
       final t = await f.readAsString();
       if (t.isEmpty || t == _controller.text) {
