@@ -33,6 +33,7 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     '伏笔',
     '参考',
     '记忆',
+    '写作清单',
   };
   // 记忆包内容
   String _memoryContent = '';
@@ -136,6 +137,7 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     final hooks = ref.watch(plotHooksProvider(selectedNovel.id));
     final references = ref.watch(referencesProvider(selectedNovel.id));
     final customFolders = ref.watch(customFoldersProvider);
+    final todos = ref.watch(todosProvider);
 
     // 构建文件树
     final treeNodes = _buildFileTree(
@@ -149,6 +151,7 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
       references: references,
       memoryContent: _memoryContent,
       customFolders: customFolders,
+      todos: todos,
     );
 
     final theme = Theme.of(context);
@@ -290,6 +293,7 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
     required List<ReferenceMaterial> references,
     required String memoryContent,
     required List<CustomMaterialFolder> customFolders,
+    required List<WritingTodo> todos,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return [
@@ -412,6 +416,30 @@ class _MaterialsTreePageState extends ConsumerState<MaterialsTreePage> {
                 name: '${r.title}.md',
                 content: _formatReferenceContent(r),
                 fileType: 'md',
+              ),
+            )
+            .toList(),
+      ),
+      // 写作清单
+      FileTreeNode(
+        id: 'folder_todos',
+        name: '写作清单 (${todos.length})',
+        isFolder: true,
+        isExpanded: _expandedNodes.contains('写作清单'),
+        children: todos
+            .map(
+              (t) => FileTreeNode(
+                id: 'todo_${t.id}',
+                parentType: 'todo',
+                name: '${t.isDone ? "✓ " : ""}${t.title}',
+                content: t.description,
+                icon: t.isDone
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                iconColor: t.isDone ? Colors.green : null,
+                fileType: 'todo',
+                badge: t.isDone ? '完成' : null,
+                badgeColor: t.isDone ? Colors.green : null,
               ),
             )
             .toList(),

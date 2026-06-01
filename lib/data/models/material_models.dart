@@ -550,3 +550,57 @@ class CustomMaterialItem {
         category: json['category'] as String?,
       );
 }
+
+/// 写作清单待办项
+class WritingTodo {
+  final String id;
+  final String novelId;
+  String title;
+  String? description;
+  bool isDone;
+  DateTime createdAt;
+
+  WritingTodo({
+    required this.id,
+    required this.novelId,
+    required this.title,
+    this.description,
+    this.isDone = false,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  WritingTodo copyWith({
+    String? id,
+    String? novelId,
+    String? title,
+    String? description,
+    bool? isDone,
+    DateTime? createdAt,
+  }) =>
+      WritingTodo(
+        id: id ?? this.id,
+        novelId: novelId ?? this.novelId,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        isDone: isDone ?? this.isDone,
+        createdAt: createdAt ?? this.createdAt,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'novelId': novelId,
+    'title': title,
+    'description': description,
+    'isDone': isDone,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory WritingTodo.fromJson(Map<String, dynamic> json) => WritingTodo(
+    id: json['id'] as String,
+    novelId: json['novelId'] as String,
+    title: json['title'] as String,
+    description: json['description'] as String?,
+    isDone: json['isDone'] as bool? ?? false,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
+}

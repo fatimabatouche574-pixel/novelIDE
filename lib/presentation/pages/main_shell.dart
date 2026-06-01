@@ -33,6 +33,7 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> {
   bool _sidebarOpen = false;
   bool _modelDropdownOpen = false;
+  bool _focusMode = false; // 专注模式：隐藏所有面板
 
   // 作品树展开状态
   final Set<String> _expandedNovels = {};
@@ -209,7 +210,13 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       backgroundColor: _bgColor,
-      body: Stack(
+      body: _focusMode
+          // 专注模式：隐藏所有面板，全屏聊天
+          ? GestureDetector(
+              onLongPress: () => setState(() => _focusMode = false),
+              child: AiChatPage(),
+            )
+          : Stack(
         children: [
           // 主内容区
           Column(
@@ -366,6 +373,14 @@ class _MainShellState extends ConsumerState<MainShell> {
                   _showCreateNovelDialog(context, ref);
                 }
               },
+            ),
+            // 专注模式
+            IconButton(
+              icon: Icon(
+                _focusMode ? Icons.fullscreen_exit : Icons.fullscreen,
+                color: textPrimary, size: 22,
+              ),
+              onPressed: () => setState(() => _focusMode = !_focusMode),
             ),
             // 设置按钮
             IconButton(

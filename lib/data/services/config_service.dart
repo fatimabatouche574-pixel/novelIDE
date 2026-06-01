@@ -24,7 +24,7 @@ class ConfigService {
   static set lineHeight(double value) => _box.put('lineHeight', value);
 
   // Word goal
-  static int get wordGoal => _box.get('wordGoal', defaultValue: 3000);
+  static int get wordGoal => _box.get('wordGoal', defaultValue: 5000);
   static set wordGoal(int value) => _box.put('wordGoal', value);
 
   // Streak

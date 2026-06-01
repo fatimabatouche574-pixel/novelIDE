@@ -59,6 +59,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     _loadChapterList();
     _loadTodayWords();
     _initSpeech();
+    // 崩溃恢复检查
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTempRecovery());
   }
 
   // --- Undo/Redo ---
@@ -97,6 +99,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   int _currentChapterIndex = 0;
   int todayWords = 0;
   int goal = 3000;
+  bool _showGoalPanel = true;
+  int _monthWords = 0;
 
   Future<void> _loadChapterList() async {
     final chapters = await ref
@@ -141,6 +145,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     try {
       todayWords = await ref.read(statsRepoProvider).getTodayWords();
       goal = ref.read(wordGoalProvider);
+      _monthWords = await ref.read(statsRepoProvider).getMonthWords();
+      if (mounted) setState(() {});
     } catch (_) {}
   }
 
@@ -198,12 +204,19 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     );
     await ref.read(chapterRepoProvider).updateChapter(updated, novel.title);
 
+    // 同步保存到 temp 文件（崩溃恢复用）
+    _saveToTemp(_controller.text, widget.chapterId);
+
     // Record daily word count delta (use _lastSavedWordCount guard to prevent double-counting)
     final delta = newWordCount - _lastSavedWordCount;
     if (delta > 0) {
       await ref.read(statsRepoProvider).recordWords(novel.id, delta);
       final todayWords = await ref.read(statsRepoProvider).getTodayWords();
       ref.read(todayWordsProvider.notifier).state = todayWords;
+      this.todayWords = todayWords;
+      // Refresh month words
+      _monthWords = await ref.read(statsRepoProvider).getMonthWords();
+      ref.read(monthWordsProvider.notifier).state = _monthWords;
       // Check if daily goal reached
       final goal = ref.read(wordGoalProvider);
       if (todayWords >= goal && todayWords - delta < goal) {
@@ -219,6 +232,40 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     // Auto-update novel memory file
     NovelMemory.invalidateCache();
     NovelMemory(novelId: widget.novelId, novelTitle: novel.title).autoUpdate();
+    _saveToTemp(_controller.text, widget.chapterId);
+  }
+
+  void _saveToTemp(String content, String cid) {
+    try {
+      final d = Directory('/storage/emulated/0/NovelIDE/temp/');
+      if (!d.existsSync()) d.createSync(recursive: true);
+      File('/storage/emulated/0/NovelIDE/temp/' + cid + '.bak').writeAsStringSync(
+        content.length > 100000 ? content.substring(0, 100000) : content,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _checkTempRecovery() async {
+    try {
+      final f = File('/storage/emulated/0/NovelIDE/temp/' + widget.chapterId + '.bak');
+      if (!await f.exists()) return;
+      final t = await f.readAsString();
+      if (t.isEmpty || t == _controller.text) { await f.delete(); return; }
+      if (!mounted) return;
+      final r = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('检测到未保存的内容'),
+          content: Text('上次编辑未保存（' + t.length.toString() + '字），恢复？'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('放弃')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('恢复')),
+          ],
+        ),
+      );
+      if (r == true && mounted) _controller.text = t;
+      await f.delete();
+    } catch (_) {}
   }
 
   void _createSnapshot() {
@@ -728,6 +775,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                 ],
               ),
             ),
+          // 写作目标面板
+          _buildGoalPanel(),
           Expanded(
             child: TextField(
               controller: _controller,
@@ -1074,6 +1123,190 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+
+  // ==================== 写作目标面板 ====================
+
+  Widget _buildGoalPanel() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final progress = goal > 0 ? (todayWords / goal).clamp(0.0, 1.0) : 0.0;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.45),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 标题栏（可折叠）
+          InkWell(
+            onTap: () => setState(() => _showGoalPanel = !_showGoalPanel),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.flag_outlined, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 6),
+                  Text(
+                    '写作目标',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$todayWords / $goal 字',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _showGoalPanel ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: Colors.grey[500],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 展开内容
+          if (_showGoalPanel) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: Column(
+                children: [
+                  // 进度条
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        todayWords >= goal
+                            ? Colors.green
+                            : colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // 统计信息行
+                  Row(
+                    children: [
+                      // 今日进度
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit_calendar,
+                              size: 14,
+                              color: Colors.grey[500],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '今日 $todayWords 字',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // 设置目标
+                      GestureDetector(
+                        onTap: _showGoalSettingDialog,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '目标 $goal',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // 月统计
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_month,
+                        size: 14,
+                        color: Colors.grey[500],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '本月 $_monthWords 字',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 设置每日写作目标
+  void _showGoalSettingDialog() {
+    final ctrl = TextEditingController(text: goal.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('设置每日目标'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '每日目标字数',
+            hintText: '例如：5000',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final newGoal = int.tryParse(ctrl.text.trim());
+              if (newGoal != null && newGoal > 0) {
+                goal = newGoal;
+                ref.read(wordGoalProvider.notifier).state = newGoal;
+              }
+              Navigator.pop(ctx);
+              if (mounted) setState(() {});
+            },
+            child: const Text('确定'),
+          ),
+        ],
       ),
     );
   }

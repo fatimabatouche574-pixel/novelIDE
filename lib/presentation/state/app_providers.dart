@@ -232,7 +232,7 @@ final effectiveAiConfigProvider = Provider<AiConfig?>((ref) {
 final isOnlineProvider = StateProvider<bool>((ref) => true);
 
 // Notifications
-final wordGoalProvider = StateProvider<int>((ref) => 3000);
+final wordGoalProvider = StateProvider<int>((ref) => ConfigService.wordGoal);
 final streakDaysProvider = StateProvider<int>((ref) => 0);
 
 // Navigation
@@ -318,6 +318,8 @@ Future<void> loadNovelMaterials(WidgetRef ref, String novelId) async {
     posMap[p.characterId] = Offset(p.x, p.y);
   }
   ref.read(relationshipPositionsProvider(novelId).notifier).state = posMap;
+  // V5: Todos
+  ref.read(todosProvider.notifier).state = await repo.getTodos(novelId);
 }
 
 /// Load all data on app startup
@@ -331,6 +333,10 @@ Future<void> loadAllData(WidgetRef ref) async {
 final statsRepoProvider = Provider((ref) => StatsRepository());
 final todayWordsProvider = StateProvider<int>((ref) => 0);
 final totalWordsProvider = StateProvider<int>((ref) => 0);
+final monthWordsProvider = StateProvider<int>((ref) => 0);
+
+// --- Writing Todos ---
+final todosProvider = StateProvider<List<WritingTodo>>((ref) => []);
 
 // --- Shared State for GPT-style UI ---
 /// 当前会话ID（用于 MainShell 和 AiChatPage 共享状态）

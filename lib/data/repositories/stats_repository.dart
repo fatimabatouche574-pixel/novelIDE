@@ -74,6 +74,20 @@ class StatsRepository {
   Future<int> getTotalWords() async {
     return await _db.getTotalWords();
   }
+
+  /// Get current month's total word count.
+  Future<int> getMonthWords() async {
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final startDate = DateFormat('yyyy-MM-dd').format(firstDay);
+    final endDate = DateFormat('yyyy-MM-dd').format(now);
+    final rows = await _db.getDailyWords(startDate: startDate, endDate: endDate);
+    int total = 0;
+    for (final row in rows) {
+      total += row['word_count'] as int;
+    }
+    return total;
+  }
 }
 
 class DailyStat {

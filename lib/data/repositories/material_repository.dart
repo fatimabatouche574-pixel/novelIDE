@@ -211,4 +211,23 @@ class MaterialRepository {
     final file = File(p.join(dir.path, '${novelId}_relationships.json'));
     await file.writeAsString(jsonEncode(data.toJson()), encoding: utf8);
   }
+
+  // --- V5: Writing Todos ---
+  Future<List<WritingTodo>> getTodos(String novelId) async {
+    final dir = await _getMaterialsDir(novelId);
+    final file = File(p.join(dir.path, '${novelId}_todos.json'));
+    if (!await file.exists()) return [];
+    final content = await file.readAsString(encoding: utf8);
+    final list = jsonDecode(content) as List<dynamic>;
+    return list
+        .map((j) => WritingTodo.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> saveTodos(String novelId, List<WritingTodo> todos) async {
+    final dir = await _getMaterialsDir(novelId);
+    final file = File(p.join(dir.path, '${novelId}_todos.json'));
+    final json = todos.map((t) => t.toJson()).toList();
+    await file.writeAsString(jsonEncode(json), encoding: utf8);
+  }
 }
