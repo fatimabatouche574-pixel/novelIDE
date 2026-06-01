@@ -147,8 +147,9 @@
 │  │ volumes    │ │ settings   │ │ user   │ │        │ │        │     │
 │  └────────────┘ └────────────┘ └────────┘ └────────┘ └────────┘     │
 │                                                                        │
-│  SQLite：novels/volumes/chapters/ai_configs                            │
+│  SQLite：novels/volumes/chapters/ai_configs/memories/memory_links     │
 │  SecureStorage：API Keys（Keychain/EncryptedSharedPreferences）        │
+│  记忆系统：结构化记忆表+标签+关联图谱+向量嵌入框架                      │
 └────────────────────────────────────────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════════
@@ -180,20 +181,22 @@
                         关 键 文 件 清 单
 ═══════════════════════════════════════════════════════════════════════════
  lib/presentation/pages/main_shell.dart       — 主壳（侧边栏+聊天区）
+ lib/presentation/pages/app_content.dart      — 主内容区（Tab切换+屏幕缓存）
+ lib/presentation/pages/drawer_content.dart   — 侧边栏内容（分组导航）
+ lib/presentation/pages/phone_layout.dart     — 手机端手势布局
  lib/presentation/pages/ai/ai_chat_page.dart  — AI聊天页（消息流+发送）
  lib/data/services/workspace_agent.dart       — 主Agent（调度中心）
- lib/data/services/agent_tool_executors.dart  — 工具执行器（30+工具）
- lib/data/services/workflow_engine.dart       — 工作流引擎
+ lib/data/services/agent_tool_executors.dart  — 工具执行器（40+工具）
  lib/data/services/ai_service.dart            — 统一AI API
- lib/data/services/web_search_service.dart    — 联网搜索
- lib/data/services/voice_service.dart         — 语音TTS/STT
- lib/data/services/fuzzy_need_detector.dart   — 模糊需求检测
- lib/presentation/widgets/file_tree_view.dart — 通用文件树组件
- lib/presentation/widgets/proactive_question_dialog.dart — 选择卡片
- lib/data/repositories/material_repository.dart — 资料仓库
- lib/data/datasources/public_storage_helper.dart — 公共存储路径
- PROJECT_RULES.md                             — 项目铁律（17条）
+ lib/data/services/chat/xml_tool_call_parser.dart — XML工具调用解析器
+ lib/data/models/tool_parameter_schema.dart   — 工具参数结构化定义+校验+Hook
+ lib/data/models/memory/memory_entity.dart    — 记忆实体（Memory/Link/Tag）
+ lib/data/models/memory/memory_repository.dart — 记忆仓库（CRUD+搜索+图谱）
+ lib/data/models/memory/embedding.dart        — 向量嵌入+余弦相似度
+ lib/presentation/widgets/explorer/           — 工作树组件（ExplorerPanel等6个）
+ lib/presentation/state/explorer_provider.dart — 工作树Riverpod状态管理
+ lib/domain/services/file_operation_service.dart — 文件操作服务
 
 ---
 
-*最后更新：2026-06-01*
+*最后更新：2026-06-02*

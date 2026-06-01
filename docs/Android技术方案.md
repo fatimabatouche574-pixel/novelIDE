@@ -41,7 +41,10 @@ Android版可以独立完成：
 | 语音输入 | **speech_to_text** | 语音转文字输入（麦克风按钮） |
 | 语音通话 | **Android原生TTS (MethodChannel)** | 实时语音通话界面，零额外依赖 |
 | 写作技能 | **Skill系统 (writing_skill_model.dart)** | AI自动识别写作场景，加载对应技能提示词 |
-| Agent工具 | **35+工具执行器 (agent_tool_executors.dart)** | 章节/资料/AI/搜索/导出/删除/更新全覆盖 |
+| Agent工具 | **40+工具执行器 (agent_tool_executors.dart)** | 章节/资料/AI/搜索/导出/删除/更新全覆盖 |
+| 工具定义 | **ToolParameterSchema** | 结构化参数定义+类型校验+Hook生命周期 |
+| XML降级 | **XmlToolCallParser** | 不支持function calling的模型用XML格式调工具 |
+| 记忆系统 | **MemoryRepository** | 结构化SQLite记忆（标签/关联图谱/语义搜索） |
 | 工作流引擎 | **workflow_engine.dart** | 多步任务自动化流水线 |
 | 网络 | Dio | 直接请求用户配置的AI API、搜索API |
 | 安全 | flutter_secure_storage | API Key加密 |
