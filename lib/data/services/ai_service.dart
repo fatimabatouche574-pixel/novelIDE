@@ -88,12 +88,12 @@ class AiService {
         data: _buildPayload(config, messages),
       );
 
-      final content = _parseResponse(config, response);
+      final parsed = _parseResponse(config, response);
 
       // Track usage
       final usage = response.data['usage'];
       final tokenCount =
-          (usage?['total_tokens'] as int?) ?? content.length ~/ 2;
+          (usage?['total_tokens'] as int?) ?? parsed.content.length ~/ 2;
       _costTracker.recordUsage(
         configId: config.id,
         model: config.modelName,
@@ -101,7 +101,7 @@ class AiService {
         tokenCount: tokenCount,
       );
 
-      return content;
+      return parsed.content;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       final respBody = e.response?.data?.toString() ?? '';
@@ -211,16 +211,28 @@ class AiService {
     return payload;
   }
 
-  String _parseResponse(AiConfig config, dynamic response) {
+  ({String content, String? thinkingContent}) _parseResponse(
+    AiConfig config,
+    dynamic response,
+  ) {
     if (config.protocol == ApiProtocol.anthropic) {
       final content = response.data['content'];
       if (content is List && content.isNotEmpty) {
-        return content[0]['text'] ?? '生成失败';
+        return (
+          content: content[0]['text'] ?? '生成失败',
+          thinkingContent: content[0]['thinking'] as String?,
+        );
       }
-      return '生成失败，请检查API配置';
+      return (content: '生成失败，请检查API配置', thinkingContent: null);
     }
-    return response.data['choices']?[0]?['message']?['content'] ??
-        '生成失败，请检查API配置';
+    final message = response.data['choices']?[0]?['message'];
+    final thinkingContent =
+        message?['reasoning_content'] as String? ??
+        message?['thinking'] as String?;
+    return (
+      content: message?['content'] ?? '生成失败，请检查API配置',
+      thinkingContent: thinkingContent,
+    );
   }
 
   /// Convenience: send with system prompt + user message.
@@ -286,6 +298,11 @@ class AiService {
       final message = choice?['message'];
       final content = message?['content'] as String?;
 
+      // Extract thinking content (DeepSeek reasoning_content, etc.)
+      final thinkingContent =
+          message?['reasoning_content'] as String? ??
+          message?['thinking'] as String?;
+
       // Parse tool_calls
       List<ToolCallInfo>? toolCalls;
       if (withTools) {
@@ -305,7 +322,11 @@ class AiService {
         }
       }
 
-      return _ToolChatResponse(content: content, toolCalls: toolCalls);
+      return _ToolChatResponse(
+        content: content,
+        toolCalls: toolCalls,
+        thinkingContent: thinkingContent,
+      );
     }
 
     try {
@@ -488,8 +509,9 @@ class AiService {
 class _ToolChatResponse {
   final String? content;
   final List<ToolCallInfo>? toolCalls;
+  final String? thinkingContent;
 
-  const _ToolChatResponse({this.content, this.toolCalls});
+  const _ToolChatResponse({this.content, this.toolCalls, this.thinkingContent});
 }
 
 /// Tool call info parsed from API response

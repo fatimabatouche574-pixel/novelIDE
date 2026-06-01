@@ -418,6 +418,12 @@ class WorkspaceAgent {
       parameters: {'novel_id': '小说ID'},
       category: ToolCategories.project,
     ),
+    AgentTool(
+      name: 'web_search',
+      description: '联网搜索获取实时信息，用于查询写作参考资料、事实核查、知识查询等',
+      parameters: {'query': '搜索关键词'},
+      category: ToolCategories.project,
+    ),
 
     // ====== 编辑器工具 ======
     AgentTool(
@@ -471,7 +477,10 @@ class WorkspaceAgent {
     String? systemPrompt,
     int maxToolRounds = 5,
   }) async {
-    final effectiveSystemPrompt = systemPrompt ?? _defaultSystemPrompt;
+    // Agent系统提示始终作为基础，自定义提示作为角色补充
+    final effectiveSystemPrompt = systemPrompt != null
+        ? '$_defaultSystemPrompt\n\n---\n用户自定义角色设定：\n$systemPrompt'
+        : _defaultSystemPrompt;
 
     // 构建轻量消息列表
     List<Map<String, dynamic>> apiMessages = [
@@ -563,6 +572,7 @@ class WorkspaceAgent {
         // 没有工具调用，返回最终回复
         return AgentResponse(
           content: response.content ?? '',
+          thinkingContent: response.thinkingContent,
           toolCalls: toolCalls,
           toolResults: toolResults,
         );
@@ -600,7 +610,10 @@ class WorkspaceAgent {
     required List<Map<String, String>> messages,
     String? systemPrompt,
   }) async {
-    final effectiveSystemPrompt = systemPrompt ?? _defaultSystemPrompt;
+    // Agent系统提示始终作为基础，自定义提示作为角色补充
+    final effectiveSystemPrompt = systemPrompt != null
+        ? '$_defaultSystemPrompt\n\n---\n用户自定义角色设定：\n$systemPrompt'
+        : _defaultSystemPrompt;
 
     final conversationText = messages
         .map((m) => '${m["role"]}: ${m["content"]}')
@@ -615,24 +628,35 @@ class WorkspaceAgent {
   }
 
   static const String _defaultSystemPrompt =
-      '''你是一个全能AI写作助手（Workspace Agent），是网文AI IDE的核心。
+      '''你是 NovelIDE 的主智能体（Main Agent / Orchestrator），是网文写作AI IDE的总控。
 
-你的能力：
-1. 读取小说的全部数据（角色、设定、地点、伏笔、章节、记忆包）
-2. 操作资料库（添加角色、设定、地点、伏笔）
-3. 分析章节内容，给出写作建议
-4. 检查伏笔状态，提醒闲置伏笔
-5. 帮助构思剧情、生成大纲
-6. 管理AI模型配置
-7. 创建和管理小说项目
-8. 直接编辑和创建章节内容
+你的身份：你不是被动的问答机器人，你是拥有完整工具调用能力的自主Agent。用户只需表达意图，你来拆解执行。
 
-工作原则：
-- 主动分析小说状态，发现潜在问题
-- 需要操作时直接调用工具，不要让用户手动操作
-- 给出具体可操作的建议
-- 保持创作连贯性，参考已有设定
-- 用中文回复，语气友好专业''';
+你的核心原则：
+1. 先理解再行动：通过对话了解用户真实需求（在写小说？找灵感？修改旧文？），然后自主决定调用什么工具
+2. 不推销不预设：用户没说要写大纲就不要推荐大纲，用户没说要写文章就不要问写什么文章。保持纯净对话
+3. 工具优先：能调用工具获取的信息就调用工具，不要猜测
+4. 结果导向：直接交付结果，不要说"我无法操作你的设备"
+
+你能调用的工具类别：
+- 读取：get_novel_info, get_chapters, get_chapter_content, get_characters, get_settings, get_locations, get_factions, get_items, get_hooks, get_references, get_memory, get_skills, get_ai_configs, list_novels
+- 写入：add_character, add_setting, add_location, add_faction, add_item, add_hook, add_reference, add_skill, add_ai_config, create_novel, create_chapter, write_chapter_content
+- 编辑：update_character, update_setting, update_location, update_faction, update_item, update_hook, update_reference, update_hook_status, delete_character, delete_setting, delete_location, delete_faction, delete_item, delete_hook, delete_reference
+- 分析：analyze_plot_consistency, check_idle_hooks, generate_chapter_outline, character_relationship_map, humanize_text
+- 调度：delegate_to_sub_agent（派任务给子Agent）、run_workflow（触发自动化工作流）
+- 配置：set_active_ai_config, switch_novel
+
+典型工作流示例：
+- 用户说"帮我看看现有的角色" → 调用 get_characters → 展示结果
+- 用户说"把刚才讨论的角色加到资料库" → 调用 add_character
+- 用户说"帮我查一下xxx" → 调用联网搜索（如有）
+- 用户说"分析我的小说有没有Bug" → 调用 analyze_plot_consistency + check_idle_hooks + character_relationship_map
+
+回复风格：
+- 用中文，简洁有力
+- 不要过度承诺能力，实事求是
+- 遇到不确定的情况，坦诚说明并提出替代方案
+- 工具执行结果有误差时，告知用户并寻求确认''';
 }
 
 /// Agent响应结果
@@ -640,10 +664,12 @@ class AgentResponse {
   final String content;
   final Map<String, String> toolCalls;
   final List<ToolResult> toolResults;
+  final String? thinkingContent;
 
   const AgentResponse({
     required this.content,
     this.toolCalls = const {},
     this.toolResults = const [],
+    this.thinkingContent,
   });
 }

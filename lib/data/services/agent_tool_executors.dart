@@ -1,5 +1,6 @@
 import 'package:novel_ide/data/models/material_models.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
+import 'package:novel_ide/data/models/tomato_agent_model.dart';
 import 'package:novel_ide/data/repositories/material_repository.dart';
 import 'package:novel_ide/data/repositories/chapter_repository.dart';
 import 'package:novel_ide/data/repositories/skill_repository.dart';
@@ -7,8 +8,10 @@ import 'package:novel_ide/data/repositories/novel_repository.dart';
 import 'package:novel_ide/data/datasources/local_file_datasource.dart';
 import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/data/datasources/secure_storage_datasource.dart';
+import 'package:novel_ide/data/services/ai_service.dart';
 import 'package:novel_ide/data/services/novel_memory.dart';
 import 'package:novel_ide/data/services/workspace_agent.dart';
+import 'package:novel_ide/data/services/web_search_service.dart';
 import 'package:novel_ide/data/services/config_service.dart';
 import 'package:novel_ide/data/services/workflow_engine.dart';
 import 'package:uuid/uuid.dart';
@@ -16,6 +19,8 @@ import 'package:uuid/uuid.dart';
 /// 注册通用工具执行器（不需要小说上下文）
 void registerGeneralToolExecutors({
   required WorkspaceAgent agent,
+  required List<TomatoAgent> presetAgents,
+  required AiConfig aiConfig,
   Function(String)? onSwitchNovel,
   Function(String novelId, String novelTitle)? onNovelCreated,
 }) {
@@ -231,6 +236,56 @@ void registerGeneralToolExecutors({
     }
   });
 
+  // ====== 子代理调度 ======
+
+  agent.registerExecutor('delegate_to_sub_agent', (args) async {
+    final taskType = args['task_type'] as String? ?? '';
+    final instruction = args['instruction'] as String? ?? '';
+
+    final subAgent = presetAgents.where((a) => a.id == taskType).firstOrNull;
+    if (subAgent == null) {
+      final available = presetAgents
+          .map((a) => '${a.id}(${a.name})')
+          .join(', ');
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '未找到子代理类型: $taskType\n可用的子代理: $available',
+      );
+    }
+
+    if (instruction.isEmpty) {
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '子代理指令不能为空',
+      );
+    }
+
+    try {
+      final aiService = AiService();
+      final result = await aiService.send(
+        config: aiConfig,
+        systemPrompt: subAgent.systemPrompt,
+        userMessage: instruction,
+        taskType: 'sub_agent:$taskType',
+      );
+
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: true,
+        message: '【${subAgent.name}】返回结果：\n\n$result',
+        data: {'agent_name': subAgent.name, 'agent_id': subAgent.id},
+      );
+    } catch (e) {
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '子代理「${subAgent.name}」执行失败: $e',
+      );
+    }
+  });
+
   // ====== 文本处理工具 ======
 
   agent.registerExecutor('humanize_text', (args) async {
@@ -249,6 +304,50 @@ void registerGeneralToolExecutors({
       message: '请根据工具描述中的Humanizer规则，对以下文本进行去AI味改写：\n\n$text',
     );
   });
+
+  // ====== 联网搜索工具 ======
+
+  agent.registerExecutor('web_search', (args) async {
+    try {
+      final query = args['query'] as String? ?? '';
+      if (query.isEmpty) {
+        return ToolResult(
+          toolName: 'web_search',
+          success: false,
+          message: '请提供搜索关键词',
+        );
+      }
+      final results = await WebSearchService.search(query);
+      if (results.isEmpty) {
+        return ToolResult(
+          toolName: 'web_search',
+          success: true,
+          message: '未找到与「$query」相关的搜索结果。',
+        );
+      }
+      final buffer = StringBuffer('搜索「$query」的结果（共${results.length}条）：\n\n');
+      for (int i = 0; i < results.length; i++) {
+        final r = results[i];
+        buffer.writeln('${i + 1}. ${r.title}');
+        buffer.writeln('   ${r.snippet}');
+        if (r.url.isNotEmpty) {
+          buffer.writeln('   ${r.url}');
+        }
+        buffer.writeln();
+      }
+      return ToolResult(
+        toolName: 'web_search',
+        success: true,
+        message: buffer.toString(),
+      );
+    } catch (e) {
+      return ToolResult(
+        toolName: 'web_search',
+        success: false,
+        message: '搜索失败: $e',
+      );
+    }
+  });
 }
 
 /// 注册所有Agent工具执行器
@@ -257,6 +356,8 @@ void registerAllToolExecutors({
   required WorkspaceAgent agent,
   required String novelId,
   required String novelTitle,
+  required List<TomatoAgent> presetAgents,
+  required AiConfig aiConfig,
 }) {
   final materialRepo = MaterialRepository();
   final chapterRepo = ChapterRepository();
@@ -1200,11 +1301,52 @@ void registerAllToolExecutors({
   agent.registerExecutor('delegate_to_sub_agent', (args) async {
     final taskType = args['task_type'] as String? ?? '';
     final instruction = args['instruction'] as String? ?? '';
-    return ToolResult(
-      toolName: 'delegate_to_sub_agent',
-      success: true,
-      message: '子代理任务已接收：\n- 类型：$taskType\n- 指令：$instruction\n\n请根据指令执行任务。',
-    );
+
+    // 根据 task_type 匹配预设 Agent
+    final subAgent = presetAgents.where((a) => a.id == taskType).firstOrNull;
+    if (subAgent == null) {
+      final available = presetAgents
+          .map((a) => '${a.id}(${a.name})')
+          .join(', ');
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '未找到子代理类型: $taskType\n可用的子代理: $available',
+      );
+    }
+
+    if (instruction.isEmpty) {
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '子代理指令不能为空',
+      );
+    }
+
+    try {
+      // 使用子Agent的systemPrompt，直接发送指令
+      // 子Agent只做文本处理，没有工具
+      final aiService = AiService();
+      final result = await aiService.send(
+        config: aiConfig,
+        systemPrompt: subAgent.systemPrompt,
+        userMessage: instruction,
+        taskType: 'sub_agent:$taskType',
+      );
+
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: true,
+        message: '【${subAgent.name}】返回结果：\n\n$result',
+        data: {'agent_name': subAgent.name, 'agent_id': subAgent.id},
+      );
+    } catch (e) {
+      return ToolResult(
+        toolName: 'delegate_to_sub_agent',
+        success: false,
+        message: '子代理「${subAgent.name}」执行失败: $e',
+      );
+    }
   });
 
   agent.registerExecutor('run_workflow', (args) async {

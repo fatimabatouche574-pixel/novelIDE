@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
-import 'package:novel_ide/data/models/tomato_agent_model.dart';
 import 'package:novel_ide/data/models/ai_chat_session_model.dart';
 import 'package:novel_ide/data/models/proactive_question_model.dart';
 import 'package:novel_ide/data/models/writing_skill_model.dart';
@@ -19,17 +18,11 @@ import 'package:novel_ide/data/services/voice_service.dart';
 import 'package:novel_ide/data/services/skill_matcher.dart';
 import 'package:novel_ide/data/services/fuzzy_need_detector.dart';
 import 'package:novel_ide/data/repositories/chat_history_repository.dart';
-import 'package:novel_ide/presentation/pages/ai/voice_call_page.dart';
-import 'package:novel_ide/presentation/pages/ai/full_text_review_page.dart';
-import 'package:novel_ide/presentation/pages/ai/polish_engine_page.dart';
-import 'package:novel_ide/presentation/pages/writing/proofread_page.dart';
-import 'package:novel_ide/presentation/pages/stats/stats_page.dart';
-import 'package:novel_ide/presentation/pages/profile/profile_page.dart';
-import 'package:novel_ide/presentation/pages/tomato/agent_marketplace_page.dart';
 import 'package:novel_ide/presentation/widgets/top_notification.dart';
 import 'package:novel_ide/presentation/widgets/skill_indicator.dart';
 import 'package:novel_ide/presentation/widgets/proactive_question_dialog.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
+import 'package:novel_ide/presentation/pages/ai/voice_call_page.dart';
 
 /// AI chat session model.
 class AiChatSession {
@@ -62,12 +55,19 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
   final List<AiChatSession> _sessions = [];
   AiChatSession? _currentSession;
   bool _isLoading = false;
+  DateTime _lastProactiveCardTime = DateTime(2000); // 选择卡片冷却
 
   // 语音相关
   final VoiceService _voiceService = VoiceService();
 
   // 技能匹配记录：assistant消息索引 → 匹配到的技能列表
   final Map<int, List<WritingSkill>> _skillMatches = {};
+
+  // 深度思考内容：assistant消息索引 → 思考内容
+  final Map<int, String> _thinkingContents = {};
+
+  // 展开的思考卡片索引
+  final Set<int> _expandedThinking = {};
 
   // 历史记录仓库
   final ChatHistoryRepository _historyRepo = ChatHistoryRepository();
@@ -159,6 +159,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       _sessions.insert(0, session);
       _currentSession = session;
       _skillMatches.clear();
+      _thinkingContents.clear();
+      _expandedThinking.clear();
     });
   }
 
@@ -190,32 +192,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       return;
     }
 
-    // 模糊需求检测
-    final detector = FuzzyNeedDetector();
-    final fuzzyType = await detector.detect(
-      text,
-      config: config,
-      userMemory: await UserMemory.load().catchError((_) => ''),
-      novelContext: ref.read(selectedNovelProvider) != null
-          ? await NovelMemory.getForAiContext(
-              ref.read(selectedNovelProvider)!.id,
-              ref.read(selectedNovelProvider)!.title,
-            ).catchError((_) => '')
-          : null,
-    );
-
-    if (fuzzyType != null) {
-      List<WritingSkill>? skills;
-      try {
-        final skillRepo = ref.read(skillRepoProvider);
-        skills = await skillRepo.getAllSkills();
-      } catch (e) {
-        debugPrint('Load materials error: $e');
-      }
-
-      final question = await detector.generateQuestion(
+    // 模糊需求检测（带30秒冷却，避免频繁弹窗）
+    final now = DateTime.now();
+    final canShowCard = now.difference(_lastProactiveCardTime).inSeconds > 30;
+    if (canShowCard) {
+      final detector = FuzzyNeedDetector();
+      final fuzzyType = await detector.detect(
         text,
-        fuzzyType,
         config: config,
         userMemory: await UserMemory.load().catchError((_) => ''),
         novelContext: ref.read(selectedNovelProvider) != null
@@ -224,25 +207,47 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                 ref.read(selectedNovelProvider)!.title,
               ).catchError((_) => '')
             : null,
-        availableSkills: skills,
       );
 
-      if (question != null && mounted) {
-        ProactiveSelection? selection;
-        await ProactiveQuestionDialog.show(
-          context,
-          question: question,
-          onSelected: (s) => selection = s,
-          onSkipped: () => selection = null,
+      if (fuzzyType != null) {
+        List<WritingSkill>? skills;
+        try {
+          final skillRepo = ref.read(skillRepoProvider);
+          skills = await skillRepo.getAllSkills();
+        } catch (e) {
+          debugPrint('Load materials error: $e');
+        }
+
+        final question = await detector.generateQuestion(
+          text,
+          fuzzyType,
+          config: config,
+          userMemory: await UserMemory.load().catchError((_) => ''),
+          novelContext: ref.read(selectedNovelProvider) != null
+              ? await NovelMemory.getForAiContext(
+                  ref.read(selectedNovelProvider)!.id,
+                  ref.read(selectedNovelProvider)!.title,
+                ).catchError((_) => '')
+              : null,
+          availableSkills: skills,
         );
 
-        if (selection != null) {
-          _inputCtrl.text = '$text\n\n[用户选择：${selection!.toAiContext()}]';
+        if (question != null && mounted) {
+          ProactiveSelection? selection;
+          await ProactiveQuestionDialog.show(
+            context,
+            question: question,
+            onSelected: (s) => selection = s,
+            onSkipped: () => selection = null,
+          );
+
+          if (selection != null) {
+            _inputCtrl.text = '$text\n\n[用户选择：${selection!.toAiContext()}]';
+          }
         }
       }
+      _lastProactiveCardTime = now; // 更新冷却时间戳
     }
-
-    final shouldTriggerAgent = detector.shouldTriggerWorkspaceAgent(text);
 
     setState(() {
       _currentSession!.messages.add({
@@ -261,9 +266,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
 
     try {
       final preset = ref.read(currentPresetProvider);
+      // Agent系统提示作为基础，预设/用户自定义作为角色补充
       var systemPrompt =
-          preset?.systemPrompt ??
-          '你是一位专业的网文写作助手，擅长帮助作者构思剧情、润色文字、生成大纲和角色设定。请用中文回复。';
+          preset?.systemPrompt ?? '你是用户的网文创作伙伴，根据对话自然回应，不强行推销功能。';
 
       List<WritingSkill> matchedSkills = [];
       try {
@@ -306,82 +311,71 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       }
 
       final novel = ref.read(selectedNovelProvider);
-      final needsAgent = shouldTriggerAgent;
 
-      if (needsAgent) {
-        final agent = WorkspaceAgent();
-        if (novel != null) {
-          registerAllToolExecutors(
-            agent: agent,
-            novelId: novel.id,
-            novelTitle: novel.title,
-          );
-        } else {
-          registerGeneralToolExecutors(
-            agent: agent,
-            onSwitchNovel: (id) {
+      // 始终使用Agent模式，创建Agent并注册所有工具
+      final agent = WorkspaceAgent();
+      if (novel != null) {
+        registerAllToolExecutors(
+          agent: agent,
+          novelId: novel.id,
+          novelTitle: novel.title,
+          presetAgents: ref.read(tomatoAgentsProvider),
+          aiConfig: config,
+        );
+      } else {
+        registerGeneralToolExecutors(
+          agent: agent,
+          presetAgents: ref.read(tomatoAgentsProvider),
+          aiConfig: config,
+          onSwitchNovel: (id) {
+            final novels = ref.read(novelsProvider).valueOrNull ?? [];
+            final novel = novels.where((n) => n.id == id).firstOrNull;
+            if (novel != null) {
+              ref.read(selectedNovelProvider.notifier).state = novel;
+              loadNovelMaterials(ref, id);
+            }
+          },
+          onNovelCreated: (novelId, novelTitle) {
+            // 刷新作品列表
+            ref.invalidate(novelsProvider);
+            // 延迟选中新创建的作品，等待列表刷新完成
+            Future.delayed(const Duration(milliseconds: 500), () {
               final novels = ref.read(novelsProvider).valueOrNull ?? [];
-              final novel = novels.where((n) => n.id == id).firstOrNull;
+              final novel = novels.where((n) => n.id == novelId).firstOrNull;
               if (novel != null) {
                 ref.read(selectedNovelProvider.notifier).state = novel;
-                loadNovelMaterials(ref, id);
+                loadNovelMaterials(ref, novelId);
               }
-            },
-            onNovelCreated: (novelId, novelTitle) {
-              // 刷新作品列表
-              ref.invalidate(novelsProvider);
-              // 延迟选中新创建的作品，等待列表刷新完成
-              Future.delayed(const Duration(milliseconds: 500), () {
-                final novels = ref.read(novelsProvider).valueOrNull ?? [];
-                final novel = novels.where((n) => n.id == novelId).firstOrNull;
-                if (novel != null) {
-                  ref.read(selectedNovelProvider.notifier).state = novel;
-                  loadNovelMaterials(ref, novelId);
-                }
-              });
-            },
-          );
-        }
-
-        final effectiveSystemPrompt = novel != null
-            ? '$systemPrompt\n\n小说记忆文件（当前状态）：\n$memoryContext$userMemoryContext'
-            : '$systemPrompt\n\n$userMemoryContext';
-
-        final response = await agent.chat(
-          config: config,
-          messages: _currentSession!.messages,
-          systemPrompt: effectiveSystemPrompt,
+            });
+          },
         );
-
-        setState(() {
-          _currentSession!.messages.add({
-            'role': 'assistant',
-            'content': response.content,
-          });
-          if (matchedSkills.isNotEmpty) {
-            _skillMatches[_currentSession!.messages.length - 1] = matchedSkills;
-          }
-          _isLoading = false;
-        });
-      } else {
-        final agent = WorkspaceAgent();
-        final aiText = await agent.chatLite(
-          config: config,
-          messages: _currentSession!.messages,
-          systemPrompt: '$systemPrompt\n\n$userMemoryContext',
-        );
-
-        setState(() {
-          _currentSession!.messages.add({
-            'role': 'assistant',
-            'content': aiText,
-          });
-          if (matchedSkills.isNotEmpty) {
-            _skillMatches[_currentSession!.messages.length - 1] = matchedSkills;
-          }
-          _isLoading = false;
-        });
       }
+
+      final effectiveSystemPrompt = novel != null
+          ? '$systemPrompt\n\n小说记忆文件（当前状态）：\n$memoryContext$userMemoryContext'
+          : '$systemPrompt\n\n$userMemoryContext';
+
+      final response = await agent.chat(
+        config: config,
+        messages: _currentSession!.messages,
+        systemPrompt: effectiveSystemPrompt,
+      );
+
+      setState(() {
+        _currentSession!.messages.add({
+          'role': 'assistant',
+          'content': response.content,
+        });
+        final msgIdx = _currentSession!.messages.length - 1;
+        if (matchedSkills.isNotEmpty) {
+          _skillMatches[msgIdx] = matchedSkills;
+        }
+        if (response.thinkingContent != null &&
+            response.thinkingContent!.isNotEmpty) {
+          _thinkingContents[msgIdx] = response.thinkingContent!;
+        }
+        _isLoading = false;
+      });
       _scrollToBottom();
     } catch (e) {
       setState(() {
@@ -481,11 +475,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                       final msg = messages[index];
                       final isUser = msg['role'] == 'user';
                       final matchedForThis = _skillMatches[index];
+                      final thinkingForThis = _thinkingContents[index];
                       return _buildMessage(
                         msg['content']!,
                         isUser,
                         matchedForThis,
                         index,
+                        thinkingContent: thinkingForThis,
                       );
                     },
                   ),
@@ -582,8 +578,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     String content,
     bool isUser,
     List<WritingSkill>? skills,
-    int index,
-  ) {
+    int index, {
+    String? thinkingContent,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -591,6 +588,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           Padding(
             padding: const EdgeInsets.only(bottom: 4, left: 44),
             child: SkillIndicator(matchedSkills: skills),
+          ),
+        if (thinkingContent != null && thinkingContent.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8, left: 44),
+            child: _CollapsibleThinkingCard(thinkingContent: thinkingContent),
           ),
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -651,6 +653,71 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           ),
         ),
       ],
+    );
+  }
+
+  /// 深度思考可折叠卡片
+  Widget _buildThinkingCard(int index, String thinkingContent) {
+    final isExpanded = _expandedThinking.contains(index);
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedThinking.remove(index);
+          } else {
+            _expandedThinking.add(index);
+          }
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12, left: 40),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            left: BorderSide(color: _primaryColor.withOpacity(0.4), width: 3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.psychology, size: 16, color: _textSecondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isExpanded ? '已深度思考（点击收起）' : '已深度思考（点击展开）',
+                    style: TextStyle(color: _textSecondary, fontSize: 13),
+                  ),
+                ),
+                Icon(
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: _textSecondary,
+                  size: 18,
+                ),
+              ],
+            ),
+            if (isExpanded) ...[
+              const SizedBox(height: 8),
+              Divider(height: 1, color: _cardBg2),
+              const SizedBox(height: 8),
+              SelectableText(
+                thinkingContent,
+                style: TextStyle(
+                  color: _textPrimary.withOpacity(0.75),
+                  fontSize: 14,
+                  height: 1.6,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -794,8 +861,24 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.mic, color: _textPrimary, size: 20),
-                      onPressed: _handleMic,
+                      icon: Icon(Icons.call, color: _primaryColor, size: 20),
+                      onPressed: () async {
+                        final result = await Navigator.push<String>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VoiceCallPage(
+                              onCallEnd: (transcript, aiResponse) {
+                                if (mounted) {
+                                  _inputCtrl.text = transcript;
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                        if (result != null && result.isNotEmpty && mounted) {
+                          _inputCtrl.text = result;
+                        }
+                      },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -806,25 +889,20 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     );
   }
 
-  /// 显示底部弹窗菜单
+  /// 显示底部弹窗菜单 - 附加功能
   void _showBottomSheet() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
       builder: (ctx) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.75,
-        ),
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
-        child: SingleChildScrollView(
+        child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 拖拽指示条
               Container(
                 width: 36,
                 height: 4,
@@ -834,87 +912,54 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // 功能网格
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 1.0,
-                  children: [
-                    _buildSheetItem(Icons.mic, '语音输入', '语音转文字', () {
-                      Navigator.pop(ctx);
-                      _handleMic();
-                    }),
-                    _buildSheetItem(
-                      Icons.attach_file,
-                      '上传文件',
-                      'TXT/DOCX/PDF',
-                      () {
-                        Navigator.pop(ctx);
-                        _handleFileUpload();
-                      },
-                    ),
-                    _buildSheetItem(Icons.library_books, '选择资料', '发给AI上下文', () {
-                      Navigator.pop(ctx);
-                      _showMaterialPicker();
-                    }),
-                    _buildSheetItem(Icons.description, '选择模板', '写作模板库', () {
-                      Navigator.pop(ctx);
-                      _showWritingTemplates();
-                    }),
-                    _buildSheetItem(
-                      Icons.local_fire_department,
-                      '番茄写作',
-                      '风格预设',
-                      () {
-                        Navigator.pop(ctx);
-                        _showTomatoPresetPicker();
-                      },
-                    ),
-                    _buildSheetItem(Icons.phone, '语音通话', '实时AI对话', () {
-                      Navigator.pop(ctx);
-                      _openVoiceCall();
-                    }),
-                    _buildSheetItem(Icons.bar_chart, '写作统计', '字数趋势', () {
-                      Navigator.pop(ctx);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const StatsPage()),
-                      );
-                    }),
-                    _buildSheetItem(Icons.settings, '更多设置', '模型/外观/数据', () {
-                      Navigator.pop(ctx);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProfilePage()),
-                      );
-                    }),
-                    _buildSheetItem(Icons.fact_check, '全文审查', '设定/角色/逻辑', () {
-                      Navigator.pop(ctx);
-                      _navigateToFullTextReview();
-                    }),
-                    _buildSheetItem(Icons.auto_fix_high, '润色引擎', '章节精修', () {
-                      Navigator.pop(ctx);
-                      _navigateToPolishEngine();
-                    }),
-                    _buildSheetItem(Icons.spellcheck, '校对', '错别字/标点', () {
-                      Navigator.pop(ctx);
-                      _navigateToProofread();
-                    }),
-                  ],
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '附加',
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
+              _buildAttachmentItem(
+                icon: Icons.psychology,
+                title: 'Skills',
+                subtitle: '选择已启用的技能',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showSkillsPicker();
+                },
+              ),
+              _buildAttachmentItem(
+                icon: Icons.folder,
+                title: '作品区',
+                subtitle: '选择章节/文件',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showWorkspacePicker();
+                },
+              ),
+              _buildAttachmentItem(
+                icon: Icons.source,
+                title: '资料区',
+                subtitle: '选择资料',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showMaterialPicker();
+                },
+              ),
+              _buildAttachmentItem(
+                icon: Icons.attach_file,
+                title: '本地文件',
+                subtitle: '上传文件',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleFileUpload();
+                },
+              ),
               const SizedBox(height: 16),
-              // Agent列表
-              _buildAgentSection(ctx),
-              // Skill列表
-              _buildSkillSection(ctx),
-              // 番茄写作
-              _buildTomatoSection(ctx),
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -966,369 +1011,56 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     }
   }
 
-  Widget _buildSheetItem(
-    IconData icon,
-    String title,
-    String subtitle,
-    VoidCallback onTap,
-  ) {
+  /// 构建附加菜单项
+  Widget _buildAttachmentItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: _cardBg2,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _cardBg2),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-            Icon(icon, color: _textPrimary, size: 24),
-            SizedBox(height: 6),
-            Text(title, style: TextStyle(color: _textPrimary, fontSize: 13)),
-            Text(
-              subtitle,
-              style: TextStyle(color: _textTertiary, fontSize: 10),
+            Icon(icon, color: _primaryColor, size: 24),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: _textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: _textTertiary, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
+            Icon(Icons.chevron_right, color: _textTertiary, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAgentSection(BuildContext ctx) {
-    final agents = ref.watch(tomatoAgentsProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Text(
-            'Agent（智能体）',
-            style: TextStyle(color: _textSecondary, fontSize: 12),
-          ),
-        ),
-        SizedBox(
-          height: 90,
-          child: agents.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    '暂无Agent',
-                    style: TextStyle(color: _textTertiary, fontSize: 12),
-                  ),
-                )
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: agents.length + 1,
-                  itemBuilder: (context, index) {
-                    // 最后一项：更多Agent按钮
-                    if (index == agents.length) {
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AgentMarketplacePage(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 80,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: _cardBg2,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _cardBg2),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.storefront,
-                                color: _primaryColor,
-                                size: 20,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                '更多',
-                                style: TextStyle(
-                                  color: _textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    final agent = agents[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _invokeAgent(agent);
-                      },
-                      child: Container(
-                        width: 120,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _cardBg2,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _cardBg2),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(agent.icon, style: TextStyle(fontSize: 20)),
-                            SizedBox(height: 6),
-                            Text(
-                              agent.name,
-                              style: TextStyle(
-                                color: _textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              agent.description,
-                              style: TextStyle(
-                                color: _textTertiary,
-                                fontSize: 11,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSkillSection(BuildContext ctx) {
-    // 从 Provider 读取真实技能列表
+  /// 显示技能选择器
+  void _showSkillsPicker() {
     final skillsAsync = ref.watch(skillRepoProvider);
-
-    return FutureBuilder<List<WritingSkill>>(
-      future: skillsAsync.getAllSkills(),
-      builder: (context, snapshot) {
-        final allSkills = snapshot.data ?? [];
-        final enabledSkills = allSkills.where((s) => s.isEnabled).toList();
-        final displaySkills = enabledSkills; // 显示全部技能
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text(
-                'Skill（写作技巧）',
-                style: TextStyle(color: _textSecondary, fontSize: 12),
-              ),
-            ),
-            SizedBox(
-              height: 70,
-              child: displaySkills.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        '暂无启用的技能',
-                        style: TextStyle(color: _textTertiary, fontSize: 12),
-                      ),
-                    )
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: displaySkills.length,
-                      itemBuilder: (context, index) {
-                        final skill = displaySkills[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            // 应用技能到当前会话
-                            ref
-                                .read(currentPresetProvider.notifier)
-                                .state = TomatoPreset(
-                              id: skill.id,
-                              name: skill.name,
-                              category: skill.category,
-                              description: skill.description,
-                              systemPrompt: skill.content,
-                              tags: skill.keywords,
-                            );
-                            TopNotification.success(
-                              context,
-                              '已应用技能：${skill.name}',
-                            );
-                          },
-                          child: Container(
-                            width: 120,
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: _cardBg2,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _cardBg2),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  skill.name,
-                                  style: TextStyle(
-                                    color: _textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  skill.description,
-                                  style: TextStyle(
-                                    color: _textTertiary,
-                                    fontSize: 11,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTomatoSection(BuildContext ctx) {
-    // 从 Provider 读取真实番茄预设
-    final presets = ref.watch(tomatoPresetsProvider);
-    final displayPresets = presets; // 显示全部预设
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text(
-            '番茄写作',
-            style: TextStyle(color: _textSecondary, fontSize: 12),
-          ),
-        ),
-        SizedBox(
-          height: 70,
-          child: displayPresets.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    '暂无预设',
-                    style: TextStyle(color: _textTertiary, fontSize: 12),
-                  ),
-                )
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: displayPresets.length,
-                  itemBuilder: (context, index) {
-                    final preset = displayPresets[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        // 应用预设
-                        ref.read(currentPresetProvider.notifier).state = preset;
-                        TopNotification.success(
-                          context,
-                          '已应用预设：${preset.name}',
-                        );
-                      },
-                      child: Container(
-                        width: 120,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _cardBg2,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _cardBg2),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              preset.name,
-                              style: TextStyle(
-                                color: _textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              preset.description,
-                              style: TextStyle(
-                                color: _textTertiary,
-                                fontSize: 11,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  void _handleMic() {
-    if (!_voiceService.isAvailable) {
-      TopNotification.show(context, '当前设备不支持语音识别，请使用文字输入', isSuccess: false);
-      return;
-    }
-    _voiceService.onResult = (text) {
-      if (text.isNotEmpty && mounted) {
-        setState(() {
-          _inputCtrl.text = '${_inputCtrl.text}$text';
-        });
-      }
-    };
-    _voiceService.startListening();
-    TopNotification.success(context, '正在聆听...');
-  }
-
-  /// 显示写作模板选择
-  void _showWritingTemplates() {
-    final templates = [
-      {'name': '都市', 'prompt': '请帮我写一段都市风格的小说开头，主角是一个普通上班族，某天突然获得了超能力。'},
-      {'name': '玄幻', 'prompt': '请帮我构思一个玄幻世界设定，包括修炼体系、宗门势力和主角的金手指。'},
-      {'name': '言情', 'prompt': '请帮我写一段甜宠风格的言情开局，男女主角在咖啡店偶遇。'},
-      {'name': '悬疑', 'prompt': '请帮我设计一个悬疑推理的开篇，一个密室杀人案，所有嫌疑人都有不在场证明。'},
-      {'name': '历史', 'prompt': '请帮我写一段穿越历史题材的开头，主角穿越到唐朝，身份是一个落魄书生。'},
-      {'name': '科幻', 'prompt': '请帮我构思一个科幻设定，人类在22世纪发现了外星文明遗迹。'},
-      {'name': '游戏', 'prompt': '请帮我写一段游戏异世界题材的开头，主角在玩游戏时被传送到了游戏世界。'},
-      {'name': '仙侠', 'prompt': '请帮我设计一个仙侠世界，包括境界划分、法宝体系和天道法则。'},
-    ];
 
     showModalBottomSheet(
       context: context,
@@ -1352,9 +1084,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Text(
-                  '选择写作模板',
+                  '选择技能',
                   style: TextStyle(
                     color: _textPrimary,
                     fontSize: 16,
@@ -1362,54 +1094,86 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                   ),
                 ),
               ),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: templates.length,
-                  itemBuilder: (context, index) {
-                    final t = templates[index];
-                    return ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: _cardBg2,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            t['name']!.substring(0, 1),
-                            style: TextStyle(
-                              color: _primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+              FutureBuilder<List<WritingSkill>>(
+                future: skillsAsync.getAllSkills(),
+                builder: (context, snapshot) {
+                  final allSkills = snapshot.data ?? [];
+                  final enabledSkills = allSkills
+                      .where((s) => s.isEnabled)
+                      .toList();
+
+                  if (enabledSkills.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        '暂无启用的技能',
+                        style: TextStyle(color: _textTertiary, fontSize: 14),
+                      ),
+                    );
+                  }
+
+                  return Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: enabledSkills.length,
+                      itemBuilder: (context, index) {
+                        final skill = enabledSkills[index];
+                        return ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _cardBg2,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                skill.name.substring(0, 1),
+                                style: TextStyle(
+                                  color: _primaryColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      title: Text(
-                        '${t['name']}题材',
-                        style: TextStyle(color: _textPrimary, fontSize: 14),
-                      ),
-                      subtitle: Text(
-                        t['prompt']!,
-                        style: TextStyle(color: _textTertiary, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        setState(() {
-                          _inputCtrl.text = t['prompt']!;
-                        });
-                        TopNotification.success(context, '已选择${t['name']}模板');
+                          title: Text(
+                            skill.name,
+                            style: TextStyle(color: _textPrimary, fontSize: 14),
+                          ),
+                          subtitle: Text(
+                            skill.description,
+                            style: TextStyle(
+                              color: _textTertiary,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            ref
+                                .read(currentPresetProvider.notifier)
+                                .state = TomatoPreset(
+                              id: skill.id,
+                              name: skill.name,
+                              category: skill.category,
+                              description: skill.description,
+                              systemPrompt: skill.content,
+                              tags: skill.keywords,
+                            );
+                            TopNotification.success(
+                              context,
+                              '已应用技能：${skill.name}',
+                            );
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -1417,24 +1181,25 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     );
   }
 
-  /// 显示番茄写作预设选择弹窗
-  void _showTomatoPresetPicker() {
-    final presets = ref.read(tomatoPresetsProvider);
+  /// 显示作品区选择器（选择章节/文件）
+  void _showWorkspacePicker() {
+    final novel = ref.read(selectedNovelProvider);
+    if (novel == null) {
+      TopNotification.error(context, '请先选择一部作品');
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.65,
-        ),
+        height: MediaQuery.of(ctx).size.height * 0.7,
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 36,
@@ -1446,274 +1211,143 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                '选择番茄写作预设',
-                style: TextStyle(
-                  color: _textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.folder, size: 20, color: _primaryColor),
+                  SizedBox(width: 8),
+                  Text(
+                    '选择章节',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: presets.length,
-                itemBuilder: (context, index) {
-                  final preset = presets[index];
-                  final isApplied =
-                      ref.read(currentPresetProvider)?.id == preset.id;
-                  return ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _cardBg2,
-                        borderRadius: BorderRadius.circular(8),
+            Divider(height: 1, color: _cardBg2),
+            Expanded(
+              child: FutureBuilder<List<dynamic>>(
+                future: ref
+                    .read(volumeRepoProvider)
+                    .getVolumesByNovel(novel.id),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text(
+                        '暂无章节',
+                        style: TextStyle(color: _textTertiary, fontSize: 14),
                       ),
-                      child: Center(
-                        child: Text(
-                          preset.category.isNotEmpty
-                              ? preset.category.substring(0, 1)
-                              : preset.name.substring(0, 1),
-                          style: TextStyle(
-                            color: _primaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    );
+                  }
+
+                  final volumes = snapshot.data!;
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: volumes.length,
+                    itemBuilder: (context, vIndex) {
+                      final vol = volumes[vIndex];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 4),
+                            child: Text(
+                              vol.title,
+                              style: TextStyle(
+                                color: _textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      preset.name,
-                      style: TextStyle(color: _textPrimary, fontSize: 14),
-                    ),
-                    subtitle: Text(
-                      preset.description,
-                      style: TextStyle(color: _textTertiary, fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: isApplied
-                        ? Icon(
-                            Icons.check_circle,
-                            color: _primaryColor,
-                            size: 20,
-                          )
-                        : null,
-                    onTap: () {
-                      ref.read(currentPresetProvider.notifier).state = preset;
-                      Navigator.pop(ctx);
-                      TopNotification.success(context, '已应用预设：${preset.name}');
+                          FutureBuilder<List<dynamic>>(
+                            future: ref
+                                .read(chapterRepoProvider)
+                                .getChaptersByVolume(vol.id),
+                            builder: (context, chSnapshot) {
+                              if (chSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                );
+                              }
+                              final chapters = chSnapshot.data ?? [];
+                              if (chapters.isEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Text(
+                                    '无章节',
+                                    style: TextStyle(
+                                      color: _textTertiary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return Column(
+                                children: chapters
+                                    .map(
+                                      (ch) => ListTile(
+                                        leading: Icon(
+                                          Icons.description,
+                                          color: _textPrimary,
+                                          size: 18,
+                                        ),
+                                        title: Text(
+                                          ch.title,
+                                          style: TextStyle(
+                                            color: _textPrimary,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          Navigator.pop(ctx);
+                                          final buffer = StringBuffer();
+                                          buffer.writeln('[章节：${ch.title}]');
+                                          buffer.writeln(
+                                            ch.content.length > 2000
+                                                ? '${ch.content.substring(0, 2000)}...(内容过长已截断)'
+                                                : ch.content,
+                                          );
+                                          _inputCtrl.text =
+                                              '${buffer.toString()}\n${_inputCtrl.text}';
+                                          TopNotification.success(
+                                            context,
+                                            '已选择章节：${ch.title}',
+                                          );
+                                        },
+                                      ),
+                                    )
+                                    .toList(),
+                              );
+                            },
+                          ),
+                        ],
+                      );
                     },
                   );
                 },
               ),
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
     );
-  }
-
-  /// 导航到全文审查页面
-  void _navigateToFullTextReview() {
-    final novel = ref.read(selectedNovelProvider);
-    if (novel == null) {
-      TopNotification.show(context, '请先选择一部作品再使用全文审查');
-      return;
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            FullTextReviewPage(novelId: novel.id, novelTitle: novel.title),
-      ),
-    );
-  }
-
-  /// 导航到润色引擎页面
-  void _navigateToPolishEngine() {
-    final novel = ref.read(selectedNovelProvider);
-    if (novel == null) {
-      TopNotification.show(context, '请先选择一部作品再使用润色引擎');
-      return;
-    }
-    final chapter = ref.read(selectedChapterProvider);
-    if (chapter == null) {
-      TopNotification.show(context, '请先选择一个章节再使用润色引擎');
-      return;
-    }
-    // 读取章节内容
-    final chapterRepo = ref.read(chapterRepoProvider);
-    chapterRepo
-        .getChapter(chapter.id)
-        .then((ch) {
-          if (ch != null && mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PolishEnginePage(
-                  chapterContent: ch.content,
-                  novelTitle: novel.title,
-                  onApply: (modifiedContent) {
-                    // 更新章节内容
-                    chapterRepo.updateChapter(
-                      ch.copyWith(content: modifiedContent),
-                    );
-                  },
-                ),
-              ),
-            );
-          } else if (mounted) {
-            TopNotification.show(context, '无法读取章节内容');
-          }
-        })
-        .catchError((e) {
-          if (mounted) TopNotification.show(context, '读取章节失败: $e');
-        });
-  }
-
-  /// 导航到校对页面
-  void _navigateToProofread() {
-    final novel = ref.read(selectedNovelProvider);
-    if (novel == null) {
-      TopNotification.show(context, '请先选择一部作品再使用校对功能');
-      return;
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ProofreadPage(novelId: novel.id)),
-    );
-  }
-
-  /// 调用Agent
-  Future<void> _invokeAgent(TomatoAgent agent) async {
-    final config = ref.read(effectiveAiConfigProvider);
-    if (config == null) {
-      TopNotification.error(context, '请先配置AI模型');
-      return;
-    }
-
-    if (_currentSession == null) _newSession();
-
-    final userMessage = '请执行「${agent.name}」任务';
-    setState(() {
-      _currentSession!.messages.add({
-        'role': 'user',
-        'content': '⚡ ${agent.name}\n$userMessage',
-      });
-      if (_currentSession!.messages.length == 1) {
-        _currentSession!.title = agent.name;
-      }
-      _isLoading = true;
-    });
-    _scrollToBottom();
-
-    try {
-      final recentMsgs = _currentSession!.messages
-          .where((m) => m != _currentSession!.messages.last)
-          .toList();
-      final contextMsgs = recentMsgs.length > 20
-          ? recentMsgs.sublist(recentMsgs.length - 20)
-          : recentMsgs;
-
-      String memoryContext = '';
-      try {
-        final novel = ref.read(selectedNovelProvider);
-        if (novel != null) {
-          memoryContext = await NovelMemory.getForAiContext(
-            novel.id,
-            novel.title,
-          );
-        }
-      } catch (e) {
-        debugPrint('Load materials error: $e');
-      }
-      String userMemoryContext = '';
-      try {
-        userMemoryContext = await UserMemory.getForAiContext();
-      } catch (e) {
-        debugPrint('Load materials error: $e');
-      }
-
-      final aiService = ref.read(aiServiceProvider);
-
-      final messages = <Map<String, String>>[
-        {
-          'role': 'system',
-          'content': '${agent.systemPrompt}\n$memoryContext$userMemoryContext',
-        },
-        ...contextMsgs.map(
-          (m) => {'role': m['role']!, 'content': m['content']!},
-        ),
-        {'role': 'user', 'content': userMessage},
-      ];
-
-      final aiText = await aiService.chat(config, messages, taskType: 'agent');
-
-      setState(() {
-        _currentSession!.messages.add({
-          'role': 'assistant',
-          'content': '【${agent.name}】\n$aiText',
-        });
-        _isLoading = false;
-      });
-      _scrollToBottom();
-    } catch (e) {
-      setState(() {
-        _currentSession!.messages.add({
-          'role': 'assistant',
-          'content': '【${agent.name}】调用失败: $e',
-        });
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// 打开语音通话
-  void _openVoiceCall() async {
-    final voiceConfig = ref.read(selectedVoiceConfigProvider);
-    if (voiceConfig == null) {
-      TopNotification.error(context, '请先在设置中配置语音模型');
-      return;
-    }
-    final config = ref.read(effectiveAiConfigProvider);
-    if (config == null) {
-      TopNotification.error(context, '请先配置文本AI模型');
-      return;
-    }
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => VoiceCallPage(
-          onCallEnd: (transcript, aiResponse) {
-            if (_currentSession == null) _newSession();
-            if (transcript.isNotEmpty) {
-              setState(() {
-                _currentSession!.messages.add({
-                  'role': 'user',
-                  'content': '🎤 语音通话记录：\n$transcript',
-                });
-              });
-            }
-            if (aiResponse.isNotEmpty) {
-              setState(() {
-                _currentSession!.messages.add({
-                  'role': 'assistant',
-                  'content': '🤖 AI回复：\n$aiResponse',
-                });
-              });
-            }
-          },
-        ),
-      ),
-    );
-
-    _scrollToBottom();
   }
 
   /// 显示消息长按菜单
@@ -2015,6 +1649,66 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
             activeColor: _primaryColor,
           ),
       ],
+    );
+  }
+}
+
+/// 可折叠的深度思考卡片
+class _CollapsibleThinkingCard extends StatefulWidget {
+  final String thinkingContent;
+  const _CollapsibleThinkingCard({required this.thinkingContent});
+
+  @override
+  State<_CollapsibleThinkingCard> createState() =>
+      _CollapsibleThinkingCardState();
+}
+
+class _CollapsibleThinkingCardState extends State<_CollapsibleThinkingCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: Colors.grey.shade400, width: 2)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '💭 已深度思考',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: SelectableText(
+                widget.thinkingContent,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

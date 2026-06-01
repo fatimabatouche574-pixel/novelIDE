@@ -9,6 +9,70 @@ import 'package:novel_ide/data/services/config_service.dart';
 import 'package:novel_ide/data/services/default_config_service.dart';
 import 'package:novel_ide/data/services/ai_service.dart';
 
+class _VendorInfo {
+  final String name;
+  final String apiUrl;
+  final List<String> defaultModels;
+  final ApiProtocol protocol;
+  const _VendorInfo(this.name, this.apiUrl, this.defaultModels, this.protocol);
+}
+
+class _VendorCard extends StatelessWidget {
+  final String name;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _VendorCard({
+    required this.name,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AiConfigListPage extends ConsumerWidget {
   const AiConfigListPage({super.key});
 
@@ -24,7 +88,7 @@ class AiConfigListPage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: '添加自定义模型',
-            onPressed: () => _showAddDialog(context, ref),
+            onPressed: () => _showAddEditDialog(context, ref),
           ),
         ],
       ),
@@ -132,6 +196,12 @@ class AiConfigListPage extends ConsumerWidget {
                                         .read(selectedAiConfigProvider.notifier)
                                         .state =
                                     config;
+                              } else if (value == 'edit') {
+                                _showAddEditDialog(
+                                  context,
+                                  ref,
+                                  existingConfig: config,
+                                );
                               } else if (value == 'delete') {
                                 _showDeleteConfirm(context, ref, config);
                               }
@@ -140,6 +210,10 @@ class AiConfigListPage extends ConsumerWidget {
                               const PopupMenuItem(
                                 value: 'use',
                                 child: Text('使用这个模型'),
+                              ),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Text('编辑'),
                               ),
                               const PopupMenuItem(
                                 value: 'delete',
@@ -234,406 +308,544 @@ class AiConfigListPage extends ConsumerWidget {
     );
   }
 
-  void _showAddDialog(BuildContext context, WidgetRef ref) {
-    final nameCtrl = TextEditingController();
-    final urlCtrl = TextEditingController();
-    final modelCtrl = TextEditingController();
-    final keyCtrl = TextEditingController();
+  void _showAddEditDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    AiConfig? existingConfig,
+  }) {
+    final bool isEdit = existingConfig != null;
+
+    final nameCtrl = TextEditingController(text: existingConfig?.name ?? '');
+    final urlCtrl = TextEditingController(text: existingConfig?.apiUrl ?? '');
+    final modelCtrl = TextEditingController(
+      text: existingConfig?.modelName ?? '',
+    );
+    final keyCtrl = TextEditingController(text: existingConfig?.apiKey ?? '');
 
     showDialog(
       context: context,
       builder: (ctx) {
-        ApiProtocol selectedProtocol = ApiProtocol.openaiCompatible;
-        bool testing = false;
-        bool fetchingModels = false;
-        List<String> availableModels = [];
-        String? testResult;
-        bool? testSuccess;
-        int? testLatency;
+        const vendors = [
+          _VendorInfo('OpenAI', 'https://api.openai.com/v1', [
+            'gpt-4o',
+            'gpt-4-turbo',
+          ], ApiProtocol.openaiCompatible),
+          _VendorInfo('Anthropic', 'https://api.anthropic.com/v1', [
+            'claude-opus-4-8',
+            'claude-sonnet-4-6',
+          ], ApiProtocol.anthropic),
+          _VendorInfo('DeepSeek', 'https://api.deepseek.com/v1', [
+            'deepseek-chat',
+          ], ApiProtocol.openaiCompatible),
+          _VendorInfo(
+            '智谱AI',
+            'https://open.bigmodel.cn/api/paas/v4',
+            ['glm-4-flash'],
+            ApiProtocol.openaiCompatible,
+          ),
+          _VendorInfo(
+            '通义千问',
+            'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            ['qwen-plus'],
+            ApiProtocol.openaiCompatible,
+          ),
+          _VendorInfo('Moonshot', 'https://api.moonshot.cn/v1', [
+            'moonshot-v1-8k',
+          ], ApiProtocol.openaiCompatible),
+        ];
 
         return StatefulBuilder(
-          builder: (ctx, setDialogState) => AlertDialog(
-            title: const Text('添加自定义模型'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '配置名称',
-                      prefixIcon: Icon(Icons.label),
-                    ),
+          builder: (ctx, setDialogState) {
+            int step = isEdit ? 1 : 0;
+            ApiProtocol selectedProtocol =
+                existingConfig?.protocol ?? ApiProtocol.openaiCompatible;
+            bool testing = false;
+            bool fetchingModels = false;
+            List<String> availableModels = [];
+            String? testResult;
+            bool? testSuccess;
+            int? testLatency;
+
+            void selectVendor(_VendorInfo v) {
+              setDialogState(() {
+                step = 1;
+                nameCtrl.text = v.name;
+                urlCtrl.text = v.apiUrl;
+                selectedProtocol = v.protocol;
+                if (v.defaultModels.isNotEmpty) {
+                  modelCtrl.text = v.defaultModels.first;
+                }
+              });
+            }
+
+            void selectCustom() {
+              setDialogState(() => step = 1);
+            }
+
+            Future<void> doTestConnection() async {
+              final url = urlCtrl.text.trim();
+              if (url.isEmpty) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('请先填写 API 地址'),
+                    backgroundColor: Colors.orange,
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: urlCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'API 地址',
-                      prefixIcon: Icon(Icons.link),
-                      hintText: '如 https://api.deepseek.com',
-                    ),
+                );
+                return;
+              }
+              setDialogState(() {
+                testing = true;
+                testResult = null;
+              });
+              final aiService = ref.read(aiServiceProvider);
+              final testCfg = AiConfig(
+                id: '_test',
+                name: nameCtrl.text.trim().isEmpty
+                    ? 'test'
+                    : nameCtrl.text.trim(),
+                apiUrl: url,
+                modelName: modelCtrl.text.trim().isEmpty
+                    ? 'gpt-3.5-turbo'
+                    : modelCtrl.text.trim(),
+                apiKey: keyCtrl.text.trim().isEmpty
+                    ? null
+                    : keyCtrl.text.trim(),
+                protocol: selectedProtocol,
+              );
+              final result = await aiService.testConnection(testCfg);
+              setDialogState(() {
+                testing = false;
+                testSuccess = result['success'] as bool;
+                testResult = result['message'] as String;
+                testLatency = result['latency_ms'] as int?;
+              });
+            }
+
+            Future<void> doFetchModels() async {
+              final url = urlCtrl.text.trim();
+              if (url.isEmpty) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('请先填写 API 地址'),
+                    backgroundColor: Colors.orange,
                   ),
-                  const SizedBox(height: 12),
-                  // 模型ID + 下拉选择
-                  Row(
+                );
+                return;
+              }
+              setDialogState(() => fetchingModels = true);
+              final aiService = ref.read(aiServiceProvider);
+              final fetchCfg = AiConfig(
+                id: '_fetch',
+                name: 'fetch',
+                apiUrl: url,
+                modelName: 'x',
+                apiKey: keyCtrl.text.trim().isEmpty
+                    ? null
+                    : keyCtrl.text.trim(),
+                protocol: selectedProtocol,
+              );
+              try {
+                final models = await aiService.fetchModels(fetchCfg);
+                setDialogState(() {
+                  fetchingModels = false;
+                  availableModels = models;
+                });
+                if (models.isEmpty && ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('未获取到模型列表，请检查地址和 Key'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              } catch (e) {
+                setDialogState(() => fetchingModels = false);
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text('获取失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+
+            return AlertDialog(
+              title: Text(isEdit ? '编辑模型配置' : '添加模型配置'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: modelCtrl,
+                      if (step == 0)
+                        _buildVendorGrid(vendors, selectVendor, selectCustom)
+                      else ...[
+                        TextField(
+                          controller: nameCtrl,
                           decoration: const InputDecoration(
-                            labelText: '模型 ID',
-                            prefixIcon: Icon(Icons.memory),
+                            labelText: '配置名称',
+                            prefixIcon: Icon(Icons.label),
                           ),
                         ),
-                      ),
-                      if (availableModels.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        PopupMenuButton<String>(
-                          icon: const Icon(
-                            Icons.arrow_drop_down_circle,
-                            color: Colors.blue,
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: urlCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'API 地址',
+                            prefixIcon: Icon(Icons.link),
+                            hintText: '如 https://api.deepseek.com',
                           ),
-                          tooltip: '从获取的模型列表中选择',
-                          onSelected: (v) {
-                            modelCtrl.text = v;
-                            setDialogState(() {});
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: modelCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: '模型 ID',
+                                  prefixIcon: Icon(Icons.memory),
+                                ),
+                              ),
+                            ),
+                            if (availableModels.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              PopupMenuButton<String>(
+                                icon: const Icon(
+                                  Icons.arrow_drop_down_circle,
+                                  color: Colors.blue,
+                                ),
+                                tooltip: '从获取的模型列表中选择',
+                                onSelected: (v) {
+                                  modelCtrl.text = v;
+                                  setDialogState(() {});
+                                },
+                                itemBuilder: (_) => availableModels
+                                    .map(
+                                      (m) => PopupMenuItem(
+                                        value: m,
+                                        child: Text(
+                                          m,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<ApiProtocol>(
+                          value: selectedProtocol,
+                          decoration: const InputDecoration(
+                            labelText: 'API 协议',
+                            prefixIcon: Icon(Icons.swap_horiz),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: ApiProtocol.openaiCompatible,
+                              child: Text('OpenAI兼容'),
+                            ),
+                            DropdownMenuItem(
+                              value: ApiProtocol.anthropic,
+                              child: Text('Anthropic'),
+                            ),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) {
+                              setDialogState(() => selectedProtocol = v);
+                            }
                           },
-                          itemBuilder: (_) => availableModels
-                              .map(
-                                (m) => PopupMenuItem(
-                                  value: m,
-                                  child: Text(
-                                    m,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ),
-                              )
-                              .toList(),
                         ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<ApiProtocol>(
-                    value: selectedProtocol,
-                    decoration: const InputDecoration(
-                      labelText: 'API 协议',
-                      prefixIcon: Icon(Icons.swap_horiz),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: ApiProtocol.openaiCompatible,
-                        child: Text('OpenAI兼容'),
-                      ),
-                      DropdownMenuItem(
-                        value: ApiProtocol.anthropic,
-                        child: Text('Anthropic'),
-                      ),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) setDialogState(() => selectedProtocol = v);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: keyCtrl,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'API Key',
-                      prefixIcon: Icon(Icons.key),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── 测试连接 & 获取模型列表 按钮 ──
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: testing
-                              ? null
-                              : () async {
-                                  final url = urlCtrl.text.trim();
-                                  if (url.isEmpty) {
-                                    ScaffoldMessenger.of(ctx).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('请先填写 API 地址'),
-                                        backgroundColor: Colors.orange,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  setDialogState(() {
-                                    testing = true;
-                                    testResult = null;
-                                  });
-                                  final aiService = ref.read(aiServiceProvider);
-                                  final config = AiConfig(
-                                    id: '_test',
-                                    name: nameCtrl.text.trim().isEmpty
-                                        ? 'test'
-                                        : nameCtrl.text.trim(),
-                                    apiUrl: url,
-                                    modelName: modelCtrl.text.trim().isEmpty
-                                        ? 'gpt-3.5-turbo'
-                                        : modelCtrl.text.trim(),
-                                    apiKey: keyCtrl.text.trim().isEmpty
-                                        ? null
-                                        : keyCtrl.text.trim(),
-                                    protocol: selectedProtocol,
-                                  );
-                                  final result = await aiService.testConnection(
-                                    config,
-                                  );
-                                  setDialogState(() {
-                                    testing = false;
-                                    testSuccess = result['success'] as bool;
-                                    testResult = result['message'] as String;
-                                    testLatency = result['latency_ms'] as int?;
-                                  });
-                                },
-                          icon: testing
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.wifi_tethering, size: 18),
-                          label: Text(testing ? '测试中...' : '测试连接'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: fetchingModels
-                              ? null
-                              : () async {
-                                  final url = urlCtrl.text.trim();
-                                  if (url.isEmpty) {
-                                    ScaffoldMessenger.of(ctx).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('请先填写 API 地址'),
-                                        backgroundColor: Colors.orange,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  setDialogState(() => fetchingModels = true);
-                                  final aiService = ref.read(aiServiceProvider);
-                                  final config = AiConfig(
-                                    id: '_fetch',
-                                    name: 'fetch',
-                                    apiUrl: url,
-                                    modelName: 'x',
-                                    apiKey: keyCtrl.text.trim().isEmpty
-                                        ? null
-                                        : keyCtrl.text.trim(),
-                                    protocol: selectedProtocol,
-                                  );
-                                  try {
-                                    final models = await aiService.fetchModels(
-                                      config,
-                                    );
-                                    setDialogState(() {
-                                      fetchingModels = false;
-                                      availableModels = models;
-                                    });
-                                    if (models.isEmpty && ctx.mounted) {
-                                      ScaffoldMessenger.of(ctx).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('未获取到模型列表，请检查地址和 Key'),
-                                          backgroundColor: Colors.orange,
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    setDialogState(
-                                      () => fetchingModels = false,
-                                    );
-                                    if (ctx.mounted) {
-                                      ScaffoldMessenger.of(ctx).showSnackBar(
-                                        SnackBar(
-                                          content: Text('获取失败: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                          icon: fetchingModels
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.download, size: 18),
-                          label: Text(fetchingModels ? '获取中...' : '获取模型'),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // ── 测试结果 ──
-                  if (testResult != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: (testSuccess == true ? Colors.green : Colors.red)
-                            .withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color:
-                              (testSuccess == true ? Colors.green : Colors.red)
-                                  .withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            testSuccess == true
-                                ? Icons.check_circle
-                                : Icons.error,
-                            color: testSuccess == true
-                                ? Colors.green
-                                : Colors.red,
-                            size: 20,
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: keyCtrl,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'API Key',
+                            prefixIcon: Icon(Icons.key),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: testing ? null : doTestConnection,
+                                icon: testing
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.wifi_tethering,
+                                        size: 18,
+                                      ),
+                                label: Text(testing ? '测试中...' : '测试连接'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: fetchingModels
+                                    ? null
+                                    : doFetchModels,
+                                icon: fetchingModels
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.download, size: 18),
+                                label: Text(fetchingModels ? '获取中...' : '获取模型'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (testResult != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color:
+                                  (testSuccess == true
+                                          ? Colors.green
+                                          : Colors.red)
+                                      .withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color:
+                                    (testSuccess == true
+                                            ? Colors.green
+                                            : Colors.red)
+                                        .withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
                               children: [
-                                Text(
-                                  testResult!,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: testSuccess == true
-                                        ? Colors.green[800]
-                                        : Colors.red[800],
+                                Icon(
+                                  testSuccess == true
+                                      ? Icons.check_circle
+                                      : Icons.error,
+                                  color: testSuccess == true
+                                      ? Colors.green
+                                      : Colors.red,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        testResult!,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: testSuccess == true
+                                              ? Colors.green[800]
+                                              : Colors.red[800],
+                                        ),
+                                      ),
+                                      if (testLatency != null)
+                                        Text(
+                                          '延迟: ${testLatency}ms',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
-                                if (testLatency != null)
-                                  Text(
-                                    '延迟: ${testLatency}ms',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
                               ],
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-
-                  // ── 模型列表预览 ──
-                  if (availableModels.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 150),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '可用模型 (${availableModels.length})，点击选择:',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.blue[700],
-                              fontWeight: FontWeight.bold,
+                        if (availableModels.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 150),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.blue.withOpacity(0.2),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Expanded(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: availableModels.length,
-                              itemBuilder: (_, i) => InkWell(
-                                onTap: () {
-                                  modelCtrl.text = availableModels[i];
-                                  setDialogState(() {});
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: Text(
-                                    availableModels[i],
-                                    style: const TextStyle(fontSize: 13),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '可用模型 (${availableModels.length})，点击选择:',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Expanded(
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: availableModels.length,
+                                    itemBuilder: (_, i) => InkWell(
+                                      onTap: () {
+                                        modelCtrl.text = availableModels[i];
+                                        setDialogState(() {});
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 2,
+                                        ),
+                                        child: Text(
+                                          availableModels[i],
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                ],
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('取消'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  final name = nameCtrl.text.trim();
-                  final url = urlCtrl.text.trim();
-                  final model = modelCtrl.text.trim();
-                  final key = keyCtrl.text.trim();
-                  if (name.isEmpty || url.isEmpty || model.isEmpty) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                        content: Text('名称、API地址、模型ID不能为空'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-                  final db = DatabaseHelper();
-                  final config = AiConfig(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: name,
-                    apiUrl: url,
-                    modelName: model,
-                    protocol: selectedProtocol,
-                  );
-                  await db.insertAiConfig(db.toDbMap(config));
-                  if (key.isNotEmpty) {
-                    await SecureStorageDataSource().writeApiKey(config.id, key);
-                  }
-                  await loadAiConfigs(ref);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('已添加「$name」'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                },
-                child: const Text('添加'),
-              ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('取消'),
+                ),
+                if (step == 1)
+                  FilledButton(
+                    onPressed: () async {
+                      final name = nameCtrl.text.trim();
+                      final url = urlCtrl.text.trim();
+                      final model = modelCtrl.text.trim();
+                      final key = keyCtrl.text.trim();
+                      if (name.isEmpty || url.isEmpty || model.isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('名称、API地址、模型ID不能为空'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+                      final db = DatabaseHelper();
+                      if (isEdit) {
+                        final updated = AiConfig(
+                          id: existingConfig.id,
+                          name: name,
+                          apiUrl: url,
+                          modelName: model,
+                          protocol: selectedProtocol,
+                        );
+                        await db.insertAiConfig(db.toDbMap(updated));
+                        if (key.isNotEmpty) {
+                          await SecureStorageDataSource().writeApiKey(
+                            existingConfig.id,
+                            key,
+                          );
+                        }
+                      } else {
+                        final newId = DateTime.now().millisecondsSinceEpoch
+                            .toString();
+                        final config = AiConfig(
+                          id: newId,
+                          name: name,
+                          apiUrl: url,
+                          modelName: model,
+                          protocol: selectedProtocol,
+                        );
+                        await db.insertAiConfig(db.toDbMap(config));
+                        if (key.isNotEmpty) {
+                          await SecureStorageDataSource().writeApiKey(
+                            config.id,
+                            key,
+                          );
+                        }
+                      }
+                      await loadAiConfigs(ref);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isEdit ? '已更新「$name」' : '已添加「$name」'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(isEdit ? '保存修改' : '添加'),
+                  ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildVendorGrid(
+    List<_VendorInfo> vendors,
+    void Function(_VendorInfo) onSelect,
+    VoidCallback onCustom,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            '选择厂商',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 2.5,
+          ),
+          itemCount: vendors.length + 1,
+          itemBuilder: (_, i) {
+            if (i == vendors.length) {
+              return _VendorCard(
+                name: '自定义',
+                subtitle: '手动填写所有字段',
+                icon: Icons.build,
+                onTap: onCustom,
+              );
+            }
+            final v = vendors[i];
+            return _VendorCard(
+              name: v.name,
+              subtitle: v.defaultModels.join(', '),
+              icon: Icons.cloud,
+              onTap: () => onSelect(v),
+            );
+          },
+        ),
+      ],
     );
   }
 }

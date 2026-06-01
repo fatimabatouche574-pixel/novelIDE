@@ -39,6 +39,8 @@ class FileTreeView extends StatelessWidget {
   final Function(FileTreeNode)? onNodeTap;
   final Function(FileTreeNode)? onNodeLongPress;
   final Function(FileTreeNode)? onToggleExpand;
+  final bool shrinkWrap;
+  final ScrollPhysics? physics;
 
   const FileTreeView({
     super.key,
@@ -46,6 +48,8 @@ class FileTreeView extends StatelessWidget {
     this.onNodeTap,
     this.onNodeLongPress,
     this.onToggleExpand,
+    this.shrinkWrap = false,
+    this.physics,
   });
 
   @override
@@ -53,6 +57,9 @@ class FileTreeView extends StatelessWidget {
     final items = _flattenNodes(nodes);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 4),
+      shrinkWrap: shrinkWrap,
+      physics:
+          physics ?? (shrinkWrap ? const NeverScrollableScrollPhysics() : null),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
