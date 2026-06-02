@@ -15,6 +15,17 @@ import 'package:novel_ide/data/models/memory/memory_entity.dart';
 import 'package:novel_ide/presentation/pages/memory/memory_graph_page.dart';
 import 'package:novel_ide/presentation/pages/memory/memory_list_page.dart';
 import 'package:novel_ide/presentation/pages/memory/memory_edit_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_theme_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_user_prefs_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_language_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_model_config_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_functional_config_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_speech_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_prompts_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_waifu_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_tool_perm_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_backup_page.dart';
+import 'package:novel_ide/presentation/pages/settings/operit_context_summary_page.dart';
 
 class AppRouter {
   static const String home = '/';
@@ -32,6 +43,17 @@ class AppRouter {
   static const String memoryGraph = '/memory-graph';
   static const String memoryList = '/memory-list';
   static const String memoryEdit = '/memory-edit';
+  static const String theme = '/settings/theme';
+  static const String userPrefs = '/settings/user-prefs';
+  static const String language = '/settings/language';
+  static const String modelConfig = '/settings/model-config';
+  static const String functionalConfig = '/settings/functional-config';
+  static const String speech = '/settings/speech';
+  static const String prompts = '/settings/prompts';
+  static const String waifu = '/settings/waifu';
+  static const String toolPerm = '/settings/tool-perm';
+  static const String backup = '/settings/backup';
+  static const String contextSummary = '/settings/context-summary';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -111,6 +133,32 @@ class AppRouter {
             memory: memory,
             novelId: args?['novelId'] as String?,
           ),
+        );
+      case theme:
+        return MaterialPageRoute(builder: (_) => const OperitThemePage());
+      case userPrefs:
+        return MaterialPageRoute(builder: (_) => const OperitUserPrefsPage());
+      case language:
+        return MaterialPageRoute(builder: (_) => const OperitLanguagePage());
+      case modelConfig:
+        return MaterialPageRoute(builder: (_) => const OperitModelConfigPage());
+      case functionalConfig:
+        return MaterialPageRoute(
+          builder: (_) => const OperitFunctionalConfigPage(),
+        );
+      case speech:
+        return MaterialPageRoute(builder: (_) => const OperitSpeechPage());
+      case prompts:
+        return MaterialPageRoute(builder: (_) => const OperitPromptsPage());
+      case waifu:
+        return MaterialPageRoute(builder: (_) => const OperitWaifuPage());
+      case toolPerm:
+        return MaterialPageRoute(builder: (_) => const OperitToolPermPage());
+      case backup:
+        return MaterialPageRoute(builder: (_) => const OperitBackupPage());
+      case contextSummary:
+        return MaterialPageRoute(
+          builder: (_) => const OperitContextSummaryPage(),
         );
       default:
         return MaterialPageRoute(builder: (_) => const MainShellV2());

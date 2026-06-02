@@ -15,6 +15,7 @@ import 'package:novel_ide/data/services/ai_service.dart';
 import 'package:novel_ide/data/services/novel_memory.dart';
 import 'package:novel_ide/data/services/user_memory.dart';
 import 'package:novel_ide/data/services/workspace_agent.dart';
+import 'package:novel_ide/data/models/tool_parameter_schema.dart';
 import 'package:novel_ide/data/services/agent_tool_executors.dart';
 import 'package:novel_ide/data/services/voice_service.dart';
 import 'package:novel_ide/data/services/skill_matcher.dart';
@@ -69,6 +70,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
 
   // 深度思考内容：assistant消息索引 → 思考内容
   final Map<int, String> _thinkingContents = {};
+
+  // 工具调用结果：assistant消息索引 → 工具结果列表
+  final Map<int, List<ToolResult>> _toolCallResults = {};
 
   // 历史记录仓库
   final ChatHistoryRepository _historyRepo = ChatHistoryRepository();
@@ -162,6 +166,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       _currentSession = session;
       _skillMatches.clear();
       _thinkingContents.clear();
+      _toolCallResults.clear();
     });
   }
 
@@ -318,6 +323,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
 
       // 始终使用Agent模式，创建Agent并注册所有工具
       final agent = WorkspaceAgent();
+      final toolHook = _ChatToolHook(
+        onStateChanged: () {
+          if (mounted) setState(() {});
+        },
+      );
+      agent.addHook(toolHook);
       if (novel != null) {
         registerAllToolExecutors(
           agent: agent,
@@ -379,6 +390,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         if (response.thinkingContent != null &&
             response.thinkingContent!.isNotEmpty) {
           _thinkingContents[msgIdx] = response.thinkingContent!;
+        }
+        if (response.toolResults.isNotEmpty) {
+          _toolCallResults[msgIdx] = response.toolResults;
         }
         _isLoading = false;
       });
@@ -489,12 +503,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                       final isUser = msg['role'] == 'user';
                       final matchedForThis = _skillMatches[index];
                       final thinkingForThis = _thinkingContents[index];
+                      final toolResultsForThis = _toolCallResults[index];
                       return _buildMessage(
                         msg['content'] ?? '',
                         isUser,
                         matchedForThis,
                         index,
                         thinkingContent: thinkingForThis,
+                        toolResults: toolResultsForThis,
                       );
                     },
                   ),
@@ -593,6 +609,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     List<WritingSkill>? skills,
     int index, {
     String? thinkingContent,
+    List<ToolResult>? toolResults,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -606,6 +623,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           Padding(
             padding: const EdgeInsets.only(bottom: 8, left: 44),
             child: _CollapsibleThinkingCard(thinkingContent: thinkingContent),
+          ),
+        if (toolResults != null && toolResults.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8, left: 44),
+            child: _buildToolResultsCard(toolResults),
           ),
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -693,6 +715,54 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           ),
         ),
       ],
+    );
+  }
+
+  /// 工具调用结果卡片
+  Widget _buildToolResultsCard(List<ToolResult> results) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardBg2.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: results.map((r) {
+          final icon = r.success ? Icons.check_circle : Icons.error;
+          final color = r.success ? Colors.green : Colors.orange;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Icon(icon, size: 14, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  r.toolName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    r.message,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _textTertiary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -1418,6 +1488,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
               setState(() {
                 _currentSession!.messages.removeAt(index);
                 _skillMatches.remove(index);
+                _toolCallResults.remove(index);
                 final newMatches = <int, List<WritingSkill>>{};
                 _skillMatches.forEach((key, value) {
                   if (key < index) {
@@ -1428,6 +1499,16 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                 });
                 _skillMatches.clear();
                 _skillMatches.addAll(newMatches);
+                final newToolResults = <int, List<ToolResult>>{};
+                _toolCallResults.forEach((key, value) {
+                  if (key < index) {
+                    newToolResults[key] = value;
+                  } else if (key > index) {
+                    newToolResults[key - 1] = value;
+                  }
+                });
+                _toolCallResults.clear();
+                _toolCallResults.addAll(newToolResults);
               });
               _saveHistory();
               TopNotification.success(context, '消息已撤回');
@@ -1646,6 +1727,34 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           ),
       ],
     );
+  }
+}
+
+/// 工具调用钩子：追踪当前活跃的工具并触发UI刷新
+class _ChatToolHook extends ToolHook {
+  _ChatToolHook({required this.onStateChanged});
+
+  final VoidCallback onStateChanged;
+  final Set<String> _activeTools = {};
+
+  Set<String> get activeTools => Set.unmodifiable(_activeTools);
+
+  @override
+  void onToolExecutionStarted(String toolName) {
+    _activeTools.add(toolName);
+    onStateChanged();
+  }
+
+  @override
+  void onToolExecutionFinished(String toolName) {
+    _activeTools.remove(toolName);
+    onStateChanged();
+  }
+
+  @override
+  void onToolExecutionError(String toolName, Object error) {
+    _activeTools.remove(toolName);
+    onStateChanged();
   }
 }
 
