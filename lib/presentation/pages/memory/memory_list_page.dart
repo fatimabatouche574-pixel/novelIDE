@@ -23,6 +23,10 @@ class _MemoryListPageState extends ConsumerState<MemoryListPage> {
   bool _showSearch = false;
   final TextEditingController _searchCtrl = TextEditingController();
 
+  // 文件夹筛选
+  String? _selectedFolder;
+  List<String> _folders = [];
+
   @override
   void initState() {
     super.initState();
@@ -44,10 +48,17 @@ class _MemoryListPageState extends ConsumerState<MemoryListPage> {
         db: db,
         profileId: widget.novelId ?? 'global',
       );
-      final memories = await repo.searchMemories(query: '*');
+      final memories = await repo.searchMemories(
+        query: '*',
+        folderPath: _selectedFolder,
+      );
+      final folders = await repo.getAllFolderPaths(
+        novelId: widget.novelId,
+      );
       if (mounted) {
         setState(() {
           _memories = memories;
+          _folders = folders;
           _isLoading = false;
         });
       }
@@ -73,6 +84,7 @@ class _MemoryListPageState extends ConsumerState<MemoryListPage> {
       final query = _searchQuery.trim();
       final results = await repo.searchMemories(
         query: query.isEmpty ? '*' : query,
+        folderPath: _selectedFolder,
       );
       if (mounted) {
         setState(() => _memories = results);
@@ -157,6 +169,7 @@ class _MemoryListPageState extends ConsumerState<MemoryListPage> {
       body: Column(
         children: [
           if (_showSearch) _buildSearchBar(skin),
+          if (_folders.isNotEmpty) _buildFolderFilter(skin),
           Expanded(child: _buildBody(skin)),
         ],
       ),
@@ -190,6 +203,55 @@ class _MemoryListPageState extends ConsumerState<MemoryListPage> {
           ),
         ),
         style: TextStyle(color: skin.textPrimary),
+      ),
+    );
+  }
+
+  Widget _buildFolderFilter(SkinTheme skin) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildFolderChip(null, '全部', skin),
+          ..._folders.map((f) => _buildFolderChip(f, f, skin)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFolderChip(String? folder, String label, SkinTheme skin) {
+    final selected = _selectedFolder == folder;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _selectedFolder = folder);
+          _performSearch();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? skin.primary.withValues(alpha: 0.15)
+                : skin.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? skin.primary.withValues(alpha: 0.4)
+                  : skin.textSecondary.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: selected ? skin.primary : skin.textSecondary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -297,12 +359,26 @@ class _MemoryListPageState extends ConsumerState<MemoryListPage> {
                     const SizedBox(width: 8),
                   ],
 
-                  // 来源
+                  // 来源 + 文件夹
                   if (memory.source.isNotEmpty)
                     Text(
                       memory.source,
                       style: TextStyle(fontSize: 12, color: skin.textSecondary),
                     ),
+                  if (memory.folderPath != null &&
+                      memory.folderPath!.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.folder_outlined,
+                      size: 12,
+                      color: skin.textSecondary,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      memory.folderPath!,
+                      style: TextStyle(fontSize: 11, color: skin.textSecondary),
+                    ),
+                  ],
                 ],
               ),
             ],

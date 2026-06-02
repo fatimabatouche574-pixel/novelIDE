@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/core/theme/app_themes.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
+import 'package:novel_ide/core/theme/ui_tokens.dart';
 
 /// 手机端布局组件
 ///
 /// 管理侧边栏滑入/滑出动画、拖拽手势和遮罩层。
-/// 使用弹簧动画（320ms Curves.elasticOut）实现自然的物理感。
+/// 使用 Operit 风格动画曲线（cubic-bezier .2,.9,.3,1），420ms 时长。
 class PhoneLayout extends ConsumerStatefulWidget {
   const PhoneLayout({
     super.key,
@@ -39,8 +40,11 @@ class PhoneLayout extends ConsumerStatefulWidget {
 class _PhoneLayoutState extends ConsumerState<PhoneLayout>
     with SingleTickerProviderStateMixin {
   static const _sidebarWidth = 280.0;
-  static const _animationDuration = Duration(milliseconds: 320);
-  static const _animationCurve = Curves.elasticOut;
+  static const _dragEdgeWidth = 30.0;
+
+  /// Operit 动画曲线: cubic-bezier(.2, .9, .3, 1)
+  static const _animCurve = Cubic(0.2, 0.9, 0.3, 1.0);
+  static const _animDuration = Duration(milliseconds: 420);
 
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -53,14 +57,8 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: _animationDuration,
-    );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: _animationCurve,
-    );
+    _controller = AnimationController(vsync: this, duration: _animDuration);
+    _animation = CurvedAnimation(parent: _controller, curve: _animCurve);
     if (widget.sidebarOpen) {
       _controller.value = 1.0;
     }
@@ -70,9 +68,7 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
   void didUpdateWidget(covariant PhoneLayout oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.sidebarOpen != oldWidget.sidebarOpen) {
-      widget.sidebarOpen
-          ? _controller.forward()
-          : _controller.reverse();
+      widget.sidebarOpen ? _controller.forward() : _controller.reverse();
     }
   }
 
@@ -85,8 +81,8 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
   // ── 拖拽手势 ──────────────────────────────────────────────
 
   void _handleDragStart(DragStartDetails details) {
-    // 仅在屏幕左侧 30px 范围内起始时激活
-    if (details.globalPosition.dx < 30) {
+    // 仅在屏幕左侧边缘 30px 范围内激活
+    if (details.globalPosition.dx < _dragEdgeWidth) {
       _isDragging = true;
       _dragStartX = details.globalPosition.dx;
       _dragOpened = widget.sidebarOpen;
@@ -118,6 +114,11 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
   Widget build(BuildContext context) {
     final skin = ref.watch(skinThemeProvider);
 
+    // 抽屉打开时内容区 3D 变换
+    final animValue = _animation.value;
+    final translateX = _sidebarWidth * 0.82 * animValue;
+    final scale = 1.0 - 0.08 * animValue;
+
     return Scaffold(
       backgroundColor: skin.background,
       body: SafeArea(
@@ -128,11 +129,18 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
           behavior: HitTestBehavior.translucent,
           child: Stack(
             children: [
-              // 主内容区
-              widget.content,
+              // 主内容区 - 带 3D 变换
+              Transform(
+                alignment: Alignment.centerLeft,
+                transform: Matrix4.identity()
+                  ..setEntry(0, 3, translateX)
+                  ..setEntry(1, 1, scale)
+                  ..setEntry(2, 2, scale),
+                child: widget.content,
+              ),
 
-              // 遮罩层（侧边栏打开时显示）
-              _buildMask(skin),
+              // 遮罩层（侧边栏打开时渐入）
+              _buildMask(animValue, skin),
 
               // 左侧侧边栏（滑入动画）
               _buildSidebar(),
@@ -146,27 +154,25 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
     );
   }
 
-  Widget _buildMask(SkinTheme skin) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        final opacity = _animation.value * 0.45;
-        if (opacity <= 0) return const SizedBox.shrink();
-        return Positioned.fill(
-          child: GestureDetector(
-            onTap: () => widget.onSidebarOpenChanged(false),
-            child: Container(color: Colors.black.withOpacity(opacity)),
-          ),
-        );
-      },
+  /// 遮罩层 - 侧边栏打开时渐入
+  Widget _buildMask(double animValue, SkinTheme skin) {
+    final opacity = animValue * 0.45;
+    if (opacity <= 0) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: () => widget.onSidebarOpenChanged(false),
+        child: Container(color: Colors.black.withValues(alpha: opacity)),
+      ),
     );
   }
 
+  /// 侧边栏滑入动画
   Widget _buildSidebar() {
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        final offset = -_sidebarWidth * (1 - _animation.value);
+        final offset = -_sidebarWidth * (1.0 - _animation.value);
         return Positioned(
           left: offset,
           top: 0,
@@ -177,6 +183,7 @@ class _PhoneLayoutState extends ConsumerState<PhoneLayout>
       },
       child: Material(
         elevation: 16,
+        color: UiTokens.sidebarBg,
         child: widget.sidebar,
       ),
     );
