@@ -106,21 +106,21 @@ class NavItem {
 
   // ── 底部快捷 ──
   static const bottomShortcuts = [
-    _BottomShortcut(
+    BottomShortcut(
       id: 'import',
       label: '导入',
       iconCodepoint: 0xe2c6, // Icons.file_upload
       route: 'import',
       group: NavGroup.system,
     ),
-    _BottomShortcut(
+    BottomShortcut(
       id: 'export',
       label: '导出',
       iconCodepoint: 0xe2c7, // Icons.file_download
       route: 'export',
       group: NavGroup.system,
     ),
-    _BottomShortcut(
+    BottomShortcut(
       id: 'settings',
       label: '设置',
       iconCodepoint: 0xe8b8, // Icons.settings
@@ -232,14 +232,14 @@ class _QuickAction {
 }
 
 /// 底部快捷导航数据
-class _BottomShortcut {
+class BottomShortcut {
   final String id;
   final String label;
   final int iconCodepoint;
   final String route;
   final NavGroup group;
 
-  const _BottomShortcut({
+  const BottomShortcut({
     required this.id,
     required this.label,
     required this.iconCodepoint,

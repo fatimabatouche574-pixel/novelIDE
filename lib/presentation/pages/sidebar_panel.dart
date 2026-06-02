@@ -443,7 +443,7 @@ class _BottomShortcutRow extends StatelessWidget {
     this.onExport,
   });
 
-  final List<_BottomShortcut> shortcuts;
+  final List<BottomShortcut> shortcuts;
   final Color textColor;
   final void Function(NavItem item) onNavigate;
   final VoidCallback? onImport;
