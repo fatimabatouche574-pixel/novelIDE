@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/core/constants.dart';
+import 'package:novel_ide/core/theme/skin_provider.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/presentation/state/app_providers.dart';
 import 'package:novel_ide/data/datasources/database_helper.dart';
@@ -386,6 +387,18 @@ class AiConfigListPage extends ConsumerWidget {
         final contextLengthCtrl = TextEditingController(
           text: (existingConfig?.contextLength ?? 64.0).toStringAsFixed(1),
         );
+        final customHeadersCtrl = TextEditingController(
+          text: existingConfig?.customHeaders ?? '{}',
+        );
+        // 新增状态变量
+        double summaryThreshold = existingConfig?.summaryTokenThreshold ?? 0.7;
+        final requestLimitCtrl = TextEditingController(
+          text: (existingConfig?.requestLimitPerMinute ?? 0).toString(),
+        );
+        final maxConcurrentCtrl = TextEditingController(
+          text: (existingConfig?.maxConcurrentRequests ?? 0).toString(),
+        );
+        bool apiKeyVisible = false;
 
         return StatefulBuilder(
           builder: (ctx, setDialogState) {

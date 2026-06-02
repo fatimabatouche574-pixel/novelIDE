@@ -48,44 +48,58 @@ class SkinTheme {
     required this.brightness,
   });
 
-  ThemeData toThemeData() => ThemeData(
-    useMaterial3: true,
-    brightness: brightness,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primary,
+  ThemeData toThemeData() {
+    final isDark = brightness == Brightness.dark;
+    return ThemeData(
+      useMaterial3: true,
       brightness: brightness,
-      primary: primary,
-      secondary: secondary,
-      surface: surface,
-    ),
-    scaffoldBackgroundColor: background,
-    appBarTheme: AppBarTheme(
-      elevation: 0,
-      centerTitle: true,
-      backgroundColor: appBarBg,
-      foregroundColor: textPrimary,
-    ),
-    cardTheme: CardThemeData(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: cardBg,
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: navBg,
-      selectedItemColor: navSelected,
-      unselectedItemColor: navUnselected,
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-    ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: primary,
-      foregroundColor: Colors.white,
-    ),
-    dividerTheme: DividerThemeData(
-      color: textSecondary.withOpacity(0.2),
-      thickness: 0.5,
-    ),
-  );
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: brightness,
+        primary: primary,
+        secondary: secondary,
+        surface: surface,
+      ),
+      scaffoldBackgroundColor: background,
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: appBarBg,
+        foregroundColor: textPrimary,
+      ),
+      cardTheme: CardThemeData(
+        elevation: isDark ? 2 : 0,
+        shadowColor: isDark ? Colors.black54 : null,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isDark
+              ? BorderSide(
+                  color: Colors.white.withValues(alpha: 0.06),
+                )
+              : BorderSide.none,
+        ),
+        color: cardBg,
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: navBg,
+        selectedItemColor: navSelected,
+        unselectedItemColor: navUnselected,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+        elevation: isDark ? 6 : 4,
+      ),
+      dividerTheme: DividerThemeData(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : textSecondary.withValues(alpha: 0.2),
+        thickness: 0.5,
+      ),
+    );
+  }
 }
 
 /// 8种主题定义
@@ -116,15 +130,15 @@ class AppSkins {
     type: SkinType.black,
     primary: Color(0xFF10A37F),
     secondary: Color(0xFF00E5BB),
-    background: Color(0xFF000000),
-    surface: Color(0xFF1A1A1A),
-    textPrimary: Color(0xFFFFFFFF),
-    textSecondary: Color(0xFF888888),
-    appBarBg: Color(0xFF000000),
-    navBg: Color(0xFF0D0D0D),
+    background: Color(0xFF0A0A0A),
+    surface: Color(0xFF161616),
+    textPrimary: Color(0xFFE8E8E8),
+    textSecondary: Color(0xFF9E9E9E),
+    appBarBg: Color(0xFF0A0A0A),
+    navBg: Color(0xFF0A0A0A),
     navSelected: Color(0xFF10A37F),
-    navUnselected: Color(0xFF888888),
-    cardBg: Color(0xFF1F1F1F),
+    navUnselected: Color(0xFF9E9E9E),
+    cardBg: Color(0xFF1E1E1E),
     brightness: Brightness.dark,
   );
 

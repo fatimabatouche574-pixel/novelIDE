@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
+import 'package:novel_ide/data/models/memory/memory_repository.dart';
 import 'package:novel_ide/data/models/tool_parameter_schema.dart';
 import 'package:novel_ide/data/services/ai_service.dart'
     show AiService, ToolChatResponse;
 import 'package:novel_ide/data/services/chat/xml_tool_call_parser.dart';
+import 'package:novel_ide/data/services/memory/memory_pipeline.dart';
 
 /// Agent工具定义
 class AgentTool {
@@ -174,6 +177,15 @@ class WorkspaceAgent {
 
   /// 移除工具调用钩子
   void removeHook(ToolHook hook) => _hooks.remove(hook);
+
+  /// 通知所有钩子（安全调用，单个钩子异常不影响其他钩子）
+  void _notifyHooks(void Function(ToolHook hook) callback) {
+    for (final hook in _hooks) {
+      try {
+        callback(hook);
+      } catch (_) {}
+    }
+  }
 
   /// 所有可用工具（按分类组织，每个描述包含：何时用 + 返回什么 + 触发词）
   static final List<AgentTool> tools = [
@@ -670,11 +682,42 @@ class WorkspaceAgent {
     required List<Map<String, String>> messages,
     String? systemPrompt,
     int maxToolRounds = 5,
+    String? novelId,
   }) async {
     // Agent系统提示始终作为基础，自定义提示作为角色补充
-    final effectiveSystemPrompt = systemPrompt != null
+    var effectiveSystemPrompt = systemPrompt != null
         ? '$_defaultSystemPrompt\n\n---\n用户自定义角色设定：\n$systemPrompt'
         : _defaultSystemPrompt;
+
+    // 注入小说记忆到系统提示词（如果提供了 novelId）
+    if (novelId != null) {
+      try {
+        final db = await DatabaseHelper().database;
+        final repo = MemoryRepository(
+          db: db,
+          profileId: novelId,
+        );
+        final memories = await repo.searchMemories(
+          query: '*',
+          novelId: novelId,
+        );
+        if (memories.isNotEmpty) {
+          final top10 = memories.toList()
+            ..sort(
+              (a, b) => b.importance.compareTo(a.importance),
+            );
+          final selected = top10.take(10);
+          final buf = StringBuffer();
+          buf.writeln('\n\n=== 📝 小说记忆 ===');
+          for (final m in selected) {
+            buf.writeln('· ${m.title}: ${m.content}');
+          }
+          effectiveSystemPrompt += buf.toString();
+        }
+      } catch (_) {
+        // 记忆查询失败时静默忽略，不影响对话
+      }
+    }
 
     // 构建轻量消息列表
     List<Map<String, dynamic>> apiMessages = [
@@ -703,6 +746,13 @@ class WorkspaceAgent {
         final errorMsg = e is Exception ? e.toString() : '未知错误';
         // 第一轮就失败，直接降级为纯文本模式返回
         if (round == 0) {
+          _extractAndSaveMemory(
+            novelId: novelId,
+            messages: messages,
+            aiResponse: '工具调用暂时不可用',
+            toolCalls: toolCalls,
+            toolResults: toolResults,
+          );
           return AgentResponse(
             content: '工具调用暂时不可用，已切换为纯文本模式。\n$errorMsg',
             toolCalls: toolCalls,
@@ -751,8 +801,20 @@ class WorkspaceAgent {
               final args = tc.arguments is String
                   ? jsonDecode(tc.arguments as String)
                   : (tc.arguments as Map<String, dynamic>? ?? {});
+              _notifyHooks(
+                (h) => h.onToolCallRequested(tc.functionName, args),
+              );
+              _notifyHooks(
+                (h) => h.onToolExecutionStarted(tc.functionName),
+              );
               final result = await executor(args);
               toolResults.add(result);
+              _notifyHooks(
+                (h) => h.onToolExecutionResult(tc.functionName, result.success),
+              );
+              _notifyHooks(
+                (h) => h.onToolExecutionFinished(tc.functionName),
+              );
 
               // 工具结果摘要回传（截断过长内容，避免payload膨胀）
               apiMessages.add({
@@ -761,6 +823,9 @@ class WorkspaceAgent {
                 'content': _summarizeToolResult(result),
               });
             } catch (e) {
+              _notifyHooks(
+                (h) => h.onToolExecutionError(tc.functionName, e),
+              );
               toolResults.add(
                 ToolResult.failure(
                   toolName: tc.functionName,
@@ -800,13 +865,28 @@ class WorkspaceAgent {
             final executor = _executors[xc.name];
             if (executor != null) {
               try {
+                _notifyHooks(
+                  (h) => h.onToolCallRequested(xc.name, xc.arguments),
+                );
+                _notifyHooks(
+                  (h) => h.onToolExecutionStarted(xc.name),
+                );
                 final result = await executor(xc.arguments);
                 toolResults.add(result);
+                _notifyHooks(
+                  (h) => h.onToolExecutionResult(xc.name, result.success),
+                );
+                _notifyHooks(
+                  (h) => h.onToolExecutionFinished(xc.name),
+                );
                 apiMessages.add({
                   'role': 'user',
                   'content': '[工具结果] ${xc.name}: ${_summarizeToolResult(result)}',
                 });
               } catch (e) {
+                _notifyHooks(
+                  (h) => h.onToolExecutionError(xc.name, e),
+                );
                 toolResults.add(
                   ToolResult.failure(
                     toolName: xc.name,
@@ -830,6 +910,13 @@ class WorkspaceAgent {
         }
 
         // 没有 XML 工具调用，返回最终回复
+        _extractAndSaveMemory(
+          novelId: novelId,
+          messages: messages,
+          aiResponse: content,
+          toolCalls: toolCalls,
+          toolResults: toolResults,
+        );
         return AgentResponse(
           content: content,
           thinkingContent: response.thinkingContent,
@@ -840,6 +927,13 @@ class WorkspaceAgent {
     }
 
     // 达到最大轮次
+    _extractAndSaveMemory(
+      novelId: novelId,
+      messages: messages,
+      aiResponse: '已达到最大工具调用轮次（$maxToolRounds轮）',
+      toolCalls: toolCalls,
+      toolResults: toolResults,
+    );
     return AgentResponse(
       content: '已达到最大工具调用轮次（$maxToolRounds轮），请简化你的需求。',
       toolCalls: toolCalls,
@@ -859,11 +953,62 @@ class WorkspaceAgent {
   String _summarizeToolResult(ToolResult result) {
     final content = result.message;
     if (content.length <= 300) return content;
-    // 超过300字时截断，保留前200 + 后100
+    // 超过300字时截断，保留前前200 + 后100
     final prefix = content.substring(0, 200);
     final suffix = content.substring(content.length - 100);
     final omitted = content.length - 300;
     return '$prefix\n...（省略$omitted字）...\n$suffix';
+  }
+
+  /// 异步提取对话关键信息并存入记忆（不阻塞返回）
+  ///
+  /// 使用三阶段管线：语义分割 → 结构化抽取 → 整合入库
+  void _extractAndSaveMemory({
+    required String? novelId,
+    required List<Map<String, String>> messages,
+    required String aiResponse,
+    required Map<String, String> toolCalls,
+    required List<ToolResult> toolResults,
+  }) {
+    if (novelId == null || novelId.isEmpty) return;
+    // 异步执行，不阻塞返回
+    Future.microtask(() async {
+      try {
+        final db = await DatabaseHelper().database;
+        final repo = MemoryRepository(db: db, profileId: novelId);
+
+        // 使用三阶段管线处理对话
+        final pipeline = MemoryPipeline(repository: repo);
+        final toolNames = toolCalls.keys.toList();
+        await pipeline.run(
+          messages: messages,
+          toolCallNames: toolNames,
+          novelId: novelId,
+        );
+      } catch (_) {
+        // 管线失败时回退到简单提取
+        try {
+          final db = await DatabaseHelper().database;
+          final repo = MemoryRepository(db: db, profileId: novelId);
+          for (final result in toolResults) {
+            if (!result.success) continue;
+            final writeTools = {
+              'add_character', 'add_setting', 'add_location',
+              'add_faction', 'add_item', 'add_hook', 'add_reference',
+            };
+            if (writeTools.contains(result.toolName)) {
+              await repo.createMemory(
+                title: '工具操作: ${result.toolName}',
+                content: result.message.length > 500
+                    ? result.message.substring(0, 500)
+                    : result.message,
+                source: 'tool_${result.toolName}',
+              );
+            }
+          }
+        } catch (_) {}
+      }
+    });
   }
 
   /// 轻量模式：只发对话，不传工具定义
