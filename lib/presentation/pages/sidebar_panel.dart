@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:novel_ide/presentation/models/nav_item.dart';
 import 'package:novel_ide/core/theme/ui_tokens.dart';
 
-/// 固定侧边栏面板 (240dp)
+/// 抽屉式侧边栏面板 — 宽度由 Drawer 控制，自适应手机屏幕
 class SidebarPanel extends StatefulWidget {
   final NavItem currentItem;
   final void Function(NavItem item) onNavigate;
@@ -20,8 +20,8 @@ class SidebarPanel extends StatefulWidget {
 class _SidebarPanelState extends State<SidebarPanel> {
   @override
   Widget build(BuildContext context) {
+    // 宽度由 Drawer 控制（通常为 240dp），填满抽屉即可
     return Container(
-      width: UiTokens.sidebarWidth,
       color: UiTokens.sidebarBg,
       child: Column(children: [
         Expanded(

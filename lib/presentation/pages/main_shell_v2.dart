@@ -14,7 +14,7 @@ import 'package:novel_ide/core/theme/ui_tokens.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
 import 'package:novel_ide/core/theme/app_themes.dart';
 
-/// V2 主壳层 — 采用 SidebarPanel + 右侧页面切换架构
+/// V2 主壳层 — 手机竖屏适配版：抽屉式侧边栏 + 全宽内容
 class MainShellV2 extends ConsumerStatefulWidget {
   const MainShellV2({super.key});
 
@@ -23,6 +23,8 @@ class MainShellV2 extends ConsumerStatefulWidget {
 }
 
 class _MainShellV2State extends ConsumerState<MainShellV2> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
   /// 当前导航项
   NavItem _currentItem = NavItem.aiChat;
 
@@ -31,6 +33,20 @@ class _MainShellV2State extends ConsumerState<MainShellV2> {
 
   /// 专注模式退出倒计时
   int _focusExitCountdown = 0;
+
+  // ── 打开 / 关闭抽屉 ──
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+  void _closeDrawer() {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  /// 抽屉内导航
+  void _onDrawerNavigate(NavItem item) {
+    _closeDrawer();
+    setState(() => _currentItem = item);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,35 +58,26 @@ class _MainShellV2State extends ConsumerState<MainShellV2> {
     }
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: skin.background,
+      // ── 抽屉式侧边栏（从左侧滑出，覆盖在内容上方）──
+      drawer: Drawer(
+        width: UiTokens.sidebarWidth,
+        child: SafeArea(
+          child: SidebarPanel(
+            currentItem: _currentItem,
+            onNavigate: _onDrawerNavigate,
+          ),
+        ),
+      ),
+      // ── 主内容区（全屏宽度）──
       body: SafeArea(
-        child: Row(
+        child: Column(
           children: [
-            // 左侧固定侧边栏
-            SidebarPanel(
-              currentItem: _currentItem,
-              onNavigate: (item) {
-                setState(() => _currentItem = item);
-              },
-            ),
-
-            // 分隔线
-            Container(
-              width: 0.5,
-              color: skin.textSecondary.withOpacity(0.15),
-            ),
-
-            // 右侧内容区
-            Expanded(
-              child: Column(
-                children: [
-                  // 顶部栏
-                  _buildTopBar(),
-                  // 页面内容
-                  Expanded(child: _buildPageContent()),
-                ],
-              ),
-            ),
+            // 顶部栏
+            _buildTopBar(),
+            // 页面内容
+            Expanded(child: _buildPageContent()),
           ],
         ),
       ),
@@ -90,9 +97,9 @@ class _MainShellV2State extends ConsumerState<MainShellV2> {
       ),
       child: Row(
         children: [
-          // 汉堡菜单 ☰ — 触发专注模式
+          // 汉堡菜单 ☰ — 打开抽屉
           GestureDetector(
-            onTap: () => setState(() => _focusMode = !_focusMode),
+            onTap: _openDrawer,
             child: const Text(
               '☰',
               style: TextStyle(
@@ -145,7 +152,6 @@ class _MainShellV2State extends ConsumerState<MainShellV2> {
         return const MaterialsTreePage();
 
       case 'memory':
-        // 默认显示记忆列表
         final novel = ref.watch(selectedNovelProvider);
         if (novel != null) {
           return MemoryListPage(novelId: novel.id);
@@ -160,7 +166,6 @@ class _MainShellV2State extends ConsumerState<MainShellV2> {
             novelTitle: selectedNovel.title,
           );
         }
-        // 未选择作品时的提示
         return _buildNoNovelPlaceholder();
 
       case 'settings':
