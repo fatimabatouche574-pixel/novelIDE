@@ -372,13 +372,13 @@ void registerGeneralToolExecutors({
 
 /// 注册所有Agent工具执行器
 /// 将工具名连接到实际的数据操作
-void registerAllToolExecutors({
+Future<void> registerAllToolExecutors({
   required WorkspaceAgent agent,
   required String novelId,
   required String novelTitle,
   required List<TomatoAgent> presetAgents,
   required AiConfig aiConfig,
-}) {
+}) async {
   final materialRepo = MaterialRepository();
   final chapterRepo = ChapterRepository();
   final fs = LocalFileDataSource();

@@ -330,7 +330,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       );
       agent.addHook(toolHook);
       if (novel != null) {
-        registerAllToolExecutors(
+        await registerAllToolExecutors(
           agent: agent,
           novelId: novel.id,
           novelTitle: novel.title,
