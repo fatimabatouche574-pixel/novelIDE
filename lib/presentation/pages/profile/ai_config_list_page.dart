@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:novel_ide/core/constants.dart';
+import 'package:novel_ide/core/theme/app_themes.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/presentation/state/app_providers.dart';
