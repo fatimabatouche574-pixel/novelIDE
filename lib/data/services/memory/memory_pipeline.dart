@@ -1,5 +1,10 @@
+import 'dart:developer' as developer;
+
+import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/data/models/memory/memory_entity.dart';
 import 'package:novel_ide/data/models/memory/memory_repository.dart';
+import 'package:novel_ide/data/services/ai_service.dart';
+import 'package:novel_ide/data/services/memory/memory_analyzer.dart';
 
 /// 记忆三阶段管线
 ///
@@ -411,6 +416,66 @@ class MemoryPipeline {
       entities: allEntities,
       novelId: novelId,
     );
+  }
+
+  /// 执行 AI 驱动的记忆分析管线
+  ///
+  /// 使用 MemoryAnalyzer 替代规则匹配，通过 LLM 结构化抽取知识图谱。
+  /// 回退：如果 AI 分析失败，自动降级到本地规则匹配。
+  Future<List<Memory>> runWithAI({
+    required List<Map<String, String>> messages,
+    required List<String> toolCallNames,
+    required String novelId,
+    required AiService aiService,
+    AiConfig? config,
+  }) async {
+    if (config == null) {
+      return await run(
+        messages: messages,
+        toolCallNames: toolCallNames,
+        novelId: novelId,
+      );
+    }
+    try {
+      final analyzer = MemoryAnalyzer(
+        repository: _repository,
+        aiService: aiService,
+      );
+      await analyzer.analyzeAndSave(
+        config: config,
+        conversationHistory: messages,
+      );
+      // AI 分析器已直接写入数据库，返回空列表
+      // （规则匹配作为补充覆盖 AI 未处理的部分）
+      return await run(
+        messages: messages,
+        toolCallNames: toolCallNames,
+        novelId: novelId,
+      );
+    } catch (e) {
+      developer.log(
+        'AI 分析失败，降级到规则匹配: $e',
+        name: 'MemoryPipeline',
+      );
+      return await run(
+        messages: messages,
+        toolCallNames: toolCallNames,
+        novelId: novelId,
+      );
+    }
+  }
+
+  /// 使用 AI 自动分类未分类的记忆
+  Future<void> autoCategorizeWithAI({
+    required AiService aiService,
+    required AiConfig config,
+    String? novelId,
+  }) async {
+    final analyzer = MemoryAnalyzer(
+      repository: _repository,
+      aiService: aiService,
+    );
+    await analyzer.autoCategorize(config: config, novelId: novelId ?? '');
   }
 }
 

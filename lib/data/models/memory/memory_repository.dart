@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:sqflite/sqflite.dart';
@@ -35,8 +36,8 @@ class MemoryRepository {
     required Database db,
     required String profileId,
     this.generateEmbedding,
-  })  : _db = db,
-        _profileId = profileId;
+  }) : _db = db,
+       _profileId = profileId;
 
   // ============================================================
   // 数据库表初始化
@@ -110,15 +111,20 @@ class MemoryRepository {
 
     // 索引
     await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_memories_novel_id ON memories(novel_id)');
+      'CREATE INDEX IF NOT EXISTS idx_memories_novel_id ON memories(novel_id)',
+    );
     await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_memories_folder_path ON memories(folder_path)');
+      'CREATE INDEX IF NOT EXISTS idx_memories_folder_path ON memories(folder_path)',
+    );
     await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_memories_uuid ON memories(uuid)');
+      'CREATE INDEX IF NOT EXISTS idx_memories_uuid ON memories(uuid)',
+    );
     await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_memory_links_source ON memory_links(source_id)');
+      'CREATE INDEX IF NOT EXISTS idx_memory_links_source ON memory_links(source_id)',
+    );
     await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_memory_links_target ON memory_links(target_id)');
+      'CREATE INDEX IF NOT EXISTS idx_memory_links_target ON memory_links(target_id)',
+    );
   }
 
   // ============================================================
@@ -141,8 +147,7 @@ class MemoryRepository {
 
   bool _isFolderPlaceholderMemory(Memory memory) {
     final title = memory.title.trim();
-    return title == '.folder_placeholder' ||
-        title == '文件夹说明';
+    return title == '.folder_placeholder' || title == '文件夹说明';
   }
 
   // ============================================================
@@ -152,27 +157,22 @@ class MemoryRepository {
   /// 创建或更新一条记忆，自动生成嵌入向量
   Future<int> saveMemory(Memory memory) async {
     final now = DateTime.now().toIso8601String();
-    final normalizedFolder =
-        normalizeFolderPath(memory.folderPath);
-    final clampedCredibility =
-        memory.credibility.clamp(0.0, 1.0);
-    final clampedImportance =
-        memory.importance.clamp(0.0, 1.0);
+    final normalizedFolder = normalizeFolderPath(memory.folderPath);
+    final clampedCredibility = memory.credibility.clamp(0.0, 1.0);
+    final clampedImportance = memory.importance.clamp(0.0, 1.0);
 
     // 生成嵌入向量
     Embedding? newEmbedding = memory.embedding;
-    final textForEmbedding =
-        memory.isDocumentNode ? memory.title : memory.content;
-    if (textForEmbedding.trim().isNotEmpty &&
-        generateEmbedding != null) {
-      newEmbedding =
-          await generateEmbedding!(textForEmbedding);
+    final textForEmbedding = memory.isDocumentNode
+        ? memory.title
+        : memory.content;
+    if (textForEmbedding.trim().isNotEmpty && generateEmbedding != null) {
+      newEmbedding = await generateEmbedding!(textForEmbedding);
     }
 
     final data = <String, dynamic>{
       'uuid': memory.uuid,
-      'novel_id':
-          memory.novelId.isEmpty ? null : memory.novelId,
+      'novel_id': memory.novelId.isEmpty ? null : memory.novelId,
       'title': memory.title,
       'content': memory.content,
       'content_type': memory.contentType,
@@ -183,17 +183,19 @@ class MemoryRepository {
       'is_document_node': memory.isDocumentNode ? 1 : 0,
       'chunk_index_file_path': memory.chunkIndexFilePath,
       'folder_path': normalizedFolder,
-      'embedding': newEmbedding != null
-          ? _encodeEmbedding(newEmbedding)
-          : null,
+      'embedding': newEmbedding != null ? _encodeEmbedding(newEmbedding) : null,
       'updated_at': now,
       'last_accessed_at': now,
     };
 
     int id;
     if (memory.id > 0) {
-      await _db.update('memories', data,
-          where: 'id = ?', whereArgs: [memory.id]);
+      await _db.update(
+        'memories',
+        data,
+        where: 'id = ?',
+        whereArgs: [memory.id],
+      );
       id = memory.id;
     } else {
       data['created_at'] = now;
@@ -204,30 +206,44 @@ class MemoryRepository {
   }
 
   Future<Memory?> findMemoryById(int id) async {
-    final rows = await _db.query('memories',
-        where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await _db.query(
+      'memories',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return _memoryFromRow(rows.first);
   }
 
   Future<Memory?> findMemoryByUuid(String uuid) async {
-    final rows = await _db.query('memories',
-        where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await _db.query(
+      'memories',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return _memoryFromRow(rows.first);
   }
 
   Future<Memory?> findMemoryByTitle(String title) async {
-    final rows = await _db.query('memories',
-        where: 'title = ?', whereArgs: [title], limit: 1);
+    final rows = await _db.query(
+      'memories',
+      where: 'title = ?',
+      whereArgs: [title],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return _memoryFromRow(rows.first);
   }
 
-  Future<List<Memory>> findMemoriesByTitle(
-      String title) async {
-    final rows = await _db.query('memories',
-        where: 'title = ?', whereArgs: [title]);
+  Future<List<Memory>> findMemoriesByTitle(String title) async {
+    final rows = await _db.query(
+      'memories',
+      where: 'title = ?',
+      whereArgs: [title],
+    );
     return Future.wait(rows.map((r) => _memoryFromRow(r)));
   }
 
@@ -236,54 +252,267 @@ class MemoryRepository {
     if (memory == null) return false;
 
     await _db.transaction((txn) async {
-      await txn.delete('memory_links',
-          where: 'source_id = ? OR target_id = ?',
-          whereArgs: [memoryId, memoryId]);
-      await txn.delete('memory_tag_relations',
-          where: 'memory_id = ?', whereArgs: [memoryId]);
-      await txn.delete('memory_properties',
-          where: 'memory_id = ?', whereArgs: [memoryId]);
-      await txn.delete('memories',
-          where: 'id = ?', whereArgs: [memoryId]);
+      await txn.delete(
+        'memory_links',
+        where: 'source_id = ? OR target_id = ?',
+        whereArgs: [memoryId, memoryId],
+      );
+      await txn.delete(
+        'memory_tag_relations',
+        where: 'memory_id = ?',
+        whereArgs: [memoryId],
+      );
+      await txn.delete(
+        'memory_properties',
+        where: 'memory_id = ?',
+        whereArgs: [memoryId],
+      );
+      await txn.delete('memories', where: 'id = ?', whereArgs: [memoryId]);
     });
 
     return true;
   }
 
-  Future<bool> deleteMemoriesByUuids(
-      Set<String> uuids) async {
+  Future<bool> deleteMemoriesByUuids(Set<String> uuids) async {
     if (uuids.isEmpty) return true;
 
-    final placeholders =
-        uuids.map((_) => '?').join(',');
-    final memories = await _db.query('memories',
-        where: 'uuid IN ($placeholders)',
-        whereArgs: uuids.toList());
+    final placeholders = uuids.map((_) => '?').join(',');
+    final memories = await _db.query(
+      'memories',
+      where: 'uuid IN ($placeholders)',
+      whereArgs: uuids.toList(),
+    );
 
     if (memories.isEmpty) return true;
 
-    final ids =
-        memories.map((m) => m['id'] as int).toList();
-    final idPlaceholders =
-        ids.map((_) => '?').join(',');
+    final ids = memories.map((m) => m['id'] as int).toList();
+    final idPlaceholders = ids.map((_) => '?').join(',');
 
     await _db.transaction((txn) async {
-      await txn.delete('memory_links',
-          where:
-              'source_id IN ($idPlaceholders) OR target_id IN ($idPlaceholders)',
-          whereArgs: [...ids, ...ids]);
-      await txn.delete('memory_tag_relations',
-          where: 'memory_id IN ($idPlaceholders)',
-          whereArgs: ids);
-      await txn.delete('memory_properties',
-          where: 'memory_id IN ($idPlaceholders)',
-          whereArgs: ids);
-      await txn.delete('memories',
-          where: 'id IN ($idPlaceholders)',
-          whereArgs: ids);
+      await txn.delete(
+        'memory_links',
+        where:
+            'source_id IN ($idPlaceholders) OR target_id IN ($idPlaceholders)',
+        whereArgs: [...ids, ...ids],
+      );
+      await txn.delete(
+        'memory_tag_relations',
+        where: 'memory_id IN ($idPlaceholders)',
+        whereArgs: ids,
+      );
+      await txn.delete(
+        'memory_properties',
+        where: 'memory_id IN ($idPlaceholders)',
+        whereArgs: ids,
+      );
+      await txn.delete(
+        'memories',
+        where: 'id IN ($idPlaceholders)',
+        whereArgs: ids,
+      );
     });
 
     return true;
+  }
+
+  /// 合并多个记忆为一个
+  /// - 找到所有 sourceTitles 对应的记忆
+  /// - 创建新记忆（newTitle, newContent, newTags, folderPath）
+  /// - 将所有旧记忆的 incoming/outgoing links 重新指向新记忆
+  /// - 删除旧记忆
+  /// - 返回合并后的新记忆
+  Future<Memory?> mergeMemories({
+    required List<String> sourceTitles,
+    required String newTitle,
+    required String newContent,
+    required List<String> newTags,
+    required String folderPath,
+    String? novelId,
+  }) async {
+    if (sourceTitles.isEmpty) return null;
+
+    // 1. 找到所有源记忆
+    final sourceMemories = <Memory>[];
+    for (final title in sourceTitles) {
+      final found = await findMemoryByTitle(title);
+      if (found != null) {
+        sourceMemories.add(found);
+      } else {
+        developer.log(
+          'mergeMemories: 未找到标题为 "$title" 的记忆，已跳过',
+          name: 'MemoryRepository',
+        );
+      }
+    }
+
+    if (sourceMemories.isEmpty) {
+      developer.log('mergeMemories: 未找到任何匹配的源记忆', name: 'MemoryRepository');
+      return null;
+    }
+
+    // 2. 收集所有源记忆的标签（去重）
+    final allTags = <String>{...newTags};
+    for (final memory in sourceMemories) {
+      final tags = await getTagsForMemory(memory.id);
+      for (final tag in tags) {
+        allTags.add(tag.name);
+      }
+    }
+
+    // 3. 在事务中执行合并操作
+    int mergedId = 0;
+    await _db.transaction((txn) async {
+      // 3a. 创建新记忆
+      final now = DateTime.now().toIso8601String();
+      final normalizedFolder = normalizeFolderPath(folderPath);
+      final newUuid = _generateUuid();
+      final effectiveNovelId = novelId ?? _profileId;
+
+      Embedding? newEmbedding;
+      if (newContent.trim().isNotEmpty && generateEmbedding != null) {
+        newEmbedding = await generateEmbedding!(newContent);
+      }
+
+      final newId = await txn.insert('memories', {
+        'uuid': newUuid,
+        'novel_id': effectiveNovelId.isEmpty ? null : effectiveNovelId,
+        'title': newTitle,
+        'content': newContent,
+        'content_type': 'text/plain',
+        'source': 'merge',
+        'credibility': 0.5,
+        'importance': 0.5,
+        'folder_path': normalizedFolder,
+        'embedding': newEmbedding != null
+            ? _encodeEmbedding(newEmbedding)
+            : null,
+        'created_at': now,
+        'updated_at': now,
+        'last_accessed_at': now,
+      });
+
+      // 3b. 为新记忆添加标签
+      for (final tagName in allTags.where((t) => t.trim().isNotEmpty)) {
+        var rows = await txn.query(
+          'memory_tags',
+          where: 'name = ?',
+          whereArgs: [tagName.trim()],
+          limit: 1,
+        );
+
+        int tagId;
+        if (rows.isNotEmpty) {
+          tagId = rows.first['id'] as int;
+        } else {
+          tagId = await txn.insert('memory_tags', {'name': tagName.trim()});
+        }
+
+        await txn.insert('memory_tag_relations', {
+          'memory_id': newId,
+          'tag_id': tagId,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+
+      // 3c. 重新指向链接：将旧记忆的 outgoing links 指向新记忆
+      final sourceIds = sourceMemories.map((m) => m.id).toList();
+      final sourceIdPlaceholders = sourceIds.map((_) => '?').join(',');
+
+      // 收集旧记忆的所有 outgoing links（去重：排除指向其他源记忆的）
+      final oldOutgoing = await txn.query(
+        'memory_links',
+        where: 'source_id IN ($sourceIdPlaceholders)',
+        whereArgs: sourceIds,
+      );
+
+      for (final linkRow in oldOutgoing) {
+        final targetId = linkRow['target_id'] as int;
+        // 跳过指向合并源记忆自身的链接
+        if (sourceIds.contains(targetId)) continue;
+
+        final existing = await txn.query(
+          'memory_links',
+          where: 'source_id = ? AND target_id = ? AND type = ?',
+          whereArgs: [newId, targetId, linkRow['type'] as String],
+          limit: 1,
+        );
+        if (existing.isEmpty) {
+          await txn.insert('memory_links', {
+            'source_id': newId,
+            'target_id': targetId,
+            'type': linkRow['type'] as String,
+            'weight': linkRow['weight'] as num,
+            'description': linkRow['description'] as String? ?? '',
+          });
+        }
+      }
+
+      // 3d. 重新指向链接：将旧记忆的 incoming links 指向新记忆
+      final oldIncoming = await txn.query(
+        'memory_links',
+        where: 'target_id IN ($sourceIdPlaceholders)',
+        whereArgs: sourceIds,
+      );
+
+      for (final linkRow in oldIncoming) {
+        final sourceLinkId = linkRow['source_id'] as int;
+        // 跳过来自合并源记忆自身的链接
+        if (sourceIds.contains(sourceLinkId)) continue;
+
+        final existing = await txn.query(
+          'memory_links',
+          where: 'source_id = ? AND target_id = ? AND type = ?',
+          whereArgs: [sourceLinkId, newId, linkRow['type'] as String],
+          limit: 1,
+        );
+        if (existing.isEmpty) {
+          await txn.insert('memory_links', {
+            'source_id': sourceLinkId,
+            'target_id': newId,
+            'type': linkRow['type'] as String,
+            'weight': linkRow['weight'] as num,
+            'description': linkRow['description'] as String? ?? '',
+          });
+        }
+      }
+
+      // 3e. 删除旧记忆的所有链接
+      await txn.delete(
+        'memory_links',
+        where:
+            'source_id IN ($sourceIdPlaceholders) OR target_id IN ($sourceIdPlaceholders)',
+        whereArgs: [...sourceIds, ...sourceIds],
+      );
+
+      // 3f. 删除旧记忆的标签关系
+      await txn.delete(
+        'memory_tag_relations',
+        where: 'memory_id IN ($sourceIdPlaceholders)',
+        whereArgs: sourceIds,
+      );
+
+      // 3g. 删除旧记忆的属性
+      await txn.delete(
+        'memory_properties',
+        where: 'memory_id IN ($sourceIdPlaceholders)',
+        whereArgs: sourceIds,
+      );
+
+      // 3h. 删除旧记忆
+      await txn.delete(
+        'memories',
+        where: 'id IN ($sourceIdPlaceholders)',
+        whereArgs: sourceIds,
+      );
+
+      mergedId = newId;
+      developer.log(
+        'mergeMemories: 已将 ${sourceMemories.length} 条记忆合并为 "$newTitle" (id=$newId)',
+        name: 'MemoryRepository',
+      );
+    });
+
+    // 4. 返回合并后的完整记忆对象
+    return findMemoryById(mergedId);
   }
 
   /// 创建一条新记忆并自动生成嵌入向量
@@ -310,8 +539,7 @@ class MemoryRepository {
     if (saved == null) return null;
 
     if (tags != null && tags.isNotEmpty) {
-      for (final tagName
-          in tags.where((t) => t.trim().isNotEmpty)) {
+      for (final tagName in tags.where((t) => t.trim().isNotEmpty)) {
         await addTagToMemory(saved, tagName.trim());
       }
     }
@@ -334,30 +562,24 @@ class MemoryRepository {
     final updatedMemory = memory.copyWith(
       title: newTitle,
       content: newContent,
-      contentType:
-          newContentType ?? memory.contentType,
+      contentType: newContentType ?? memory.contentType,
       source: newSource ?? memory.source,
-      credibility:
-          (newCredibility ?? memory.credibility)
-              .clamp(0.0, 1.0),
-      importance:
-          (newImportance ?? memory.importance)
-              .clamp(0.0, 1.0),
-      folderPath: normalizeFolderPath(
-          newFolderPath ?? memory.folderPath),
+      credibility: (newCredibility ?? memory.credibility).clamp(0.0, 1.0),
+      importance: (newImportance ?? memory.importance).clamp(0.0, 1.0),
+      folderPath: normalizeFolderPath(newFolderPath ?? memory.folderPath),
       updatedAt: DateTime.now(),
     );
 
     final id = await saveMemory(updatedMemory);
 
     if (newTags != null) {
-      await _db.delete('memory_tag_relations',
-          where: 'memory_id = ?',
-          whereArgs: [memory.id]);
-      for (final tagName
-          in newTags.where((t) => t.trim().isNotEmpty)) {
-        await addTagToMemory(
-            updatedMemory, tagName.trim());
+      await _db.delete(
+        'memory_tag_relations',
+        where: 'memory_id = ?',
+        whereArgs: [memory.id],
+      );
+      for (final tagName in newTags.where((t) => t.trim().isNotEmpty)) {
+        await addTagToMemory(updatedMemory, tagName.trim());
       }
     }
 
@@ -369,8 +591,12 @@ class MemoryRepository {
   // ============================================================
 
   Future<MemoryLink?> findLinkById(int linkId) async {
-    final rows = await _db.query('memory_links',
-        where: 'id = ?', whereArgs: [linkId], limit: 1);
+    final rows = await _db.query(
+      'memory_links',
+      where: 'id = ?',
+      whereArgs: [linkId],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return _linkFromRow(rows.first);
   }
@@ -399,8 +625,11 @@ class MemoryRepository {
   }
 
   Future<bool> deleteLink(int linkId) async {
-    final count = await _db.delete('memory_links',
-        where: 'id = ?', whereArgs: [linkId]);
+    final count = await _db.delete(
+      'memory_links',
+      where: 'id = ?',
+      whereArgs: [linkId],
+    );
     return count > 0;
   }
 
@@ -414,8 +643,7 @@ class MemoryRepository {
   }) async {
     final existing = await _db.query(
       'memory_links',
-      where:
-          'source_id = ? AND target_id = ? AND type = ?',
+      where: 'source_id = ? AND target_id = ? AND type = ?',
       whereArgs: [source.id, target.id, type],
       limit: 1,
     );
@@ -430,19 +658,21 @@ class MemoryRepository {
     });
   }
 
-  Future<List<MemoryLink>> getOutgoingLinks(
-      int memoryId) async {
-    final rows = await _db.query('memory_links',
-        where: 'source_id = ?',
-        whereArgs: [memoryId]);
+  Future<List<MemoryLink>> getOutgoingLinks(int memoryId) async {
+    final rows = await _db.query(
+      'memory_links',
+      where: 'source_id = ?',
+      whereArgs: [memoryId],
+    );
     return rows.map(_linkFromRow).toList();
   }
 
-  Future<List<MemoryLink>> getIncomingLinks(
-      int memoryId) async {
-    final rows = await _db.query('memory_links',
-        where: 'target_id = ?',
-        whereArgs: [memoryId]);
+  Future<List<MemoryLink>> getIncomingLinks(int memoryId) async {
+    final rows = await _db.query(
+      'memory_links',
+      where: 'target_id = ?',
+      whereArgs: [memoryId],
+    );
     return rows.map(_linkFromRow).toList();
   }
 
@@ -473,15 +703,12 @@ class MemoryRepository {
       whereClauses.add('target_id = ?');
       whereArgs.add(targetMemoryId);
     }
-    if (normalizedType != null &&
-        normalizedType.isNotEmpty) {
+    if (normalizedType != null && normalizedType.isNotEmpty) {
       whereClauses.add('type = ?');
       whereArgs.add(normalizedType);
     }
 
-    final whereStr = whereClauses.isEmpty
-        ? null
-        : whereClauses.join(' AND ');
+    final whereStr = whereClauses.isEmpty ? null : whereClauses.join(' AND ');
     final rows = await _db.query(
       'memory_links',
       where: whereStr,
@@ -497,66 +724,81 @@ class MemoryRepository {
   // 标签操作
   // ============================================================
 
-  Future<MemoryTag> addTagToMemory(
-      Memory memory, String tagName) async {
-    var rows = await _db.query('memory_tags',
-        where: 'name = ?',
-        whereArgs: [tagName],
-        limit: 1);
+  Future<MemoryTag> addTagToMemory(Memory memory, String tagName) async {
+    var rows = await _db.query(
+      'memory_tags',
+      where: 'name = ?',
+      whereArgs: [tagName],
+      limit: 1,
+    );
 
     int tagId;
     if (rows.isNotEmpty) {
       tagId = rows.first['id'] as int;
     } else {
-      tagId = await _db
-          .insert('memory_tags', {'name': tagName});
+      tagId = await _db.insert('memory_tags', {'name': tagName});
     }
 
-    await _db.insert(
-      'memory_tag_relations',
-      {'memory_id': memory.id, 'tag_id': tagId},
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await _db.insert('memory_tag_relations', {
+      'memory_id': memory.id,
+      'tag_id': tagId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
 
     return MemoryTag(id: tagId, name: tagName);
   }
 
-  Future<List<MemoryTag>> getTagsForMemory(
-      int memoryId) async {
-    final rows = await _db.rawQuery('''
+  Future<List<MemoryTag>> getTagsForMemory(int memoryId) async {
+    final rows = await _db.rawQuery(
+      '''
       SELECT t.id, t.name, t.parent_id
       FROM memory_tags t
       INNER JOIN memory_tag_relations r ON t.id = r.tag_id
       WHERE r.memory_id = ?
-    ''', [memoryId]);
+    ''',
+      [memoryId],
+    );
 
     return rows
-        .map((r) => MemoryTag(
-              id: r['id'] as int,
-              name: r['name'] as String,
-              parentId: r['parent_id'] as int?,
-            ))
+        .map(
+          (r) => MemoryTag(
+            id: r['id'] as int,
+            name: r['name'] as String,
+            parentId: r['parent_id'] as int?,
+          ),
+        )
         .toList();
   }
 
-  Future<List<int>> getMemoryIdsForTag(
-      int tagId) async {
-    final rows = await _db.query('memory_tag_relations',
-        columns: ['memory_id'],
-        where: 'tag_id = ?',
-        whereArgs: [tagId]);
-    return rows
-        .map((r) => r['memory_id'] as int)
-        .toList();
+  Future<List<int>> getMemoryIdsForTag(int tagId) async {
+    final rows = await _db.query(
+      'memory_tag_relations',
+      columns: ['memory_id'],
+      where: 'tag_id = ?',
+      whereArgs: [tagId],
+    );
+    return rows.map((r) => r['memory_id'] as int).toList();
   }
 
   // ============================================================
   // 文件夹操作
   // ============================================================
 
-  Future<List<String>> getAllFolderPaths() async {
-    final rows = await _db.rawQuery(
-        "SELECT DISTINCT folder_path FROM memories ORDER BY folder_path ASC");
+  /// 获取所有已使用的文件夹路径
+  Future<List<String>> getAllFolderPaths({String? novelId}) async {
+    String sql;
+    List<dynamic> args;
+
+    if (novelId != null) {
+      sql =
+          "SELECT DISTINCT folder_path FROM memories WHERE novel_id = ? OR novel_id IS NULL ORDER BY folder_path ASC";
+      args = [novelId];
+    } else {
+      sql =
+          "SELECT DISTINCT folder_path FROM memories ORDER BY folder_path ASC";
+      args = [];
+    }
+
+    final rows = await _db.rawQuery(sql, args);
 
     return rows.map((r) {
       final path = r['folder_path'] as String?;
@@ -564,34 +806,63 @@ class MemoryRepository {
     }).toList();
   }
 
-  Future<List<Memory>> getMemoriesByFolderPath(
-      String folderPath) async {
-    final normalizedTarget =
-        normalizeFolderPath(folderPath);
+  /// 按文件夹路径查找记忆
+  Future<List<Memory>> findMemoriesByFolderPath(
+    String folderPath, {
+    String? novelId,
+  }) async {
+    final normalizedTarget = normalizeFolderPath(folderPath);
 
     List<Map<String, dynamic>> rows;
-    if (folderPath == '未分类' ||
-        normalizedTarget == null) {
-      rows = await _db.query('memories',
-          where: 'folder_path IS NULL');
+    if (folderPath == '未分类' || normalizedTarget == null) {
+      if (novelId != null) {
+        rows = await _db.query(
+          'memories',
+          where: 'folder_path IS NULL AND (novel_id = ? OR novel_id IS NULL)',
+          whereArgs: [novelId],
+        );
+      } else {
+        rows = await _db.query('memories', where: 'folder_path IS NULL');
+      }
+    } else {
+      if (novelId != null) {
+        rows = await _db.query(
+          'memories',
+          where:
+              '(folder_path = ? OR folder_path LIKE ?) AND (novel_id = ? OR novel_id IS NULL)',
+          whereArgs: [normalizedTarget, '$normalizedTarget/%', novelId],
+        );
+      } else {
+        rows = await _db.query(
+          'memories',
+          where: 'folder_path = ? OR folder_path LIKE ?',
+          whereArgs: [normalizedTarget, '$normalizedTarget/%'],
+        );
+      }
+    }
+
+    return Future.wait(rows.map((r) => _memoryFromRow(r)));
+  }
+
+  Future<List<Memory>> getMemoriesByFolderPath(String folderPath) async {
+    final normalizedTarget = normalizeFolderPath(folderPath);
+
+    List<Map<String, dynamic>> rows;
+    if (folderPath == '未分类' || normalizedTarget == null) {
+      rows = await _db.query('memories', where: 'folder_path IS NULL');
     } else {
       rows = await _db.query(
         'memories',
         where: 'folder_path = ? OR folder_path LIKE ?',
-        whereArgs: [
-          normalizedTarget,
-          '$normalizedTarget/%'
-        ],
+        whereArgs: [normalizedTarget, '$normalizedTarget/%'],
       );
     }
 
-    return Future.wait(
-        rows.map((r) => _memoryFromRow(r)));
+    return Future.wait(rows.map((r) => _memoryFromRow(r)));
   }
 
   Future<bool> createFolder(String folderPath) async {
-    final normalizedPath =
-        normalizeFolderPath(folderPath);
+    final normalizedPath = normalizeFolderPath(folderPath);
     if (normalizedPath == null) return false;
 
     final existing = await _db.query(
@@ -613,42 +884,37 @@ class MemoryRepository {
     return true;
   }
 
-  Future<bool> renameFolder(
-      String oldPath, String newPath) async {
+  Future<bool> renameFolder(String oldPath, String newPath) async {
     final normalizedOld = normalizeFolderPath(oldPath);
     final normalizedNew = normalizeFolderPath(newPath);
-    if (normalizedOld == null ||
-        normalizedNew == null) return false;
+    if (normalizedOld == null || normalizedNew == null) return false;
     if (normalizedOld == normalizedNew) return true;
 
     final memories = await _db.query(
       'memories',
       where: 'folder_path = ? OR folder_path LIKE ?',
-      whereArgs: [
-        normalizedOld,
-        '$normalizedOld/%'
-      ],
+      whereArgs: [normalizedOld, '$normalizedOld/%'],
     );
 
     final batch = _db.batch();
     for (final row in memories) {
-      final currentPath =
-          row['folder_path'] as String?;
+      final currentPath = row['folder_path'] as String?;
       if (currentPath == null) continue;
 
       final String updatedPath;
       if (currentPath == normalizedOld) {
         updatedPath = normalizedNew;
       } else {
-        updatedPath = normalizedNew +
-            currentPath
-                .substring(normalizedOld.length);
+        updatedPath =
+            normalizedNew + currentPath.substring(normalizedOld.length);
       }
 
       batch.update(
-          'memories', {'folder_path': updatedPath},
-          where: 'id = ?',
-          whereArgs: [row['id']]);
+        'memories',
+        {'folder_path': updatedPath},
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
     }
     await batch.commit(noResult: true);
 
@@ -656,46 +922,49 @@ class MemoryRepository {
   }
 
   Future<bool> moveMemoriesToFolder(
-      List<int> memoryIds,
-      String targetFolderPath) async {
-    final normalizedTarget =
-        targetFolderPath == '未分类'
-            ? null
-            : normalizeFolderPath(targetFolderPath);
+    List<int> memoryIds,
+    String targetFolderPath,
+  ) async {
+    final normalizedTarget = targetFolderPath == '未分类'
+        ? null
+        : normalizeFolderPath(targetFolderPath);
 
     final batch = _db.batch();
     for (final id in memoryIds) {
       batch.update(
-          'memories', {'folder_path': normalizedTarget},
-          where: 'id = ?', whereArgs: [id]);
+        'memories',
+        {'folder_path': normalizedTarget},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
     }
     await batch.commit(noResult: true);
 
     return true;
   }
 
-  Future<void> deleteFolder(
-      String folderPath) async {
-    final normalizedTarget =
-        normalizeFolderPath(folderPath);
+  Future<void> deleteFolder(String folderPath) async {
+    final normalizedTarget = normalizeFolderPath(folderPath);
 
     List<Map<String, dynamic>> memories;
-    if (normalizedTarget == null ||
-        folderPath == '未分类') {
-      memories = await _db.query('memories',
-          where: 'folder_path IS NULL');
+    if (normalizedTarget == null || folderPath == '未分类') {
+      memories = await _db.query('memories', where: 'folder_path IS NULL');
     } else {
-      memories = await _db.query('memories',
-          where: 'folder_path = ?',
-          whereArgs: [normalizedTarget]);
+      memories = await _db.query(
+        'memories',
+        where: 'folder_path = ?',
+        whereArgs: [normalizedTarget],
+      );
     }
 
     final batch = _db.batch();
     for (final row in memories) {
       batch.update(
-          'memories', {'folder_path': null},
-          where: 'id = ?',
-          whereArgs: [row['id']]);
+        'memories',
+        {'folder_path': null},
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -709,45 +978,34 @@ class MemoryRepository {
     required String query,
     String? novelId,
     String? folderPath,
-    MemoryScoreMode scoreMode =
-        MemoryScoreMode.balanced,
+    MemoryScoreMode scoreMode = MemoryScoreMode.balanced,
     double keywordWeight = 10.0,
     double tagWeight = 0.0,
     double semanticWeight = 0.5,
     double edgeWeight = 0.4,
-    double relevanceThreshold =
-        _searchRelevanceThreshold,
+    double relevanceThreshold = _searchRelevanceThreshold,
     int? createdAtStartMs,
     int? createdAtEndMs,
   }) async {
-    final normalizedFolder =
-        normalizeFolderPath(folderPath);
+    final normalizedFolder = normalizeFolderPath(folderPath);
 
     // 获取作用域内的记忆（按 novelId 过滤）
     List<Memory> memoriesInScope;
     if (normalizedFolder == null) {
       if (folderPath == '未分类') {
-        final allRows = await _queryScopedMemories(
-            novelId);
+        final allRows = await _queryScopedMemories(novelId);
         memoriesInScope = allRows
-            .where((m) =>
-                normalizeFolderPath(m.folderPath) ==
-                null)
+            .where((m) => normalizeFolderPath(m.folderPath) == null)
             .toList();
       } else {
-        memoriesInScope =
-            await _queryScopedMemories(novelId);
+        memoriesInScope = await _queryScopedMemories(novelId);
       }
     } else {
-      memoriesInScope =
-          await getMemoriesByFolderPath(
-              normalizedFolder);
+      memoriesInScope = await getMemoriesByFolderPath(normalizedFolder);
       // 进一步按 novelId 过滤
       if (novelId != null) {
         memoriesInScope = memoriesInScope
-            .where((m) =>
-                m.novelId == novelId ||
-                m.novelId.isEmpty)
+            .where((m) => m.novelId == novelId || m.novelId.isEmpty)
             .toList();
       }
     }
@@ -758,27 +1016,21 @@ class MemoryRepository {
         .toList();
 
     // 时间过滤
-    final timeFiltered =
-        (createdAtStartMs == null &&
-                createdAtEndMs == null)
-            ? searchableMemories
-            : searchableMemories.where((m) {
-                final createdAtMs = m
-                    .createdAt.millisecondsSinceEpoch;
-                if (createdAtStartMs != null &&
-                    createdAtMs < createdAtStartMs) {
-                  return false;
-                }
-                if (createdAtEndMs != null &&
-                    createdAtMs > createdAtEndMs) {
-                  return false;
-                }
-                return true;
-              }).toList();
+    final timeFiltered = (createdAtStartMs == null && createdAtEndMs == null)
+        ? searchableMemories
+        : searchableMemories.where((m) {
+            final createdAtMs = m.createdAt.millisecondsSinceEpoch;
+            if (createdAtStartMs != null && createdAtMs < createdAtStartMs) {
+              return false;
+            }
+            if (createdAtEndMs != null && createdAtMs > createdAtEndMs) {
+              return false;
+            }
+            return true;
+          }).toList();
 
     // 通配符查询
-    if (query.trim() == '*' ||
-        query.trim().isEmpty) {
+    if (query.trim() == '*' || query.trim().isEmpty) {
       return timeFiltered;
     }
 
@@ -798,16 +1050,12 @@ class MemoryRepository {
     // --- 关键词匹配评分（RRF） ---
     final scores = <int, double>{};
 
-    final keywordTokens =
-        _buildLexicalQueryTokens(query, keywords);
-    if (keywordTokens.isNotEmpty &&
-        config.keywordWeight > 0) {
+    final keywordTokens = _buildLexicalQueryTokens(query, keywords);
+    if (keywordTokens.isNotEmpty && config.keywordWeight > 0) {
       final titleMatches = <int, int>{};
       for (final memory in timeFiltered) {
         final matchedCount = keywordTokens
-            .where((token) =>
-                _textMatchesLexicalToken(
-                    memory.title, token))
+            .where((token) => _textMatchesLexicalToken(memory.title, token))
             .length;
         if (matchedCount > 0) {
           titleMatches[memory.id] = matchedCount;
@@ -817,19 +1065,14 @@ class MemoryRepository {
       final contentMatches = <int, int>{};
       for (final memory in timeFiltered) {
         final matchedCount = keywordTokens
-            .where((token) =>
-                _textMatchesLexicalToken(
-                    memory.content, token))
+            .where((token) => _textMatchesLexicalToken(memory.content, token))
             .length;
         if (matchedCount > 0) {
           contentMatches[memory.id] = matchedCount;
         }
       }
 
-      final allMatchedIds = {
-        ...titleMatches.keys,
-        ...contentMatches.keys
-      };
+      final allMatchedIds = {...titleMatches.keys, ...contentMatches.keys};
       final rankedIds = allMatchedIds.toList()
         ..sort((a, b) {
           final aTitle = titleMatches[a] ?? 0;
@@ -837,89 +1080,69 @@ class MemoryRepository {
           if (aTitle != bTitle) {
             return bTitle.compareTo(aTitle);
           }
-          final aContent =
-              contentMatches[a] ?? 0;
-          final bContent =
-              contentMatches[b] ?? 0;
+          final aContent = contentMatches[a] ?? 0;
+          final bContent = contentMatches[b] ?? 0;
           return bContent.compareTo(aContent);
         });
 
       for (int i = 0; i < rankedIds.length; i++) {
         final id = rankedIds[i];
         final rank = i + 1;
-        final baseScore =
-            1.0 / (_searchRrfK + rank);
+        final baseScore = 1.0 / (_searchRrfK + rank);
         final matchedTokenCount =
-            (titleMatches[id] ?? 0) +
-                (contentMatches[id] ?? 0);
-        final coverageRatio =
-            keywordTokens.isEmpty
-                ? 0.0
-                : matchedTokenCount /
-                    keywordTokens.length;
-        final coverageMultiplier = 1.0 +
-            (_searchKeywordCoverageBonus *
-                coverageRatio);
-        final weightedScore = baseScore *
+            (titleMatches[id] ?? 0) + (contentMatches[id] ?? 0);
+        final coverageRatio = keywordTokens.isEmpty
+            ? 0.0
+            : matchedTokenCount / keywordTokens.length;
+        final coverageMultiplier =
+            1.0 + (_searchKeywordCoverageBonus * coverageRatio);
+        final weightedScore =
+            baseScore *
             config.keywordWeight *
             config.keywordMultiplier *
             coverageMultiplier;
-        scores[id] =
-            (scores[id] ?? 0.0) + weightedScore;
+        scores[id] = (scores[id] ?? 0.0) + weightedScore;
       }
     }
 
     // --- 标签匹配评分 ---
     if (config.tagWeight > 0) {
       for (final memory in timeFiltered) {
-        final tags =
-            await getTagsForMemory(memory.id);
-        final matchedTagCount =
-            keywords.where((keyword) {
-          return tags.any((tag) =>
-              _textMatchesLexicalToken(
-                  tag.name, keyword));
+        final tags = await getTagsForMemory(memory.id);
+        final matchedTagCount = keywords.where((keyword) {
+          return tags.any((tag) => _textMatchesLexicalToken(tag.name, keyword));
         }).length;
         if (matchedTagCount > 0) {
-          final tagScore = matchedTagCount *
-              config.tagWeight *
-              config.keywordMultiplier;
-          scores[memory.id] =
-              (scores[memory.id] ?? 0.0) +
-                  tagScore;
+          final tagScore =
+              matchedTagCount * config.tagWeight * config.keywordMultiplier;
+          scores[memory.id] = (scores[memory.id] ?? 0.0) + tagScore;
         }
       }
     }
 
     // --- 语义搜索（需要 embedding 服务） ---
-    if (config.vectorWeight > 0 &&
-        generateEmbedding != null) {
+    if (config.vectorWeight > 0 && generateEmbedding != null) {
       for (final keyword in keywords) {
-        final queryEmbedding =
-            await generateEmbedding!(keyword);
+        final queryEmbedding = await generateEmbedding!(keyword);
         if (queryEmbedding == null) continue;
 
         for (final memory in timeFiltered) {
           if (memory.embedding == null) continue;
-          final similarity =
-              Embedding.cosineSimilarity(
-                  queryEmbedding,
-                  memory.embedding!);
+          final similarity = Embedding.cosineSimilarity(
+            queryEmbedding,
+            memory.embedding!,
+          );
           if (similarity > 0) {
-            final semanticScore = similarity *
-                config.vectorWeight *
-                config.semanticMultiplier;
-            scores[memory.id] =
-                (scores[memory.id] ?? 0.0) +
-                    semanticScore;
+            final semanticScore =
+                similarity * config.vectorWeight * config.semanticMultiplier;
+            scores[memory.id] = (scores[memory.id] ?? 0.0) + semanticScore;
           }
         }
       }
     }
 
     // --- 按得分排序并过滤阈值 ---
-    final threshold =
-        relevanceThreshold.clamp(0.0, double.infinity);
+    final threshold = relevanceThreshold.clamp(0.0, double.infinity);
     final memoryById = <int, Memory>{};
     for (final m in timeFiltered) {
       memoryById[m.id] = m;
@@ -945,17 +1168,14 @@ class MemoryRepository {
     return rows.map(_linkFromRow).toList();
   }
 
-  Future<List<MemoryLink>> getGraphForMemories(
-      List<Memory> memories) async {
+  Future<List<MemoryLink>> getGraphForMemories(List<Memory> memories) async {
     final ids = memories.map((m) => m.id).toSet();
     if (ids.isEmpty) return [];
 
     final expandedIds = Set<int>.from(ids);
     for (final memory in memories) {
-      final outgoing =
-          await getOutgoingLinks(memory.id);
-      final incoming =
-          await getIncomingLinks(memory.id);
+      final outgoing = await getOutgoingLinks(memory.id);
+      final incoming = await getIncomingLinks(memory.id);
       for (final link in outgoing) {
         expandedIds.add(link.targetId);
       }
@@ -964,25 +1184,19 @@ class MemoryRepository {
       }
     }
 
-    final idPlaceholders =
-        expandedIds.map((_) => '?').join(',');
+    final idPlaceholders = expandedIds.map((_) => '?').join(',');
     final rows = await _db.query(
       'memory_links',
       where:
           'source_id IN ($idPlaceholders) AND target_id IN ($idPlaceholders)',
-      whereArgs: [
-        ...expandedIds,
-        ...expandedIds
-      ],
+      whereArgs: [...expandedIds, ...expandedIds],
     );
 
     return rows.map(_linkFromRow).toList();
   }
 
-  Future<List<MemoryLink>> getGraphForFolder(
-      String folderPath) async {
-    final memories =
-        await getMemoriesByFolderPath(folderPath);
+  Future<List<MemoryLink>> getGraphForFolder(String folderPath) async {
+    final memories = await getMemoriesByFolderPath(folderPath);
     return getGraphForMemories(memories);
   }
 
@@ -991,8 +1205,7 @@ class MemoryRepository {
   // ============================================================
 
   /// 按 novelId 查询作用域内的记忆
-  Future<List<Memory>> _queryScopedMemories(
-      String? novelId) async {
+  Future<List<Memory>> _queryScopedMemories(String? novelId) async {
     List<Map<String, dynamic>> rows;
     if (novelId != null) {
       rows = await _db.query(
@@ -1003,18 +1216,15 @@ class MemoryRepository {
     } else {
       rows = await _db.query('memories');
     }
-    return Future.wait(
-        rows.map((r) => _memoryFromRow(r)));
+    return Future.wait(rows.map((r) => _memoryFromRow(r)));
   }
 
-  Future<Memory> _memoryFromRow(
-      Map<String, dynamic> row) async {
+  Future<Memory> _memoryFromRow(Map<String, dynamic> row) async {
     final id = row['id'] as int;
     final tags = await getTagsForMemory(id);
     final outgoingLinks = await getOutgoingLinks(id);
     final incomingLinks = await getIncomingLinks(id);
-    final properties =
-        await _getPropertiesForMemory(id);
+    final properties = await _getPropertiesForMemory(id);
 
     return Memory(
       id: id,
@@ -1022,39 +1232,29 @@ class MemoryRepository {
       novelId: row['novel_id'] as String? ?? '',
       title: row['title'] as String? ?? '',
       content: row['content'] as String? ?? '',
-      contentType:
-          row['content_type'] as String? ?? 'text/plain',
+      contentType: row['content_type'] as String? ?? 'text/plain',
       source: row['source'] as String? ?? 'unknown',
-      credibility:
-          (row['credibility'] as num?)?.toDouble() ??
-              0.5,
-      importance:
-          (row['importance'] as num?)?.toDouble() ??
-              0.5,
-      documentPath:
-          row['document_path'] as String?,
-      isDocumentNode:
-          (row['is_document_node'] as int?) == 1,
-      chunkIndexFilePath:
-          row['chunk_index_file_path'] as String?,
+      credibility: (row['credibility'] as num?)?.toDouble() ?? 0.5,
+      importance: (row['importance'] as num?)?.toDouble() ?? 0.5,
+      documentPath: row['document_path'] as String?,
+      isDocumentNode: (row['is_document_node'] as int?) == 1,
+      chunkIndexFilePath: row['chunk_index_file_path'] as String?,
       folderPath: row['folder_path'] as String?,
       embedding: row['embedding'] != null
-          ? _decodeEmbedding(
-              row['embedding'] as List<int>)
+          ? _decodeEmbedding(row['embedding'] as List<int>)
           : null,
       tags: tags,
       properties: properties,
       links: outgoingLinks,
       backlinks: incomingLinks,
-      createdAt: DateTime.tryParse(
-              row['created_at'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(row['created_at'] as String? ?? '') ??
           DateTime.now(),
-      updatedAt: DateTime.tryParse(
-              row['updated_at'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(row['updated_at'] as String? ?? '') ??
           DateTime.now(),
-      lastAccessedAt: DateTime.tryParse(
-              row['last_accessed_at'] as String? ??
-                  '') ??
+      lastAccessedAt:
+          DateTime.tryParse(row['last_accessed_at'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -1065,34 +1265,32 @@ class MemoryRepository {
       sourceId: row['source_id'] as int,
       targetId: row['target_id'] as int,
       type: row['type'] as String? ?? 'related',
-      weight:
-          (row['weight'] as num?)?.toDouble() ?? 1.0,
-      description:
-          row['description'] as String? ?? '',
+      weight: (row['weight'] as num?)?.toDouble() ?? 1.0,
+      description: row['description'] as String? ?? '',
     );
   }
 
-  Future<List<MemoryProperty>>
-      _getPropertiesForMemory(int memoryId) async {
-    final rows = await _db.query('memory_properties',
-        where: 'memory_id = ?',
-        whereArgs: [memoryId]);
+  Future<List<MemoryProperty>> _getPropertiesForMemory(int memoryId) async {
+    final rows = await _db.query(
+      'memory_properties',
+      where: 'memory_id = ?',
+      whereArgs: [memoryId],
+    );
     return rows
-        .map((r) => MemoryProperty(
-              id: r['id'] as int,
-              key: r['key'] as String? ?? '',
-              value: r['value'] as String? ?? '',
-            ))
+        .map(
+          (r) => MemoryProperty(
+            id: r['id'] as int,
+            key: r['key'] as String? ?? '',
+            value: r['value'] as String? ?? '',
+          ),
+        )
         .toList();
   }
 
-  Future<void> _cleanupDanglingLinksIfNeeded(
-      {bool force = false}) async {
-    final now =
-        DateTime.now().millisecondsSinceEpoch;
+  Future<void> _cleanupDanglingLinksIfNeeded({bool force = false}) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
     if (!force &&
-        now - _lastDanglingCleanupAtMs <
-            _danglingLinkCleanupIntervalMs) {
+        now - _lastDanglingCleanupAtMs < _danglingLinkCleanupIntervalMs) {
       return;
     }
 
@@ -1104,34 +1302,30 @@ class MemoryRepository {
     ''');
 
     if (danglingLinks.isNotEmpty) {
-      final ids = danglingLinks
-          .map((r) => r['id'] as int)
-          .toList();
-      final placeholders =
-          ids.map((_) => '?').join(',');
-      await _db.delete('memory_links',
-          where: 'id IN ($placeholders)',
-          whereArgs: ids);
+      final ids = danglingLinks.map((r) => r['id'] as int).toList();
+      final placeholders = ids.map((_) => '?').join(',');
+      await _db.delete(
+        'memory_links',
+        where: 'id IN ($placeholders)',
+        whereArgs: ids,
+      );
     }
 
     _lastDanglingCleanupAtMs = now;
   }
 
-  static List<String> _splitSearchKeywords(
-      String query) {
-    final separator =
-        query.contains('|') ? '|' : null;
+  static List<String> _splitSearchKeywords(String query) {
+    final separator = query.contains('|') ? '|' : null;
     final parts = separator != null
         ? query.split('|')
         : query.split(RegExp(r'\s+'));
-    return parts
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
+    return parts.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
   }
 
   static List<String> _buildLexicalQueryTokens(
-      String query, List<String> keywords) {
+    String query,
+    List<String> keywords,
+  ) {
     final merged = <String>{};
     if (keywords.isNotEmpty) {
       for (final kw in keywords) {
@@ -1141,14 +1335,11 @@ class MemoryRepository {
       merged.addAll(_expandKeywordToken(query));
     }
 
-    return merged
-        .where((t) => _shouldKeepLexicalToken(t))
-        .toList()
+    return merged.where((t) => _shouldKeepLexicalToken(t)).toList()
       ..sort((a, b) => b.length.compareTo(a.length));
   }
 
-  static Set<String> _expandKeywordToken(
-      String token) {
+  static Set<String> _expandKeywordToken(String token) {
     final normalized = token.trim().toLowerCase();
     if (normalized.isEmpty) return {};
 
@@ -1159,41 +1350,35 @@ class MemoryRepository {
     return expanded;
   }
 
-  static bool _shouldKeepLexicalToken(
-      String token) {
+  static bool _shouldKeepLexicalToken(String token) {
     final normalized = token.trim().toLowerCase();
     if (normalized.isEmpty) return false;
-    if (normalized.length < 2 ||
-        normalized.length > 24) return false;
-    return normalized.runes.any((r) =>
-        (r >= 0x30 && r <= 0x39) ||
-        (r >= 0x41 && r <= 0x5A) ||
-        (r >= 0x61 && r <= 0x7A) ||
-        (r >= 0x4E00 && r <= 0x9FFF));
+    if (normalized.length < 2 || normalized.length > 24) return false;
+    return normalized.runes.any(
+      (r) =>
+          (r >= 0x30 && r <= 0x39) ||
+          (r >= 0x41 && r <= 0x5A) ||
+          (r >= 0x61 && r <= 0x7A) ||
+          (r >= 0x4E00 && r <= 0x9FFF),
+    );
   }
 
-  static bool _textMatchesLexicalToken(
-      String text, String token) {
+  static bool _textMatchesLexicalToken(String text, String token) {
     final normalizedToken = token.trim();
     if (normalizedToken.isEmpty) return false;
 
-    if (normalizedToken.contains('*') &&
-        normalizedToken != '*') {
+    if (normalizedToken.contains('*') && normalizedToken != '*') {
       final parts = normalizedToken
           .split('*')
           .map((s) => s.trim())
           .where((s) => s.isNotEmpty)
           .toList();
       if (parts.isEmpty) return false;
-      final pattern =
-          parts.map(RegExp.escape).join('.*');
-      return RegExp(pattern, caseSensitive: false)
-          .hasMatch(text);
+      final pattern = parts.map(RegExp.escape).join('.*');
+      return RegExp(pattern, caseSensitive: false).hasMatch(text);
     }
 
-    return text
-        .toLowerCase()
-        .contains(normalizedToken.toLowerCase());
+    return text.toLowerCase().contains(normalizedToken.toLowerCase());
   }
 
   List<int> _encodeEmbedding(Embedding embedding) {
@@ -1208,16 +1393,14 @@ class MemoryRepository {
 
   Embedding _decodeEmbedding(List<int> bytes) {
     if (bytes.length % 8 != 0) {
-      throw FormatException(
-          'Embedding bytes length must be multiple of 8');
+      throw FormatException('Embedding bytes length must be multiple of 8');
     }
     final values = <double>[];
     for (int i = 0; i < bytes.length; i += 8) {
       final byteData = ByteData.sublistView(
-          Uint8List.fromList(
-              bytes.sublist(i, i + 8)));
-      values
-          .add(byteData.getFloat64(0, Endian.little));
+        Uint8List.fromList(bytes.sublist(i, i + 8)),
+      );
+      values.add(byteData.getFloat64(0, Endian.little));
     }
     return Embedding(Float64List.fromList(values));
   }
@@ -1229,15 +1412,13 @@ class MemoryRepository {
 
   static String _hex(Random random, int length) {
     return List.generate(
-        length,
-        (_) => random
-            .nextInt(16)
-            .toRadixString(16)).join();
+      length,
+      (_) => random.nextInt(16).toRadixString(16),
+    ).join();
   }
 
   static String _hexVariant(Random random) {
-    final variant =
-        (random.nextInt(4) + 8).toRadixString(16);
+    final variant = (random.nextInt(4) + 8).toRadixString(16);
     return '$variant${_hex(random, 3)}';
   }
 }

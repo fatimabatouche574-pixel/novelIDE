@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:novel_ide/data/datasources/database_helper.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/data/models/memory/memory_repository.dart';
@@ -7,6 +8,7 @@ import 'package:novel_ide/data/services/ai_service.dart'
     show AiService, ToolChatResponse;
 import 'package:novel_ide/data/services/chat/xml_tool_call_parser.dart';
 import 'package:novel_ide/data/services/memory/memory_pipeline.dart';
+import 'package:novel_ide/data/services/mcp/mcp_protocol.dart';
 
 /// Agent工具定义
 class AgentTool {
@@ -649,6 +651,18 @@ class WorkspaceAgent {
   /// 工具执行器映射
   final Map<String, ToolExecutor> _executors = {};
 
+  /// MCP registry for unified tool management
+  McpRegistry? _mcpRegistry;
+
+  /// Register an MCP tool provider
+  void registerMcpProvider(McpToolProvider provider) {
+    _mcpRegistry ??= McpRegistry();
+    _mcpRegistry!.register(provider);
+  }
+
+  /// Get the MCP registry
+  McpRegistry? get mcpRegistry => _mcpRegistry;
+
   /// 注册工具执行器
   void registerExecutor(String toolName, ToolExecutor executor) {
     _executors[toolName] = executor;
@@ -732,7 +746,7 @@ class WorkspaceAgent {
 
     for (int round = 0; round < maxToolRounds; round++) {
       // 只传已注册工具的定义（按需，不是全部）
-      final availableTools = _getRegisteredTools();
+      final availableTools = await _getRegisteredTools();
 
       ToolChatResponse response;
       try {
@@ -743,26 +757,39 @@ class WorkspaceAgent {
         );
       } catch (e) {
         // chatWithTools 内部已尝试降级（去掉tools重试），仍然失败时走纯文本回复
-        final errorMsg = e is Exception ? e.toString() : '未知错误';
-        // 第一轮就失败，直接降级为纯文本模式返回
+        final rawError = e.toString();
+        final errorReason = _classifyToolError(rawError);
+
+        developer.log(
+          'chatWithTools failed (round $round)',
+          name: 'WorkspaceAgent',
+          error: rawError,
+        );
+
         if (round == 0) {
           _extractAndSaveMemory(
             novelId: novelId,
             messages: messages,
-            aiResponse: '工具调用暂时不可用',
+            aiResponse: '工具调用不可用：$errorReason',
             toolCalls: toolCalls,
             toolResults: toolResults,
+            config: config,
           );
           return AgentResponse(
-            content: '工具调用暂时不可用，已切换为纯文本模式。\n$errorMsg',
+            content: '⚠️ 工具调用不可用：$errorReason\n\n'
+                '已切换为纯文本模式。您可以继续对话，'
+                '但无法使用工具功能。\n\n'
+                '建议：检查API配置是否正确，'
+                '或切换支持工具调用的模型。',
             toolCalls: toolCalls,
             toolResults: toolResults,
           );
         }
         // 后续轮次失败，返回已有的工具调用结果
         return AgentResponse(
-          content:
-              '工具调用中断，已完成 ${toolResults.where((r) => r.success).length} 个工具调用。\n$errorMsg',
+          content: '⚠️ 工具调用中断（$errorReason），'
+              '已完成 ${toolResults.where((r) => r.success).length} '
+              '个工具调用。',
           toolCalls: toolCalls,
           toolResults: toolResults,
         );
@@ -836,6 +863,38 @@ class WorkspaceAgent {
                 'role': 'tool',
                 'tool_call_id': tc.id,
                 'content': '执行失败: $e',
+              });
+            }
+          } else if (_mcpRegistry != null) {
+            // Try MCP providers
+            try {
+              final args = tc.arguments is String
+                  ? jsonDecode(tc.arguments as String)
+                  : (tc.arguments as Map<String, dynamic>? ?? {});
+              final mcpResult = await _mcpRegistry!.execute(
+                tc.functionName,
+                args,
+              );
+              toolResults.add(ToolResult(
+                toolName: tc.functionName,
+                success: mcpResult.success,
+                message: mcpResult.message,
+                error: mcpResult.success ? null : mcpResult.message,
+              ));
+              apiMessages.add({
+                'role': 'tool',
+                'tool_call_id': tc.id,
+                'content': _summarizeToolResult(ToolResult(
+                  toolName: tc.functionName,
+                  success: mcpResult.success,
+                  message: mcpResult.message,
+                )),
+              });
+            } catch (e) {
+              apiMessages.add({
+                'role': 'tool',
+                'tool_call_id': tc.id,
+                'content': 'MCP 工具执行失败: $e',
               });
             }
           } else {
@@ -916,6 +975,7 @@ class WorkspaceAgent {
           aiResponse: content,
           toolCalls: toolCalls,
           toolResults: toolResults,
+          config: config,
         );
         return AgentResponse(
           content: content,
@@ -933,6 +993,7 @@ class WorkspaceAgent {
       aiResponse: '已达到最大工具调用轮次（$maxToolRounds轮）',
       toolCalls: toolCalls,
       toolResults: toolResults,
+      config: config,
     );
     return AgentResponse(
       content: '已达到最大工具调用轮次（$maxToolRounds轮），请简化你的需求。',
@@ -942,11 +1003,21 @@ class WorkspaceAgent {
   }
 
   /// 获取已注册工具的OpenAI格式定义（只传已注册的，不是全部）
-  List<Map<String, dynamic>> _getRegisteredTools() {
-    return tools
+  Future<List<Map<String, dynamic>>> _getRegisteredTools() async {
+    final builtinTools = tools
         .where((t) => _executors.containsKey(t.name))
         .map((t) => t.toOpenAiFormat())
         .toList();
+
+    // Add MCP provider tools
+    if (_mcpRegistry != null) {
+      final mcpTools = await _mcpRegistry!.getAllTools();
+      for (final tool in mcpTools) {
+        builtinTools.add(tool.toOpenAiFormat());
+      }
+    }
+
+    return builtinTools;
   }
 
   /// 工具结果摘要（截断过长内容，避免payload膨胀）
@@ -969,6 +1040,7 @@ class WorkspaceAgent {
     required String aiResponse,
     required Map<String, String> toolCalls,
     required List<ToolResult> toolResults,
+    AiConfig? config,
   }) {
     if (novelId == null || novelId.isEmpty) return;
     // 异步执行，不阻塞返回
@@ -977,13 +1049,15 @@ class WorkspaceAgent {
         final db = await DatabaseHelper().database;
         final repo = MemoryRepository(db: db, profileId: novelId);
 
-        // 使用三阶段管线处理对话
+        // 使用 AI 驱动的知识图谱分析（降级到规则匹配）
         final pipeline = MemoryPipeline(repository: repo);
         final toolNames = toolCalls.keys.toList();
-        await pipeline.run(
+        await pipeline.runWithAI(
           messages: messages,
           toolCallNames: toolNames,
           novelId: novelId,
+          aiService: _aiService,
+          config: config,
         );
       } catch (_) {
         // 管线失败时回退到简单提取
@@ -1083,6 +1157,51 @@ class WorkspaceAgent {
 3. 可以在一次回复中嵌入多个工具调用
 4. 工具执行结果会以 [工具结果] 形式返回
 5. 只在标准工具调用不可用时使用此格式''';
+
+  /// 根据原始错误信息返回用户友好的错误原因
+  String _classifyToolError(String raw) {
+    final lower = raw.toLowerCase();
+
+    // 400 / Bad Request — 模型不支持工具或请求格式错误
+    if (lower.contains('400') || lower.contains('bad request')) {
+      if (lower.contains('tool') || lower.contains('function')) {
+        return '当前模型不支持工具调用（API返回400）';
+      }
+      if (lower.contains('token') || lower.contains('length')) {
+        return '输入内容超过模型Token限制（API返回400）';
+      }
+      return '请求参数错误（API返回400），可能是模型不支持当前功能';
+    }
+
+    // 429 / Rate limit
+    if (lower.contains('429') || lower.contains('rate limit')) {
+      return 'API请求频率超限，请稍后重试';
+    }
+
+    // Token / context 限制
+    if (lower.contains('token') &&
+        (lower.contains('limit') ||
+            lower.contains('exceed') ||
+            lower.contains('maximum') ||
+            lower.contains('overflow'))) {
+      return '输入内容超过Token或上下文长度限制';
+    }
+
+    // 格式解析错误
+    if (lower.contains('format') ||
+        lower.contains('parse') ||
+        lower.contains('json') ||
+        lower.contains('syntax')) {
+      return '模型返回格式解析失败';
+    }
+
+    // 超时
+    if (lower.contains('timeout') || lower.contains('timed out')) {
+      return '请求超时，请检查网络连接';
+    }
+
+    return '未知错误，请查看开发者日志获取详情';
+  }
 }
 
 /// Agent响应结果

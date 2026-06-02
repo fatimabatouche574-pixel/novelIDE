@@ -16,7 +16,12 @@ import 'package:novel_ide/data/services/workspace_agent.dart';
 import 'package:novel_ide/data/services/web_search_service.dart';
 import 'package:novel_ide/data/services/config_service.dart';
 import 'package:novel_ide/data/services/workflow_engine.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:novel_ide/data/services/mcp/mcp_protocol.dart';
+import 'package:novel_ide/data/services/mcp/builtin_provider.dart';
+import 'package:novel_ide/data/services/mcp/json_plugin_provider.dart';
+import 'package:novel_ide/data/datasources/public_storage_helper.dart';
 
 /// 模糊匹配子Agent（精确ID → 中文名 → 关键词 → 描述）
 TomatoAgent? fuzzyMatchAgent(String taskType, List<TomatoAgent> agents) {
@@ -1263,4 +1268,44 @@ void registerAllToolExecutors({
       return ToolResult.failure(toolName: 'create_chapter', error: '创建失败: $e');
     }
   });
+
+  // ====== MCP 自动注册 ======
+
+  // Register builtin tools as MCP provider
+  agent.registerMcpProvider(BuiltinToolProvider(agent));
+
+  // Load JSON plugins from plugin directory
+  try {
+    final pluginDir = '${PublicStorageHelper.publicRoot.path}/plugins';
+    final jsonProvider = JsonPluginProvider(
+      directory: pluginDir,
+      onExecuteBuiltin: (toolName, args) async {
+        final executor = agent.getExecutor(toolName);
+        if (executor != null) {
+          final result = await executor(args);
+          if (result.success) {
+            return McpResult.success(
+              toolName: toolName,
+              message: result.message,
+              data: result.data,
+            );
+          }
+          return McpResult.failure(
+            toolName: toolName,
+            message: result.error ?? result.message,
+            data: result.data,
+          );
+        }
+        return McpResult.failure(
+          toolName: toolName,
+          message: '工具 $toolName 不存在',
+        );
+      },
+    );
+    await jsonProvider.loadPlugins();
+    agent.registerMcpProvider(jsonProvider);
+  } catch (e) {
+    // Plugin loading is non-critical, log and continue
+    debugPrint('JSON plugin loading failed: $e');
+  }
 }
