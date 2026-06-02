@@ -37,6 +37,7 @@ dependencies:
   charset: ^2.0.1
   shared_preferences: ^2.2.3
   url_launcher: ^6.2.5
+  flutter_markdown: ^0.7.7
 
 dev_dependencies:
   flutter_test:

@@ -42,4 +42,4 @@ Thumbs.db
 
 # Python scripts
 *.py
-!.env.example
+!.env.example.mcp.json

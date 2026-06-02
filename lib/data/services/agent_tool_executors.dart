@@ -1,4 +1,6 @@
 import 'package:novel_ide/data/models/material_models.dart';
+import 'package:novel_ide/data/models/memory/memory_entity.dart';
+import 'package:novel_ide/data/models/memory/memory_repository.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
 import 'package:novel_ide/data/models/tomato_agent_model.dart';
 import 'package:novel_ide/data/repositories/material_repository.dart';
@@ -536,12 +538,48 @@ void registerAllToolExecutors({
   });
 
   agent.registerExecutor('get_memory', (args) async {
-    final memory = NovelMemory(novelId: novelId, novelTitle: novelTitle);
-    final content = await memory.autoUpdate();
-    return ToolResult.success(
-      toolName: 'get_memory',
-      message: content.isEmpty ? '记忆包为空' : content,
-    );
+    try {
+      final db = await DatabaseHelper().database;
+      final repo = MemoryRepository(db: db, profileId: novelId);
+      final query = (args['query'] as String?) ?? '*';
+      final results = await repo.searchMemories(
+        query: query,
+        novelId: novelId,
+      );
+      if (results.isEmpty) {
+        // 回退到旧的记忆文件系统
+        final memory = NovelMemory(
+          novelId: novelId,
+          novelTitle: novelTitle,
+        );
+        final content = await memory.autoUpdate();
+        return ToolResult.success(
+          toolName: 'get_memory',
+          message: content.isEmpty ? '记忆为空' : content,
+        );
+      }
+      // 按重要性排序，取 top 20
+      final sorted = List<Memory>.from(results)
+        ..sort((a, b) => b.importance.compareTo(a.importance));
+      final selected = sorted.take(20);
+      final buf = StringBuffer();
+      buf.writeln('记忆检索结果（${results.length}条，显示top ${selected.length}）：');
+      for (final m in selected) {
+        buf.writeln('· [${m.importance.toStringAsFixed(1)}] ${m.title}: ${m.content}');
+      }
+      return ToolResult.success(
+        toolName: 'get_memory',
+        message: buf.toString(),
+      );
+    } catch (e) {
+      // 查询失败时回退到旧的记忆文件系统
+      final memory = NovelMemory(novelId: novelId, novelTitle: novelTitle);
+      final content = await memory.autoUpdate();
+      return ToolResult.success(
+        toolName: 'get_memory',
+        message: content.isEmpty ? '记忆为空' : content,
+      );
+    }
   });
 
   // ====== 写入类工具 ======

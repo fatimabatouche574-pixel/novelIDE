@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:novel_ide/data/models/ai_config_model.dart';
@@ -650,13 +652,40 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                             ),
                           ),
                         )
-                      : SelectableText(
-                          content,
-                          style: TextStyle(
-                            color: _textPrimary,
-                            fontSize: 15,
-                            height: 1.6,
+                      : MarkdownBody(
+                          data: content,
+                          styleSheet: MarkdownStyleSheet(
+                            p: TextStyle(
+                              color: _textPrimary,
+                              fontSize: 15,
+                              height: 1.6,
+                            ),
+                            h1: TextStyle(
+                              color: _textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            h2: TextStyle(
+                              color: _textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            code: TextStyle(
+                              backgroundColor: _cardBg2.withValues(alpha: 0.3),
+                              fontFamily: 'monospace',
+                              fontSize: 14,
+                            ),
+                            codeblockDecoration: BoxDecoration(
+                              color: _cardBg2.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            listBullet: TextStyle(color: _textSecondary),
                           ),
+                          onTapLink: (text, href, title) {
+                            if (href != null) {
+                              launchUrl(Uri.parse(href));
+                            }
+                          },
                         ),
                 ),
               ),
@@ -744,36 +773,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
               padding: const EdgeInsets.all(8),
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
-            // 通话按钮（放大）
-            Container(
-              width: 44,
-              height: 44,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.call, color: _primaryColor, size: 24),
-                onPressed: () async {
-                  final result = await Navigator.push<String>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => VoiceCallPage(
-                        onCallEnd: (transcript, aiResponse) {
-                          if (mounted) _inputCtrl.text = transcript;
-                        },
-                      ),
-                    ),
-                  );
-                  if (result != null && result.isNotEmpty && mounted) {
-                    _inputCtrl.text = result;
-                  }
-                },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ),
             // 输入框
             Expanded(
               child: TextField(
@@ -840,22 +839,23 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         ),
       );
     }
+    // 无文字时：显示电话按钮
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.pink.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
+        color: _primaryColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(22),
       ),
       child: IconButton(
-        icon: Icon(Icons.favorite, color: Colors.pink, size: 20),
+        icon: Icon(Icons.call, color: _primaryColor, size: 24),
         onPressed: () async {
-          final result = await Navigator.push(
+          final result = await Navigator.push<String>(
             context,
             MaterialPageRoute(
               builder: (_) => VoiceCallPage(
-                onCallEnd: (t, a) {
-                  if (mounted) _inputCtrl.text = t;
+                onCallEnd: (transcript, aiResponse) {
+                  if (mounted) _inputCtrl.text = transcript;
                 },
               ),
             ),

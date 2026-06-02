@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%; width: 100%; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+/* ===== 暗色主题 (VS Code Dark+) ===== */
+[data-theme="dark"], :root {
+  --titlebar-bg: #3c3c3c;
+  --menubar-bg: #3c3c3c;
+  --activitybar-bg: #333333;
+  --sidebar-bg: #252526;
+  --editor-bg: #1e1e1e;
+  --panel-bg: #1e1e1e;
+  --statusbar-bg: #007acc;
+  --border: #3c3c3c;
+  --input-bg: #3c3c3c;
+  --hover-bg: #2a2d2e;
+  --selected-bg: #094771;
+  --tab-active-bg: #1e1e1e;
+  --tab-inactive-bg: #2d2d2d;
+  --text: #cccccc;
+  --text-bright: #e0e0e0;
+  --text-dim: #999999;
+  --text-muted: #666666;
+  --accent: #007acc;
+  --scrollbar-thumb: rgba(121,121,121,0.4);
+  --scrollbar-hover: rgba(121,121,121,0.7);
+}
+
+/* ===== 亮色主题 (VS Code Light+) ===== */
+[data-theme="light"] {
+  --titlebar-bg: #dddddd;
+  --menubar-bg: #f3f3f3;
+  --activitybar-bg: #333333;
+  --sidebar-bg: #f3f3f3;
+  --editor-bg: #ffffff;
+  --panel-bg: #f3f3f3;
+  --statusbar-bg: #007acc;
+  --border: #e0e0e0;
+  --input-bg: #ffffff;
+  --hover-bg: #e8e8e8;
+  --selected-bg: #c4e0ff;
+  --tab-active-bg: #ffffff;
+  --tab-inactive-bg: #ececec;
+  --text: #333333;
+  --text-bright: #111111;
+  --text-dim: #616161;
+  --text-muted: #999999;
+  --accent: #007acc;
+  --scrollbar-thumb: rgba(100,100,100,0.3);
+  --scrollbar-hover: rgba(100,100,100,0.5);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+.resizing { user-select: none !important; }
+.resizing * { cursor: col-resize !important; }
+
+.resize-handle-v {
+  width: 3px; cursor: col-resize; background: transparent;
+  position: relative; z-index: 10; flex-shrink: 0;
+}
+.resize-handle-v:hover, .resize-handle-v:active { background: var(--accent); }
+
+.resize-handle-h {
+  height: 3px; cursor: row-resize; background: transparent;
+  position: relative; z-index: 10; flex-shrink: 0;
+}
+.resize-handle-h:hover, .resize-handle-h:active { background: var(--accent); }

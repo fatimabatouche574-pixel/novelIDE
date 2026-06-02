@@ -7,6 +7,7 @@ import 'package:novel_ide/presentation/pages/profile/profile_page.dart';
 import 'package:novel_ide/presentation/pages/works/export_page.dart'
     hide FileTreeNode;
 import 'package:novel_ide/presentation/widgets/file_tree_view.dart';
+import 'package:novel_ide/presentation/pages/drawer_content.dart';
 import 'package:novel_ide/presentation/pages/materials/materials_tree_page.dart';
 import 'package:novel_ide/presentation/pages/materials/relationship_graph_page.dart';
 import 'package:novel_ide/data/models/novel_model.dart';
@@ -330,7 +331,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                     top: 0,
                     bottom: 0,
                     width: 280,
-                    child: _buildSidebar(
+                    child: DrawerContent(
                       context: context,
                       sidebarBg: _sidebarBg,
                       cardBg: _cardBg,

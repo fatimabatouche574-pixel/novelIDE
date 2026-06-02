@@ -1,0 +1,113 @@
+{
+  "total_count": 1,
+  "jobs": [
+    {
+      "id": 77611418482,
+      "run_id": 26366615874,
+      "workflow_name": "Build APK",
+      "head_branch": "master",
+      "run_url": "https://api.github.com/repos/qq1375828505/DAXIE666/actions/runs/26366615874",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSlhyxc8AAAASEgBDcg",
+      "head_sha": "ea46f9b2000335a1b6fa1f8d4eef839cd8cc5bc5",
+      "url": "https://api.github.com/repos/qq1375828505/DAXIE666/actions/jobs/77611418482",
+      "html_url": "https://github.com/qq1375828505/DAXIE666/actions/runs/26366615874/job/77611418482",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-05-24T16:28:45Z",
+      "started_at": "2026-05-24T16:28:47Z",
+      "completed_at": "2026-05-24T16:29:30Z",
+      "name": "build",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-05-24T16:28:47Z",
+          "completed_at": "2026-05-24T16:28:49Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-05-24T16:28:49Z",
+          "completed_at": "2026-05-24T16:28:50Z"
+        },
+        {
+          "name": "Setup Flutter",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-05-24T16:28:50Z",
+          "completed_at": "2026-05-24T16:29:21Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 4,
+          "started_at": "2026-05-24T16:29:21Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        },
+        {
+          "name": "Generate code (build_runner)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 5,
+          "started_at": "2026-05-24T16:29:28Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        },
+        {
+          "name": "Build APK",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6,
+          "started_at": "2026-05-24T16:29:28Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        },
+        {
+          "name": "Upload APK",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7,
+          "started_at": "2026-05-24T16:29:28Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        },
+        {
+          "name": "Post Setup Flutter",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-05-24T16:29:28Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-05-24T16:29:28Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-05-24T16:29:28Z",
+          "completed_at": "2026-05-24T16:29:28Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/qq1375828505/DAXIE666/check-runs/77611418482",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000000035,
+      "runner_name": "GitHub Actions 1000000035",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}
