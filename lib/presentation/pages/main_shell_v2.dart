@@ -12,6 +12,7 @@ import 'package:novel_ide/presentation/pages/memory/memory_graph_page.dart';
 import 'package:novel_ide/presentation/pages/writing/global_search_page.dart';
 import 'package:novel_ide/core/theme/ui_tokens.dart';
 import 'package:novel_ide/core/theme/skin_provider.dart';
+import 'package:novel_ide/core/theme/app_themes.dart';
 
 /// V2 主壳层 — 采用 SidebarPanel + 右侧页面切换架构
 class MainShellV2 extends ConsumerStatefulWidget {
