@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 8种主题皮肤预设
+/// 9种主题皮肤预设
 enum SkinType {
   white('白色', '纯净简洁'),
   black('黑色', '深邃护眼'),
@@ -9,7 +9,8 @@ enum SkinType {
   green('绿色清新', '自然养眼'),
   pink('粉色', '甜美浪漫'),
   wood('日系木色', '素雅淡然'),
-  red('红色热情', '热血激情');
+  red('红色热情', '热血激情'),
+  operitPurple('Operit紫', 'Material You');
 
   final String label;
   final String desc;
@@ -73,9 +74,7 @@ class SkinTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: isDark
-              ? BorderSide(
-                  color: Colors.white.withValues(alpha: 0.06),
-                )
+              ? BorderSide(color: Colors.white.withValues(alpha: 0.06))
               : BorderSide.none,
         ),
         color: cardBg,
@@ -102,7 +101,7 @@ class SkinTheme {
   }
 }
 
-/// 8种主题定义
+/// 9种主题定义
 class AppSkins {
   static const _errorRed = Color(0xFFFF4757);
   static const _tomatoRed = Color(0xFFFF6B6B);
@@ -244,8 +243,35 @@ class AppSkins {
     brightness: Brightness.light,
   );
 
+  // ==================== 9. Operit Purple (Material You) ====================
+  static const operitPurple = SkinTheme(
+    type: SkinType.operitPurple,
+    primary: Color(0xFF7C4DFF),
+    secondary: Color(0xFF625B71),
+    background: Color(0xFFFFFBFE),
+    surface: Colors.white,
+    textPrimary: Color(0xFF1C1B1F),
+    textSecondary: Color(0xFF49454F),
+    appBarBg: Color(0xFF7C4DFF),
+    navBg: Color(0xFF1E1E2E),
+    navSelected: Color(0xFFCBA6F7),
+    navUnselected: Color(0xFFCDD6F4),
+    cardBg: Colors.white,
+    brightness: Brightness.light,
+  );
+
   /// 全部主题列表
-  static const all = [white, black, blue, yellow, green, pink, wood, red];
+  static const all = [
+    white,
+    black,
+    blue,
+    yellow,
+    green,
+    pink,
+    wood,
+    red,
+    operitPurple,
+  ];
 
   /// 按类型获取主题
   static SkinTheme getByType(SkinType type) {
