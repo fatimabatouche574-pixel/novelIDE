@@ -11,6 +11,10 @@ import 'package:novel_ide/presentation/pages/works/export_page.dart';
 import 'package:novel_ide/presentation/pages/materials/materials_tree_page.dart';
 import 'package:novel_ide/presentation/pages/stats/stats_page.dart';
 import 'package:novel_ide/presentation/pages/profile/profile_page.dart';
+import 'package:novel_ide/data/models/memory/memory_entity.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_graph_page.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_list_page.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_edit_page.dart';
 
 class AppRouter {
   static const String home = '/';
@@ -25,6 +29,9 @@ class AppRouter {
   static const String materials = '/materials';
   static const String stats = '/stats';
   static const String profile = '/profile';
+  static const String memoryGraph = '/memory-graph';
+  static const String memoryList = '/memory-list';
+  static const String memoryEdit = '/memory-edit';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -87,6 +94,24 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const StatsPage());
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfilePage());
+      case memoryGraph:
+        return MaterialPageRoute(builder: (_) => const MemoryGraphPage());
+      case memoryList:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => MemoryListPage(
+            novelId: args?['novelId'] as String?,
+          ),
+        );
+      case memoryEdit:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final memory = args?['memory'] as Memory?;
+        return MaterialPageRoute(
+          builder: (_) => MemoryEditPage(
+            memory: memory,
+            novelId: args?['novelId'] as String?,
+          ),
+        );
       default:
         return MaterialPageRoute(builder: (_) => const MainShell());
     }

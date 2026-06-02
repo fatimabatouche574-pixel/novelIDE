@@ -10,6 +10,8 @@ import 'package:novel_ide/presentation/widgets/file_tree_view.dart';
 import 'package:novel_ide/presentation/pages/drawer_content.dart';
 import 'package:novel_ide/presentation/pages/materials/materials_tree_page.dart';
 import 'package:novel_ide/presentation/pages/materials/relationship_graph_page.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_list_page.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_graph_page.dart';
 import 'package:novel_ide/data/models/novel_model.dart';
 import 'package:novel_ide/data/models/chapter_model.dart';
 import 'package:novel_ide/data/models/volume_model.dart';
@@ -958,11 +960,19 @@ class _MainShellState extends ConsumerState<MainShell> {
       ),
       FileTreeNode(
         id: 'mat_memory',
-        name: '记忆包',
+        name: '记忆管理',
         icon: Icons.psychology,
         iconColor: const Color(0xFF42A5F5),
         isFolder: false,
         parentType: 'memory',
+      ),
+      FileTreeNode(
+        id: 'mat_memory_graph',
+        name: '记忆图谱',
+        icon: Icons.hub,
+        iconColor: const Color(0xFF42A5F5),
+        isFolder: false,
+        parentType: 'memory_graph',
       ),
     ];
   }
@@ -985,11 +995,29 @@ class _MainShellState extends ConsumerState<MainShell> {
       return;
     }
 
+    if (node.parentType == 'memory') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MemoryListPage(
+            novelId: selectedNovel.id,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (node.parentType == 'memory_graph') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MemoryGraphPage()),
+      );
+      return;
+    }
+
     // 设置初始分类 tab
-    if (node.parentType != null && node.parentType != 'memory') {
+    if (node.parentType != null) {
       ref.read(initialMaterialTabProvider.notifier).state = node.parentType;
-    } else {
-      ref.read(initialMaterialTabProvider.notifier).state = null;
     }
     Navigator.push(
       context,

@@ -4,6 +4,8 @@ import 'package:novel_ide/presentation/state/app_providers.dart';
 import 'package:novel_ide/presentation/widgets/file_tree_view.dart';
 import 'package:novel_ide/presentation/widgets/explorer/explorer_panel.dart';
 import 'package:novel_ide/presentation/pages/materials/relationship_graph_page.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_list_page.dart';
+import 'package:novel_ide/presentation/pages/memory/memory_graph_page.dart';
 import 'package:novel_ide/data/models/novel_model.dart';
 import 'package:novel_ide/data/models/chapter_model.dart';
 import 'package:novel_ide/data/models/ai_chat_session_model.dart';
@@ -365,6 +367,24 @@ class _DrawerContentState extends ConsumerState<DrawerContent> {
       );
       return;
     }
+    if (node.parentType == 'memory') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MemoryListPage(
+            novelId: selectedNovel.id,
+          ),
+        ),
+      );
+      return;
+    }
+    if (node.parentType == 'memory_graph') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MemoryGraphPage()),
+      );
+      return;
+    }
     widget.onNavigateToMaterial(node.parentType);
   }
 
@@ -445,11 +465,19 @@ class _DrawerContentState extends ConsumerState<DrawerContent> {
       ),
       FileTreeNode(
         id: 'mat_memory',
-        name: '记忆包',
+        name: '记忆管理',
         icon: Icons.psychology,
         iconColor: const Color(0xFF42A5F5),
         isFolder: false,
         parentType: 'memory',
+      ),
+      FileTreeNode(
+        id: 'mat_memory_graph',
+        name: '记忆图谱',
+        icon: Icons.hub,
+        iconColor: const Color(0xFF42A5F5),
+        isFolder: false,
+        parentType: 'memory_graph',
       ),
     ];
   }
