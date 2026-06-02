@@ -46,7 +46,7 @@ class _VendorCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(icon, size: 18, color: AppColors.primary),
+                  Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -115,11 +115,11 @@ class AiConfigListPage extends ConsumerWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: isSelected
-                        ? BorderSide(color: AppColors.primary, width: 2)
+                        ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
                         : BorderSide.none,
                   ),
                   color: isSelected
-                      ? AppColors.primary.withOpacity(0.08)
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
                       : null,
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
@@ -128,7 +128,7 @@ class AiConfigListPage extends ConsumerWidget {
                     ),
                     leading: Icon(
                       Icons.smart_toy,
-                      color: isSelected ? AppColors.primary : Colors.grey,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey,
                     ),
                     title: Row(
                       children: [
@@ -152,7 +152,7 @@ class AiConfigListPage extends ConsumerWidget {
                               color: Colors.orange.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               '内置',
                               style: TextStyle(
                                 fontSize: 11,
@@ -169,14 +169,14 @@ class AiConfigListPage extends ConsumerWidget {
                               vertical: 1,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.15),
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               '使用中',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
@@ -265,10 +265,10 @@ class AiConfigListPage extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () async {
               try {
                 await DatabaseHelper().deleteAiConfig(config.id);
@@ -302,7 +302,7 @@ class AiConfigListPage extends ConsumerWidget {
               }
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('删除'),
+            child: Text('删除'),
           ),
         ],
       ),
@@ -871,7 +871,7 @@ Theme(
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('取消'),
+                  child: Text('取消'),
                 ),
                 if (step == 1)
                   FilledButton(
