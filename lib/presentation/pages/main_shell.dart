@@ -282,9 +282,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     _textPrimary = skin.textPrimary;
     _textSecondary = skin.textSecondary;
     _textTertiary = skin.textSecondary.withOpacity(0.7);
-    _dividerColor = skin.brightness == Brightness.dark
-        ? _dividerColor
-        : skin.textSecondary.withOpacity(0.2);
+    _dividerColor = skin.textSecondary.withOpacity(0.15);
 
     return Scaffold(
       backgroundColor: _bgColor,
