@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:novel_ide/presentation/pages/main_shell.dart';
+import 'package:novel_ide/presentation/pages/main_shell_v2.dart';
 import 'package:novel_ide/presentation/pages/writing/editor_page.dart';
 import 'package:novel_ide/presentation/pages/writing/rich_editor_page.dart';
 import 'package:novel_ide/presentation/pages/writing/global_search_page.dart';
@@ -36,7 +36,7 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
-        return MaterialPageRoute(builder: (_) => const MainShell());
+        return MaterialPageRoute(builder: (_) => const MainShellV2());
       case editor:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
@@ -113,7 +113,7 @@ class AppRouter {
           ),
         );
       default:
-        return MaterialPageRoute(builder: (_) => const MainShell());
+        return MaterialPageRoute(builder: (_) => const MainShellV2());
     }
   }
 }

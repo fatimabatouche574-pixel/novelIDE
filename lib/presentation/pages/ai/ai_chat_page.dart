@@ -777,13 +777,25 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
             Expanded(
               child: TextField(
                 controller: _inputCtrl,
-                maxLines: null,
+                maxLines: 5,
                 minLines: 1,
+                scrollPhysics: const BouncingScrollPhysics(),
                 style: TextStyle(color: _textPrimary, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'Message',
                   hintStyle: TextStyle(color: _textSecondary),
-                  border: InputBorder.none,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                   contentPadding: EdgeInsets.symmetric(
                     vertical: 8,
                     horizontal: 4,
