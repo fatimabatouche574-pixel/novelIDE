@@ -146,6 +146,11 @@ class JsonPluginProvider implements McpToolProvider {
       ];
 
   @override
+  Future<void> dispose() async {
+    _plugins.clear();
+  }
+
+  @override
   Future<McpResult> execute(
     String toolName,
     Map<String, dynamic> args,

@@ -18,8 +18,8 @@ class _OperitTerminalPageState extends State<OperitTerminalPage> {
   static const _sampleOutput = [
     _TermLine(prompt: '\$ ', text: 'ls -la', isCommand: true),
     _TermLine(text: 'total 48', isCommand: false),
-    _TermLine(text: 'drwxr-xr-x  12 user  staff   384 Jun  3 10:30 .'),
-    _TermLine(text: 'drwxr-xr-x   6 user  staff   192 Jun  2 14:20 ..'),
+    _TermLine(text: 'drwxr-xr-x  12 user  staff   384 Jun  3 10:30 .', isCommand: false),
+    _TermLine(text: 'drwxr-xr-x   6 user  staff   192 Jun  2 14:20 ..', isCommand: false),
     _TermLine(
       text: '-rw-r--r--   1 user  staff  2048 Jun  3 09:15 config.yaml',
       isCommand: false,

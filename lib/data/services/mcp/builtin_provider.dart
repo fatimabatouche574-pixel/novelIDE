@@ -50,6 +50,9 @@ class BuiltinToolProvider implements McpToolProvider {
   }
 
   @override
+  Future<void> dispose() async {}
+
+  @override
   Future<McpResult> execute(
     String toolName,
     Map<String, dynamic> args,

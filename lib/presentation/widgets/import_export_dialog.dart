@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:novel_ide/core/theme/ui_tokens.dart';
+import 'package:novel_ide/data/models/chapter_model.dart';
 import 'package:novel_ide/data/models/novel_model.dart';
 import 'package:novel_ide/data/services/import_export_service.dart';
 import 'package:novel_ide/data/services/novel_import_service.dart';
