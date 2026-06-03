@@ -11,6 +11,7 @@ build/
 android/.gradle/
 android/app/build/
 android/DAXIE666/
+android/novel_ide_android_v1/
 android/local.properties
 android/key.properties
 *.jks
