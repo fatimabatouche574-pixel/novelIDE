@@ -234,7 +234,7 @@ class _SampleData {
     _PackageInfo(
       name: '代码审查',
       description: '自动化代码审查技能，检测安全漏洞和代码异味',
-      icon: Icons.code_review,
+      icon: Icons.code,
       installed: true,
     ),
     _PackageInfo(

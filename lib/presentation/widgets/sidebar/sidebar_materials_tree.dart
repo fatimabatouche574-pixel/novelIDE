@@ -171,4 +171,17 @@ class _CategoryDef {
   final String type;
   final String emoji;
   final IconData icon;
+
+  String get label {
+    const labels = {
+      'character': '角色',
+      'setting': '设定',
+      'location': '地点',
+      'faction': '势力',
+      'hook': '伏笔',
+      'item': '道具',
+      'reference': '参考',
+    };
+    return labels[type] ?? type;
+  }
 }
