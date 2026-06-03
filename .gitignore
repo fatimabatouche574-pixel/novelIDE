@@ -10,6 +10,7 @@ build/
 # Android
 android/.gradle/
 android/app/build/
+android/DAXIE666/
 android/local.properties
 android/key.properties
 *.jks
