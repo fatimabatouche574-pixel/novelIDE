@@ -1,8 +1,9 @@
 name: Build APK
 
 on:
+  # 任意分支 push 都跑云端 APK 构建，这样功能分支/修复分支也能直接在 Actions 下载 APK。
   push:
-    branches: [ master ]
+    branches: [ '**' ]
   pull_request:
     branches: [ master ]
   workflow_dispatch:
@@ -13,6 +14,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
     steps:
     - uses: actions/checkout@v4
@@ -31,12 +35,13 @@ jobs:
     - name: Generate code (build_runner)
       run: flutter pub run build_runner build --delete-conflicting-outputs
 
-    # 解码签名文件
+    # 有签名密钥时生成正式签名；无密钥时跳过，build.gradle 会使用 debug 签名产出可安装 APK。
     - name: Decode keystore
+      if: ${{ env.KEYSTORE_BASE64 != '' }}
       run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
 
-    # 创建 key.properties 供 build.gradle 读取
     - name: Create key.properties
+      if: ${{ env.KEYSTORE_BASE64 != '' }}
       run: |
         echo "storeFile=release-key.jks" > android/key.properties
         echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
@@ -44,20 +49,47 @@ jobs:
         echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
 
     - name: Build APK
-      run: flutter build apk --release --no-tree-shake-icons
+      id: build_apk
+      run: |
+        set +e
+        flutter build apk --release --no-tree-shake-icons
+        release_status=$?
+        set -e
 
-    - name: Rename APK
-      run: cp build/app/outputs/flutter-apk/app-release.apk novel-ide-android.apk
+        if [ "$release_status" -eq 0 ] && [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+          src_apk="build/app/outputs/flutter-apk/app-release.apk"
+          build_type="release"
+        else
+          echo "::warning::Release APK build failed; building debug APK as a downloadable fallback."
+          flutter build apk --debug --no-tree-shake-icons
+          src_apk="build/app/outputs/flutter-apk/app-debug.apk"
+          build_type="debug"
+        fi
+
+        apk_name="novel-ide-android-${build_type}-${GITHUB_SHA}.apk"
+        cp "$src_apk" "$apk_name"
+        apk_size_bytes=$(stat -c%s "$apk_name")
+        apk_size_mb=$(awk "BEGIN {printf \"%.1f\", $apk_size_bytes / 1024 / 1024}")
+        echo "APK artifact: $apk_name ($apk_size_mb MB)"
+        echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
+        echo "build_type=$build_type" >> "$GITHUB_OUTPUT"
+        echo "apk_size_mb=$apk_size_mb" >> "$GITHUB_OUTPUT"
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: release-apk
-        path: novel-ide-android.apk
+        name: android-apk-${{ steps.build_apk.outputs.build_type }}
+        path: ${{ steps.build_apk.outputs.apk_name }}
+        retention-days: 30
+
+    - name: Print APK download hint
+      run: |
+        echo "Cloud APK artifact uploaded: android-apk-${{ steps.build_apk.outputs.build_type }}"
+        echo "Open this workflow run in GitHub Actions and download the artifact named android-apk-${{ steps.build_apk.outputs.build_type }}."
 
     # 自动创建/更新 Release 并上传 APK（仅 master 分支 push，非 PR）
     - name: Auto Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.build_apk.outputs.build_type == 'release'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: "latest"
@@ -66,7 +98,11 @@ jobs:
           ## 网文写作IDE Android 最新版
 
           **安装说明**：支持 Android 6.0+，下载 APK 后直接安装即可。
-        files: novel-ide-android.apk
+
+          **包体说明**：当前 APK 是 Flutter 客户端本体，不内置本地大模型或小说语料库；AI 小说写作能力通过应用内配置的模型/API 调用提供。因此安装包约几十 MB 属于正常范围，并不表示功能被删减。
+
+          **本次构建大小**：${{ steps.build_apk.outputs.apk_size_mb }} MB
+        files: ${{ steps.build_apk.outputs.apk_name }}
         fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

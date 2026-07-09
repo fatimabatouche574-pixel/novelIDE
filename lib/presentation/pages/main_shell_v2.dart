@@ -135,6 +135,15 @@ class _MainShellV2State extends ConsumerState<MainShellV2>
     });
   }
 
+  /// 新建一个完全独立的 AI 对话，避免小说创作上下文串线。
+  void _triggerNewChat() {
+    ref.read(newSessionTriggerProvider.notifier).state =
+        ref.read(newSessionTriggerProvider) + 1;
+    if (_currentRoute != 'ai_chat') {
+      _navigateTo('ai_chat');
+    }
+  }
+
   /// 返回上一页
   void _goBack() {
     if (_navHistory.length > 1) {
@@ -202,6 +211,9 @@ class _MainShellV2State extends ConsumerState<MainShellV2>
                   title: _getPageTitle(),
                   onMenuTap: _openDrawer,
                   onBackTap: _goBack,
+                  onNewChatTap: _currentRoute == 'ai_chat'
+                      ? _triggerNewChat
+                      : null,
                   skin: skin,
                 ),
                 Expanded(child: _buildContentTransform(skin)),
@@ -454,6 +466,7 @@ class _TopBar extends StatelessWidget {
     required this.onMenuTap,
     required this.onBackTap,
     required this.skin,
+    this.onNewChatTap,
   });
 
   final bool isHome;
@@ -461,6 +474,7 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onMenuTap;
   final VoidCallback onBackTap;
   final SkinTheme skin;
+  final VoidCallback? onNewChatTap;
 
   @override
   Widget build(BuildContext context) {
@@ -490,6 +504,24 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          if (onNewChatTap != null)
+            TextButton.icon(
+              onPressed: onNewChatTap,
+              icon: const Icon(
+                Icons.add_comment_outlined,
+                color: Colors.white,
+                size: 18,
+              ),
+              label: const Text(
+                '新对话',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
           // 语音通话图标
           _TopBarAction(
             icon: Icons.call,
