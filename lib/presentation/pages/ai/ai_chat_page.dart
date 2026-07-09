@@ -33,14 +33,17 @@ class AiChatSession {
   String title;
   List<Map<String, String>> messages;
   final DateTime createdAt;
+  DateTime updatedAt;
 
   AiChatSession({
     required this.id,
     required this.title,
     List<Map<String, String>>? messages,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) : messages = messages != null ? List.from(messages) : [],
-       createdAt = createdAt ?? DateTime.now();
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 }
 
 /// GPT风格聊天页面 - 纯聊天消息列表 + 底部胶囊式输入框
@@ -77,6 +80,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
   // 历史记录仓库
   final ChatHistoryRepository _historyRepo = ChatHistoryRepository();
   bool _isHistoryLoaded = false;
+  ProviderSubscription<int>? _newSessionSub;
+  ProviderSubscription<String?>? _currentSessionSub;
 
   @override
   void initState() {
@@ -86,14 +91,23 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     _initVoice();
     _loadHistory();
 
-    // 监听新建会话触发器
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.listen<int>(newSessionTriggerProvider, (previous, next) {
+    // 监听主壳层/抽屉触发的新建与切换会话事件。
+    _newSessionSub = ref.listenManual<int>(
+      newSessionTriggerProvider,
+      (previous, next) {
         if (next != previous && next > 0) {
           _newSession();
         }
-      });
-    });
+      },
+    );
+    _currentSessionSub = ref.listenManual<String?>(
+      currentSessionIdProvider,
+      (previous, next) {
+        if (next != null && next != _currentSession?.id) {
+          _switchSession(next);
+        }
+      },
+    );
   }
 
   @override
@@ -118,10 +132,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
                 title: model.title,
                 messages: model.messages,
                 createdAt: model.createdAt,
+                updatedAt: model.updatedAt,
               ),
             );
           }
           _currentSession = _sessions.first;
+          ref.read(currentSessionIdProvider.notifier).state = _currentSession!.id;
         });
       }
       _isHistoryLoaded = true;
@@ -141,7 +157,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
               title: s.title,
               messages: s.messages,
               createdAt: s.createdAt,
-              updatedAt: DateTime.now(),
+              updatedAt: s.updatedAt,
             ),
           )
           .toList();
@@ -156,7 +172,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     if (mounted) setState(() {});
   }
 
-  void _newSession() {
+  Future<void> _newSession() async {
     final session = AiChatSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: '新会话 ${_sessions.length + 1}',
@@ -167,7 +183,21 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
       _skillMatches.clear();
       _thinkingContents.clear();
       _toolCallResults.clear();
+      ref.read(currentSessionIdProvider.notifier).state = session.id;
     });
+    await _saveHistory();
+  }
+
+  void _switchSession(String sessionId) {
+    final session = _sessions.where((s) => s.id == sessionId).firstOrNull;
+    if (session == null) return;
+    setState(() {
+      _currentSession = session;
+      _skillMatches.clear();
+      _thinkingContents.clear();
+      _toolCallResults.clear();
+    });
+    _scrollToBottom();
   }
 
   /// 停止AI生成
@@ -191,7 +221,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
     final text = _inputCtrl.text.trim();
     if (text.isEmpty) return;
 
-    if (_currentSession == null) _newSession();
+    if (_currentSession == null) await _newSession();
 
     final config = ref.read(effectiveAiConfigProvider);
     if (config == null) {
@@ -262,6 +292,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         'role': 'user',
         'content': _inputCtrl.text.trim(),
       });
+      _currentSession!.updatedAt = DateTime.now();
       if (_currentSession!.messages.length == 1) {
         _currentSession!.title = text.length > 20
             ? '${text.substring(0, 20)}...'
@@ -383,6 +414,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
           'role': 'assistant',
           'content': response.content,
         });
+        _currentSession!.updatedAt = DateTime.now();
         final msgIdx = _currentSession!.messages.length - 1;
         if (matchedSkills.isNotEmpty) {
           _skillMatches[msgIdx] = matchedSkills;
@@ -397,14 +429,17 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
         _isLoading = false;
       });
       _scrollToBottom();
+      await _saveHistory();
     } catch (e) {
       setState(() {
         _currentSession!.messages.add({
           'role': 'assistant',
           'content': '请求失败: $e',
         });
+        _currentSession!.updatedAt = DateTime.now();
         _isLoading = false;
       });
+      await _saveHistory();
     }
   }
 
@@ -451,6 +486,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _newSessionSub?.close();
+    _currentSessionSub?.close();
     _inputCtrl.removeListener(_onInputChanged);
     _saveHistory();
     _inputCtrl.dispose();
