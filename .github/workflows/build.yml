@@ -48,20 +48,37 @@ jobs:
         echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
 
     - name: Build APK
-      run: flutter build apk --release --no-tree-shake-icons
+      id: build_apk
+      run: |
+        set +e
+        flutter build apk --release --no-tree-shake-icons
+        release_status=$?
+        set -e
 
-    - name: Rename APK
-      run: cp build/app/outputs/flutter-apk/app-release.apk novel-ide-android-${{ github.sha }}.apk
+        if [ "$release_status" -eq 0 ] && [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+          src_apk="build/app/outputs/flutter-apk/app-release.apk"
+          build_type="release"
+        else
+          echo "::warning::Release APK build failed; building debug APK as a downloadable fallback."
+          flutter build apk --debug --no-tree-shake-icons
+          src_apk="build/app/outputs/flutter-apk/app-debug.apk"
+          build_type="debug"
+        fi
+
+        apk_name="novel-ide-android-${build_type}-${GITHUB_SHA}.apk"
+        cp "$src_apk" "$apk_name"
+        echo "apk_name=$apk_name" >> "$GITHUB_OUTPUT"
+        echo "build_type=$build_type" >> "$GITHUB_OUTPUT"
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: release-apk
-        path: novel-ide-android-${{ github.sha }}.apk
+        name: android-apk-${{ steps.build_apk.outputs.build_type }}
+        path: ${{ steps.build_apk.outputs.apk_name }}
 
     # 自动创建/更新 Release 并上传 APK（仅 master 分支 push，非 PR）
     - name: Auto Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.build_apk.outputs.build_type == 'release'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: "latest"
@@ -70,7 +87,7 @@ jobs:
           ## 网文写作IDE Android 最新版
 
           **安装说明**：支持 Android 6.0+，下载 APK 后直接安装即可。
-        files: novel-ide-android-${{ github.sha }}.apk
+        files: ${{ steps.build_apk.outputs.apk_name }}
         fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
