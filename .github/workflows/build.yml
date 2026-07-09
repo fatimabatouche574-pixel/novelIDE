@@ -1,8 +1,9 @@
 name: Build APK
 
 on:
+  # 任意分支 push 都跑云端 APK 构建，这样功能分支/修复分支也能直接在 Actions 下载 APK。
   push:
-    branches: [ master ]
+    branches: [ '**' ]
   pull_request:
     branches: [ master ]
   workflow_dispatch:
@@ -79,6 +80,12 @@ jobs:
       with:
         name: android-apk-${{ steps.build_apk.outputs.build_type }}
         path: ${{ steps.build_apk.outputs.apk_name }}
+        retention-days: 30
+
+    - name: Print APK download hint
+      run: |
+        echo "Cloud APK artifact uploaded: android-apk-${{ steps.build_apk.outputs.build_type }}"
+        echo "Open this workflow run in GitHub Actions and download the artifact named android-apk-${{ steps.build_apk.outputs.build_type }}."
 
     # 自动创建/更新 Release 并上传 APK（仅 master 分支 push，非 PR）
     - name: Auto Release
