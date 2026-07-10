@@ -251,7 +251,7 @@ class _MainShellV2State extends ConsumerState<MainShellV2>
     switch (_currentRoute) {
       // ── AI功能区 ──
       case 'ai_chat':
-        return const AiChatPage();
+        return AiChatPage(onOpenHistory: () => _navigateTo('chat_history'));
       case 'assistant_config':
         return const OperitAssistantPage();
       case 'memory':
@@ -307,7 +307,9 @@ class _MainShellV2State extends ConsumerState<MainShellV2>
       case 'persona_gen':
         return const OperitPersonaGenPage();
       case 'chat_history':
-        return const OperitChatHistoryPage();
+        return OperitChatHistoryPage(
+          onSessionSelected: (_) => _navigateTo('ai_chat'),
+        );
       case 'global_display':
         return const OperitGlobalDisplayPage();
       case 'layout_adjust':
