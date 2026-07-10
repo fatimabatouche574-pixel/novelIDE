@@ -50,7 +50,9 @@ class SkillRepository {
           description: s.description,
           content: s.content,
           keywords: s.keywords,
-          isEnabled: enabledState[s.id] ?? true,
+          // 新版本增加的内置技能默认关闭，交由用户主动启用，避免升级后
+          // 在不知情的情况下扩大每次请求的上下文。
+          isEnabled: enabledState[s.id] ?? false,
           isBuiltIn: true,
           createdAt: s.createdAt,
           updatedAt: s.updatedAt,
@@ -74,7 +76,7 @@ class SkillRepository {
         description: s.description,
         content: s.content,
         keywords: s.keywords,
-        isEnabled: enabledState[s.id] ?? true,
+        isEnabled: enabledState[s.id] ?? false,
         isBuiltIn: true,
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,

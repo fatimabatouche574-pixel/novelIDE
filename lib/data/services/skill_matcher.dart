@@ -13,18 +13,28 @@ class SkillMatcher {
   ) {
     if (userMessage.trim().isEmpty || enabledSkills.isEmpty) return [];
 
-    final matched = <WritingSkill>[];
-    for (final skill in enabledSkills) {
+    final normalizedMessage = userMessage.toLowerCase();
+    final scored = <({int index, int score, WritingSkill skill})>[];
+    for (var index = 0; index < enabledSkills.length; index++) {
+      final skill = enabledSkills[index];
       if (skill.keywords.isEmpty) continue;
+      var score = 0;
       for (final keyword in skill.keywords) {
-        if (userMessage.contains(keyword)) {
-          matched.add(skill);
-          break; // 每个技能只匹配一次
+        final normalizedKeyword = keyword.trim().toLowerCase();
+        if (normalizedKeyword.isNotEmpty &&
+            normalizedMessage.contains(normalizedKeyword)) {
+          // 命中越多、关键词越具体，优先级越高。
+          score += 10 + normalizedKeyword.length;
         }
       }
-      if (matched.length >= maxMatchCount) break;
+      if (score > 0) scored.add((index: index, score: score, skill: skill));
     }
-    return matched;
+
+    scored.sort((a, b) {
+      final byScore = b.score.compareTo(a.score);
+      return byScore != 0 ? byScore : a.index.compareTo(b.index);
+    });
+    return scored.take(maxMatchCount).map((entry) => entry.skill).toList();
   }
 
   /// 将匹配到的技能内容注入系统提示词

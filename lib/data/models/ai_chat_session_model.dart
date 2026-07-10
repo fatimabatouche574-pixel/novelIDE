@@ -18,17 +18,48 @@ class AiChatSessionModel {
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
+  /// 创建一个可立即持久化的新会话。
+  factory AiChatSessionModel.create({String? title}) {
+    final now = DateTime.now();
+    return AiChatSessionModel(
+      id: now.microsecondsSinceEpoch.toString(),
+      title: title ?? '新对话',
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
   /// 从 JSON 构造
   factory AiChatSessionModel.fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    final rawMessages = json['messages'];
+    final messages = <Map<String, String>>[];
+    if (rawMessages is List) {
+      for (final rawMessage in rawMessages) {
+        if (rawMessage is! Map) continue;
+        final role = rawMessage['role']?.toString();
+        final content = rawMessage['content']?.toString();
+        if (role == null || content == null) continue;
+        messages.add({'role': role, 'content': content});
+      }
+    }
+
+    final createdAt = _parseDateTime(json['createdAt']) ?? now;
     return AiChatSessionModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      messages: (json['messages'] as List<dynamic>)
-          .map((m) => Map<String, String>.from(m as Map))
-          .toList(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      id: json['id']?.toString() ?? now.microsecondsSinceEpoch.toString(),
+      title: json['title']?.toString().trim().isNotEmpty == true
+          ? json['title'].toString()
+          : '未命名对话',
+      messages: messages,
+      createdAt: createdAt,
+      // 兼容早期没有 updatedAt 的历史文件。
+      updatedAt: _parseDateTime(json['updatedAt']) ?? createdAt,
     );
+  }
+
+  static DateTime? _parseDateTime(Object? value) {
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString());
   }
 
   /// 转为 JSON
@@ -53,13 +84,28 @@ class AiChatSessionModel {
   /// 更新消息并刷新更新时间
   void updateMessages(List<Map<String, String>> newMessages) {
     messages = List.from(newMessages);
-    updatedAt = DateTime.now();
+    touch();
   }
 
   /// 添加消息
   void addMessage(Map<String, String> message) {
     messages.add(message);
+    touch();
+  }
+
+  /// 标记会话内容或标题刚刚发生了变化。
+  void touch() {
     updatedAt = DateTime.now();
+  }
+
+  AiChatSessionModel copy() {
+    return AiChatSessionModel(
+      id: id,
+      title: title,
+      messages: messages.map(Map<String, String>.from).toList(),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
   }
 
   /// 获取消息数量
@@ -69,7 +115,7 @@ class AiChatSessionModel {
   String get lastMessagePreview {
     if (messages.isEmpty) return '';
     final last = messages.last;
-    final content = last['content'] ?? '';
+    final content = (last['content'] ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
     return content.length > 30 ? '${content.substring(0, 30)}...' : content;
   }
 }
@@ -81,15 +127,26 @@ class AiChatSessionList {
   AiChatSessionList({required this.sessions});
 
   factory AiChatSessionList.fromJson(Map<String, dynamic> json) {
+    final rawSessions = json['sessions'];
     return AiChatSessionList(
-      sessions: (json['sessions'] as List<dynamic>)
-          .map((s) => AiChatSessionModel.fromJson(s as Map<String, dynamic>))
-          .toList(),
+      sessions: rawSessions is List
+          ? rawSessions
+                .whereType<Map>()
+                .map(
+                  (s) => AiChatSessionModel.fromJson(
+                    Map<String, dynamic>.from(s),
+                  ),
+                )
+                .toList()
+          : [],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'sessions': sessions.map((s) => s.toJson()).toList()};
+    return {
+      'version': 2,
+      'sessions': sessions.map((s) => s.toJson()).toList(),
+    };
   }
 
   String toJsonString() => jsonEncode(toJson());

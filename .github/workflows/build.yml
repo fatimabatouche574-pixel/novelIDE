@@ -31,17 +31,29 @@ jobs:
     - name: Generate code (build_runner)
       run: flutter pub run build_runner build --delete-conflicting-outputs
 
-    # 解码签名文件
-    - name: Decode keystore
-      run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
-
-    # 创建 key.properties 供 build.gradle 读取
-    - name: Create key.properties
+    # PR 未配置签名密钥时使用 build.gradle 的 debug fallback 完成构建验证；
+    # master 发布必须具有完整正式签名，避免误发 debug 签名 APK。
+    - name: Configure signing
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
-        echo "storeFile=release-key.jks" > android/key.properties
-        echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
-        echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-        echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+        if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
+          {
+            echo "storeFile=release-key.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
+        elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/master" ]]; then
+          echo "::error::master 发布缺少完整的 KEYSTORE_* GitHub Secrets"
+          exit 1
+        else
+          echo "PR 未配置正式签名，使用 debug signing fallback 验证 APK 构建"
+        fi
 
     - name: Build APK
       run: flutter build apk --release --no-tree-shake-icons
